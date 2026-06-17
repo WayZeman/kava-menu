@@ -1,0 +1,8 @@
+{
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4"
+  },
+  "scripts": {
+    "seed:db": "node --env-file=.env.local scripts/seed-db.mjs"
+  }
+}
