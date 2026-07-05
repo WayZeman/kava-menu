@@ -16,6 +16,16 @@ function serializeItems(items) {
 }
 
 function mapRow(row) {
+  let items = row.items || null;
+  if (typeof items === 'string') {
+    try {
+      items = JSON.parse(items);
+    } catch {
+      items = null;
+    }
+  }
+  if (!Array.isArray(items)) items = null;
+
   return {
     id: row.id,
     kind: row.kind,
@@ -23,7 +33,7 @@ function mapRow(row) {
     amount: Number(row.amount),
     source: row.source || null,
     provider: row.provider || null,
-    items: row.items || null,
+    items,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };

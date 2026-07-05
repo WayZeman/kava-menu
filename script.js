@@ -1428,6 +1428,56 @@ function getLineQty(line) {
   return Math.min(qty, 99);
 }
 
+function normalizeIncomeItems(items) {
+  if (!items) return null;
+  if (typeof items === 'string') {
+    try {
+      const parsed = JSON.parse(items);
+      return Array.isArray(parsed) ? parsed : null;
+    } catch {
+      return null;
+    }
+  }
+  return Array.isArray(items) ? items : null;
+}
+
+function parseLabelLines(label) {
+  return String(label || '')
+    .split(',')
+    .map((part) => {
+      const match = part.trim().match(/^(.+?)\s×\s*(\d+)$/);
+      if (!match) return null;
+      return {
+        name: match[1].trim(),
+        qty: Number(match[2]) || 1,
+        amount: 0,
+        id: null,
+      };
+    })
+    .filter(Boolean);
+}
+
+function getIncomeItems(record) {
+  const items = normalizeIncomeItems(record.items);
+  if (items?.length) return items;
+  if (record.source !== 'order') return null;
+  const parsed = parseLabelLines(record.label);
+  return parsed.length ? parsed : null;
+}
+
+function estimateLineAmount(line) {
+  const qty = getLineQty(line);
+  const amount = Number(line?.amount);
+  if (Number.isFinite(amount) && amount > 0) return amount * qty;
+
+  if (isHaircutLine(line)) return 250 * qty;
+
+  const drink = menuDrinks.find((item) => item.id === line.id || item.name === line.name);
+  if (drink) return drink.amount * qty;
+
+  return 0;
+}
+
 function splitIncomeRecord(record) {
   const amount = Number(record.amount || 0);
   let coffee = 0;
@@ -1437,16 +1487,33 @@ function splitIncomeRecord(record) {
   let manualCoffeeCount = 0;
 
   if (record.source === 'order') {
-    if (Array.isArray(record.items) && record.items.length) {
-      record.items.forEach((line) => {
-        const lineAmount = getLineAmount(line);
-        const qty = getLineQty(line);
+    const items = getIncomeItems(record);
+    if (items?.length) {
+      const lineAmounts = items.map((line) => ({
+        line,
+        value: estimateLineAmount(line),
+      }));
+      let knownTotal = lineAmounts.reduce((sum, entry) => sum + entry.value, 0);
 
+      if (knownTotal <= 0 && amount > 0) {
+        lineAmounts.forEach((entry) => {
+          entry.value = amount / lineAmounts.length;
+        });
+        knownTotal = amount;
+      } else if (knownTotal > 0 && amount > 0 && Math.abs(knownTotal - amount) > 0.01) {
+        const scale = amount / knownTotal;
+        lineAmounts.forEach((entry) => {
+          entry.value *= scale;
+        });
+      }
+
+      lineAmounts.forEach(({ line, value }) => {
+        const qty = getLineQty(line);
         if (isHaircutLine(line)) {
-          haircut += lineAmount;
+          haircut += value;
           haircutCount += qty;
         } else {
-          coffee += lineAmount;
+          coffee += value;
           coffeeDrinks += qty;
         }
       });
@@ -1476,8 +1543,9 @@ function getCoffeeOnlyIncomes(incomes) {
     const part = splitIncomeRecord(record);
     if (part.coffee <= 0) return [];
 
-    if (record.source === 'order' && Array.isArray(record.items) && record.items.length) {
-      const coffeeItems = record.items.filter((line) => !isHaircutLine(line));
+    const items = getIncomeItems(record);
+    if (record.source === 'order' && items?.length) {
+      const coffeeItems = items.filter((line) => !isHaircutLine(line));
       if (!coffeeItems.length) return [];
 
       return [{
