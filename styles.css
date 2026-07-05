@@ -1619,10 +1619,11 @@ body.menu-editor-open {
 }
 
 .stats-list-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
   align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+  column-gap: 12px;
+  row-gap: 4px;
   padding: 12px 14px;
   border-radius: 14px;
   background: #fffef8;
@@ -1649,7 +1650,10 @@ body.menu-editor-open {
 }
 
 .stats-list-sum {
-  flex-shrink: 0;
+  justify-self: end;
+  min-width: 5.75rem;
+  text-align: right;
+  white-space: nowrap;
   font-size: 0.92rem;
   font-weight: 800;
   color: var(--brown);
