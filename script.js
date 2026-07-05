@@ -25,14 +25,16 @@ const thanksSkip = document.getElementById('thanks-skip');
 const thanksStatus = document.getElementById('thanks-status');
 const rows = document.querySelectorAll('.menu--services .row');
 const drinksMenu = document.getElementById('drinks-menu');
-const menuSettingsSheet = document.getElementById('menu-settings-sheet');
+const menuEditor = document.getElementById('menu-editor');
+const menuEditorIconPicker = document.getElementById('menu-editor-icon-picker');
+const menuEditorIconHint = document.getElementById('menu-editor-icon-hint');
+const menuEditorList = document.getElementById('menu-editor-list');
+const menuEditorEmpty = document.getElementById('menu-editor-empty');
 const menuSettingsBtn = document.getElementById('stats-menu-settings');
 const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
 const menuAddName = document.getElementById('menu-add-name');
 const menuAddAmount = document.getElementById('menu-add-amount');
-const menuSettingsList = document.getElementById('menu-settings-list');
-const menuSettingsEmpty = document.getElementById('menu-settings-empty');
 const payActions = document.querySelectorAll('#sheet [data-provider]');
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
@@ -138,6 +140,15 @@ const DEFAULT_DRINKS = [
   { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
 ];
 
+const DRINK_ICON_OPTIONS = [
+  { id: 'espresso', label: 'Еспресо' },
+  { id: 'americano', label: 'Американо' },
+  { id: 'americano-milk', label: 'З молоком' },
+  { id: 'cappuccino', label: 'Капучино' },
+  { id: 'latte', label: 'Лате' },
+  { id: 'generic', label: 'Чашка' },
+];
+
 const DRINK_ICONS = {
   espresso: '<rect x="14" y="18" width="20" height="22" rx="3" fill="#2f1a0f"/><path d="M34 24h4a3 3 0 0 1 0 6h-4" fill="none" stroke="#2f1a0f" stroke-width="2"/><ellipse cx="24" cy="18" rx="10" ry="3" fill="#d4a853"/>',
   americano: '<path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 16h12v18H18z" fill="#5c3a28"/><ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>',
@@ -148,6 +159,8 @@ const DRINK_ICONS = {
 };
 
 let menuDrinks = [];
+let menuEditorSelectedIcon = 'generic';
+let menuEditorEditingId = null;
 
 const cartItems = new Map();
 let paymentTotal = 0;
@@ -289,38 +302,60 @@ function renderDrinksMenu() {
   updateMenuEntryMeta();
 }
 
-function addMenuDrink(name, amount) {
+function addMenuDrink(name, amount, icon = menuEditorSelectedIcon) {
   const existingIds = new Set(menuDrinks.map((drink) => drink.id));
   const drink = {
     id: makeDrinkId(name, existingIds),
     name,
     amount: Math.round(amount),
-    icon: 'generic',
+    icon: DRINK_ICONS[icon] ? icon : 'generic',
   };
   menuDrinks.push(drink);
   saveMenuDrinks();
   renderDrinksMenu();
-  renderMenuSettingsList();
+  renderMenuEditorList();
+  updateMenuEntryMeta();
 }
 
-function updateMenuDrink(id, name, amount) {
+function updateMenuDrink(id, name, amount, icon) {
   const drink = menuDrinks.find((item) => item.id === id);
   if (!drink) return;
 
   drink.name = name;
   drink.amount = Math.round(amount);
+  if (icon && DRINK_ICONS[icon]) drink.icon = icon;
   saveMenuDrinks();
   renderDrinksMenu();
-  renderMenuSettingsList();
+  renderMenuEditorList();
 }
 
 function removeMenuDrink(id) {
   menuDrinks = menuDrinks.filter((drink) => drink.id !== id);
   cartItems.delete(id);
+  if (menuEditorEditingId === id) {
+    menuEditorEditingId = null;
+    menuEditorSelectedIcon = 'generic';
+    renderMenuEditorIconPicker();
+  }
   saveMenuDrinks();
   renderDrinksMenu();
-  renderMenuSettingsList();
+  renderMenuEditorList();
+  updateMenuEntryMeta();
   updateCart();
+}
+
+function moveMenuDrink(id, direction) {
+  const index = menuDrinks.findIndex((drink) => drink.id === id);
+  if (index < 0) return;
+
+  const nextIndex = index + direction;
+  if (nextIndex < 0 || nextIndex >= menuDrinks.length) return;
+
+  const [drink] = menuDrinks.splice(index, 1);
+  menuDrinks.splice(nextIndex, 0, drink);
+  saveMenuDrinks();
+  renderDrinksMenu();
+  renderMenuEditorList();
 }
 
 function updateMenuEntryMeta() {
@@ -332,87 +367,180 @@ function updateMenuEntryMeta() {
     : 'Додати або прибрати напої';
 }
 
-function renderMenuSettingsList() {
-  if (!menuSettingsList) return;
+function setMenuEditorIcon(iconId, { editingId = null } = {}) {
+  menuEditorSelectedIcon = DRINK_ICONS[iconId] ? iconId : 'generic';
+  menuEditorEditingId = editingId;
 
-  menuSettingsList.innerHTML = '';
+  if (editingId) {
+    const drink = menuDrinks.find((item) => item.id === editingId);
+    if (drink) {
+      drink.icon = menuEditorSelectedIcon;
+      saveMenuDrinks();
+      renderDrinksMenu();
+      renderMenuEditorList();
+    }
+  }
+
+  renderMenuEditorIconPicker();
+}
+
+function renderMenuEditorIconPicker() {
+  if (!menuEditorIconPicker) return;
+
+  menuEditorIconPicker.innerHTML = '';
+
+  if (menuEditorIconHint) {
+    if (menuEditorEditingId) {
+      const drink = menuDrinks.find((item) => item.id === menuEditorEditingId);
+      menuEditorIconHint.textContent = drink
+        ? `Значок для «${drink.name}»`
+        : 'Оберіть значок';
+    } else {
+      menuEditorIconHint.textContent = 'Оберіть значок для нового напою';
+    }
+  }
+
+  DRINK_ICON_OPTIONS.forEach((option) => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'menu-editor-icon-option';
+    button.dataset.icon = option.id;
+    button.setAttribute('role', 'option');
+    button.setAttribute('aria-label', option.label);
+    button.setAttribute('aria-selected', option.id === menuEditorSelectedIcon ? 'true' : 'false');
+
+    if (option.id === menuEditorSelectedIcon) {
+      button.classList.add('is-active');
+    }
+
+    button.innerHTML = `
+      <span class="menu-editor-icon-preview">${drinkIconMarkup(option.id)}</span>
+      <span class="menu-editor-icon-label">${option.label}</span>
+    `;
+
+    button.addEventListener('click', () => {
+      setMenuEditorIcon(option.id, { editingId: menuEditorEditingId });
+    });
+
+    menuEditorIconPicker.appendChild(button);
+  });
+}
+
+function renderMenuEditorList() {
+  if (!menuEditorList) return;
+
+  menuEditorList.innerHTML = '';
 
   if (!menuDrinks.length) {
-    if (menuSettingsEmpty) menuSettingsEmpty.hidden = false;
+    if (menuEditorEmpty) menuEditorEmpty.hidden = false;
     return;
   }
 
-  if (menuSettingsEmpty) menuSettingsEmpty.hidden = true;
+  if (menuEditorEmpty) menuEditorEmpty.hidden = true;
 
-  menuDrinks.forEach((drink) => {
+  menuDrinks.forEach((drink, index) => {
     const li = document.createElement('li');
-    li.className = 'menu-settings-item';
+    li.className = 'menu-editor-item';
+    if (menuEditorEditingId === drink.id) {
+      li.classList.add('is-editing-icon');
+    }
+
+    const orderWrap = document.createElement('div');
+    orderWrap.className = 'menu-editor-item-order';
+
+    const upBtn = document.createElement('button');
+    upBtn.type = 'button';
+    upBtn.className = 'menu-editor-move-btn';
+    upBtn.textContent = '↑';
+    upBtn.disabled = index === 0;
+    upBtn.setAttribute('aria-label', 'Підняти вище');
+    upBtn.addEventListener('click', () => moveMenuDrink(drink.id, -1));
+
+    const downBtn = document.createElement('button');
+    downBtn.type = 'button';
+    downBtn.className = 'menu-editor-move-btn';
+    downBtn.textContent = '↓';
+    downBtn.disabled = index === menuDrinks.length - 1;
+    downBtn.setAttribute('aria-label', 'Опустити нижче');
+    downBtn.addEventListener('click', () => moveMenuDrink(drink.id, 1));
+
+    orderWrap.append(upBtn, downBtn);
+
+    const iconBtn = document.createElement('button');
+    iconBtn.type = 'button';
+    iconBtn.className = 'menu-editor-item-icon';
+    iconBtn.innerHTML = drinkIconMarkup(drink.icon);
+    iconBtn.setAttribute('aria-label', `Змінити значок для ${drink.name}`);
+    iconBtn.addEventListener('click', () => {
+      setMenuEditorIcon(drink.icon, { editingId: drink.id });
+    });
+
+    const fields = document.createElement('div');
+    fields.className = 'menu-editor-item-fields';
 
     const nameInput = document.createElement('input');
-    nameInput.className = 'menu-settings-item-name stats-input';
+    nameInput.className = 'menu-editor-item-name';
     nameInput.type = 'text';
     nameInput.maxLength = 80;
     nameInput.value = drink.name;
     nameInput.setAttribute('aria-label', 'Назва напою');
 
     const amountInput = document.createElement('input');
-    amountInput.className = 'menu-settings-item-amount stats-input';
+    amountInput.className = 'menu-editor-item-amount';
     amountInput.type = 'number';
     amountInput.min = '1';
     amountInput.step = '1';
     amountInput.value = String(drink.amount);
     amountInput.setAttribute('aria-label', 'Ціна');
 
-    const saveBtn = document.createElement('button');
-    saveBtn.type = 'button';
-    saveBtn.className = 'menu-settings-save stats-edit-btn';
-    saveBtn.textContent = '✓';
-    saveBtn.setAttribute('aria-label', 'Зберегти зміни');
-
-    const deleteBtn = document.createElement('button');
-    deleteBtn.type = 'button';
-    deleteBtn.className = 'menu-settings-delete stats-delete-btn';
-    deleteBtn.textContent = '−';
-    deleteBtn.setAttribute('aria-label', 'Прибрати позицію');
-
     const commit = () => {
       const name = nameInput.value.trim();
       const amount = Number(amountInput.value);
       if (!name || !Number.isFinite(amount) || amount <= 0) return;
-      updateMenuDrink(drink.id, name, amount);
+      updateMenuDrink(drink.id, name, amount, drink.icon);
     };
 
-    saveBtn.addEventListener('click', commit);
-    deleteBtn.addEventListener('click', () => removeMenuDrink(drink.id));
-    nameInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') commit();
-    });
-    amountInput.addEventListener('keydown', (event) => {
-      if (event.key === 'Enter') commit();
-    });
+    nameInput.addEventListener('change', commit);
+    amountInput.addEventListener('change', commit);
 
-    li.append(nameInput, amountInput, saveBtn, deleteBtn);
-    menuSettingsList.appendChild(li);
+    fields.append(nameInput, amountInput);
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'menu-editor-delete-btn';
+    deleteBtn.textContent = '−';
+    deleteBtn.setAttribute('aria-label', 'Видалити напій');
+    deleteBtn.addEventListener('click', () => removeMenuDrink(drink.id));
+
+    li.append(orderWrap, iconBtn, fields, deleteBtn);
+    menuEditorList.appendChild(li);
   });
 }
 
-function openMenuSettings() {
-  if (!menuSettingsSheet) return;
-  renderMenuSettingsList();
-  menuSettingsSheet.hidden = false;
-  document.body.classList.add('sheet-open');
+function renderMenuEditor() {
+  renderMenuEditorIconPicker();
+  renderMenuEditorList();
+}
+
+function openMenuEditor() {
+  if (!menuEditor) return;
+
+  menuEditorEditingId = null;
+  menuEditorSelectedIcon = 'generic';
+  renderMenuEditor();
+  menuEditor.hidden = false;
+  document.body.classList.add('menu-editor-open');
   menuAddName?.focus();
 }
 
-function closeMenuSettings() {
-  if (!menuSettingsSheet) return;
-  menuSettingsSheet.hidden = true;
+function closeMenuEditor() {
+  if (!menuEditor) return;
+
+  menuEditor.hidden = true;
+  menuEditorEditingId = null;
+  menuEditorSelectedIcon = 'generic';
   menuAddForm?.reset();
-  if (sheet.hidden && confirmSheet.hidden
-    && (!cardPaySheet || cardPaySheet.hidden)
-    && (!carWashSheet || carWashSheet.hidden)) {
-    document.body.classList.remove('sheet-open');
-  }
+  document.body.classList.remove('menu-editor-open');
 }
 
 function initMenu() {
@@ -1137,15 +1265,15 @@ menuAddForm?.addEventListener('submit', (event) => {
   const name = menuAddName?.value.trim();
   const amount = Number(menuAddAmount?.value);
   if (!name || !Number.isFinite(amount) || amount <= 0) return;
-  addMenuDrink(name, amount);
+  addMenuDrink(name, amount, menuEditorSelectedIcon);
   menuAddForm.reset();
+  menuEditorEditingId = null;
+  renderMenuEditorIconPicker();
   menuAddName?.focus();
 });
 
-menuSettingsBtn?.addEventListener('click', openMenuSettings);
-menuSettingsSheet?.querySelectorAll('[data-menu-settings-close]').forEach((el) => {
-  el.addEventListener('click', closeMenuSettings);
-});
+menuSettingsBtn?.addEventListener('click', openMenuEditor);
+menuEditor?.querySelector('[data-menu-editor-back]')?.addEventListener('click', closeMenuEditor);
 
 carWashSheet?.querySelectorAll('[data-car-wash-level]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -1213,7 +1341,7 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    if (menuSettingsSheet && !menuSettingsSheet.hidden) closeMenuSettings();
+    if (menuEditor && !menuEditor.hidden) closeMenuEditor();
     else if (statsGate && !statsGate.hidden) closeStatsGate();
     else if (statsPanel && !statsPanel.hidden) closeStats();
     else if (carWashSheet && !carWashSheet.hidden) closeCarWashSheet();
@@ -1880,7 +2008,7 @@ function closeStats() {
   if (!statsPanel) return;
   statsPanel.hidden = true;
   document.body.classList.remove('stats-open');
-  closeMenuSettings();
+  closeMenuEditor();
   incomesListExpanded = false;
   expensesListExpanded = false;
   setStatsTab('income');

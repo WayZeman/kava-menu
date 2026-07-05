@@ -14,8 +14,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=40">
-  <link rel="stylesheet" href="gradual-blur.css?v=40">
+  <link rel="stylesheet" href="styles.css?v=41">
+  <link rel="stylesheet" href="gradual-blur.css?v=41">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -389,30 +389,36 @@
     </div>
   </div>
 
-  <div id="menu-settings-sheet" class="service-sheet" hidden>
-    <div class="service-sheet-backdrop" data-menu-settings-close></div>
-    <div class="service-sheet-card menu-settings-card" role="dialog" aria-modal="true" aria-labelledby="menu-settings-title">
-      <p class="service-sheet-label">Налаштування</p>
-      <p id="menu-settings-title" class="service-sheet-title">Редагування меню</p>
-      <p class="menu-settings-hint">Додайте новий напій або приберіть зайву позицію</p>
-      <form id="menu-add-form" class="menu-settings-form">
-        <p class="menu-settings-form-label">Нова позиція</p>
-        <div class="menu-settings-form-row">
-          <input id="menu-add-name" class="stats-input menu-settings-input" type="text" maxlength="80" placeholder="Назва напою" required>
-          <input id="menu-add-amount" class="stats-input menu-settings-input menu-settings-input--amount" type="number" min="1" step="1" placeholder="Ціна" required>
-          <button class="stats-add-btn menu-settings-add" type="submit" aria-label="Додати напій">+</button>
-        </div>
-      </form>
-      <p class="menu-settings-form-label">Поточне меню</p>
-      <ul id="menu-settings-list" class="menu-settings-list"></ul>
-      <p id="menu-settings-empty" class="menu-settings-empty" hidden>Напоїв поки немає</p>
-      <button class="service-sheet-cancel" type="button" data-menu-settings-close>Готово</button>
+  <div id="menu-editor" class="menu-editor" hidden>
+    <div class="menu-editor-panel">
+      <header class="menu-editor-header">
+        <button class="stats-back" type="button" data-menu-editor-back aria-label="Назад до статистики">← Статистика</button>
+        <h2 class="stats-title">Редагування меню</h2>
+        <p class="stats-subtitle">Додайте, приберіть або змініть порядок напоїв</p>
+      </header>
+
+      <section class="menu-editor-section" aria-label="Новий напій">
+        <h3 class="menu-editor-section-title">Новий напій</h3>
+        <p id="menu-editor-icon-hint" class="menu-editor-icon-hint">Оберіть значок</p>
+        <div id="menu-editor-icon-picker" class="menu-editor-icon-picker" role="listbox" aria-label="Значок напою"></div>
+        <form id="menu-add-form" class="menu-editor-form">
+          <input id="menu-add-name" class="stats-input menu-editor-input" type="text" maxlength="80" placeholder="Назва напою" required>
+          <input id="menu-add-amount" class="stats-input menu-editor-input menu-editor-input--amount" type="number" min="1" step="1" placeholder="Ціна" required>
+          <button class="menu-editor-add-btn" type="submit">Додати</button>
+        </form>
+      </section>
+
+      <section class="menu-editor-section" aria-label="Поточне меню">
+        <h3 class="menu-editor-section-title">Поточне меню</h3>
+        <ul id="menu-editor-list" class="menu-editor-list"></ul>
+        <p id="menu-editor-empty" class="menu-editor-empty" hidden>Напоїв поки немає</p>
+      </section>
     </div>
   </div>
 
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <script src="gradual-blur.js?v=40"></script>
-  <script src="script.js?v=40"></script>
+  <script src="gradual-blur.js?v=41"></script>
+  <script src="script.js?v=41"></script>
 </body>
 </html>
