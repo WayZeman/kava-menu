@@ -269,3 +269,80 @@ export function buildOrderLabel(items) {
   if (!Array.isArray(items) || !items.length) return 'Замовлення';
   return items.map((item) => `${item.name} × ${item.qty}`).join(', ');
 }
+
+let menuTableReady = false;
+
+async function ensureMenuTable(sql) {
+  if (menuTableReady) return;
+  await sql`
+    CREATE TABLE IF NOT EXISTS app_config (
+      key TEXT PRIMARY KEY,
+      value JSONB NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+  menuTableReady = true;
+}
+
+function normalizeMenuDrinks(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const name = String(item?.name || '').trim();
+      const amount = Number(item?.amount);
+      const id = String(item?.id || '').trim();
+      if (!name || !id || !Number.isFinite(amount) || amount <= 0) return null;
+      return {
+        id,
+        name,
+        amount: Math.round(amount),
+        icon: String(item?.icon || 'generic').trim() || 'generic',
+      };
+    })
+    .filter(Boolean);
+}
+
+export async function getMenuDrinksFromDb() {
+  const sql = getSql();
+  if (!sql) return null;
+
+  await ensureMenuTable(sql);
+
+  const rows = await sql`
+    SELECT value, updated_at
+    FROM app_config
+    WHERE key = 'menu_drinks'
+    LIMIT 1
+  `;
+
+  if (!rows[0]) return null;
+
+  return {
+    drinks: normalizeMenuDrinks(rows[0].value),
+    updatedAt: rows[0].updated_at,
+  };
+}
+
+export async function saveMenuDrinksToDb(drinks) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const normalized = normalizeMenuDrinks(drinks);
+  if (!normalized.length) return null;
+
+  await ensureMenuTable(sql);
+
+  const rows = await sql`
+    INSERT INTO app_config (key, value, updated_at)
+    VALUES ('menu_drinks', ${JSON.stringify(normalized)}::jsonb, NOW())
+    ON CONFLICT (key) DO UPDATE SET
+      value = EXCLUDED.value,
+      updated_at = NOW()
+    RETURNING value, updated_at
+  `;
+
+  return {
+    drinks: normalizeMenuDrinks(rows[0].value),
+    updatedAt: rows[0].updated_at,
+  };
+}

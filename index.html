@@ -6,6 +6,20 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="theme-color" content="#f5f0e8">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <script>
+    (function () {
+      var version = '46';
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('v') !== version) {
+        params.set('v', version);
+        var next = window.location.pathname + '?' + params.toString() + window.location.hash;
+        window.location.replace(next);
+      }
+    })();
+  </script>
   <title>Кавове меню</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -14,8 +28,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=42">
-  <link rel="stylesheet" href="gradual-blur.css?v=42">
+  <link rel="stylesheet" href="styles.css?v=46">
+  <link rel="stylesheet" href="gradual-blur.css?v=46">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -418,7 +432,7 @@
 
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <script src="gradual-blur.js?v=42"></script>
-  <script src="script.js?v=45"></script>
+  <script src="gradual-blur.js?v=46"></script>
+  <script src="script.js?v=46"></script>
 </body>
 </html>

@@ -88,6 +88,7 @@ const STATS_AUTH_KEY = 'kava-stats-auth';
 const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
+const APP_VERSION = '46';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -196,24 +197,91 @@ function normalizeDrink(raw) {
   };
 }
 
-function loadMenuDrinks() {
+function loadMenuDrinksFromStorage() {
   try {
     const raw = localStorage.getItem(MENU_KEY);
-    if (!raw) return DEFAULT_DRINKS.map((item) => ({ ...item }));
+    if (!raw) return null;
     const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed)) return DEFAULT_DRINKS.map((item) => ({ ...item }));
+    if (!Array.isArray(parsed)) return null;
     const drinks = parsed.map(normalizeDrink).filter(Boolean);
-    return drinks.length ? drinks : DEFAULT_DRINKS.map((item) => ({ ...item }));
+    return drinks.length ? drinks : null;
   } catch {
-    return DEFAULT_DRINKS.map((item) => ({ ...item }));
+    return null;
   }
 }
 
-function saveMenuDrinks() {
+async function loadMenuDrinks() {
+  const local = loadMenuDrinksFromStorage();
+  let remote = null;
+  let remoteUpdatedAt = null;
+
+  try {
+    const response = await fetch('/api/menu', { cache: 'no-store' });
+    if (response.ok) {
+      const data = await response.json();
+      remote = Array.isArray(data.drinks)
+        ? data.drinks.map(normalizeDrink).filter(Boolean)
+        : null;
+      remoteUpdatedAt = data.updatedAt || null;
+    }
+  } catch {
+    // fall back to local copy
+  }
+
+  if (local?.length && (!remoteUpdatedAt || isDefaultMenu(remote))) {
+    localStorage.setItem(MENU_KEY, JSON.stringify(local));
+    try {
+      await fetch('/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ drinks: local }),
+      });
+    } catch {
+      // local menu still works offline
+    }
+    return local;
+  }
+
+  if (remote?.length) {
+    localStorage.setItem(MENU_KEY, JSON.stringify(remote));
+    return remote;
+  }
+
+  if (local?.length) return local;
+
+  return DEFAULT_DRINKS.map((item) => ({ ...item }));
+}
+
+function isDefaultMenu(drinks) {
+  if (!Array.isArray(drinks) || drinks.length !== DEFAULT_DRINKS.length) return false;
+  return DEFAULT_DRINKS.every((item, index) => {
+    const drink = drinks[index];
+    return drink?.id === item.id
+      && drink?.name === item.name
+      && drink?.amount === item.amount;
+  });
+}
+
+function saveMenuDrinksLocal() {
   try {
     localStorage.setItem(MENU_KEY, JSON.stringify(menuDrinks));
   } catch {
     // ignore quota errors
+  }
+}
+
+async function saveMenuDrinks() {
+  saveMenuDrinksLocal();
+
+  try {
+    await fetch('/api/menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ drinks: menuDrinks }),
+      keepalive: true,
+    });
+  } catch {
+    // menu still saved locally; server sync retries on next edit
   }
 }
 
@@ -317,7 +385,7 @@ function addMenuDrink(name, amount, icon = menuEditorSelectedIcon) {
     icon: DRINK_ICONS[icon] ? icon : 'generic',
   };
   menuDrinks.push(drink);
-  saveMenuDrinks();
+  persistMenuDrinks();
   renderDrinksMenu();
   renderMenuEditorList();
   updateMenuEntryMeta();
@@ -330,7 +398,7 @@ function updateMenuDrink(id, name, amount, icon) {
   drink.name = name;
   drink.amount = Math.round(amount);
   if (icon && DRINK_ICONS[icon]) drink.icon = icon;
-  saveMenuDrinks();
+  persistMenuDrinks();
   renderDrinksMenu();
   renderMenuEditorList();
 }
@@ -343,7 +411,7 @@ function removeMenuDrink(id) {
     menuEditorSelectedIcon = 'generic';
     renderMenuEditorIconPicker();
   }
-  saveMenuDrinks();
+  persistMenuDrinks();
   renderDrinksMenu();
   renderMenuEditorList();
   updateMenuEntryMeta();
@@ -359,9 +427,14 @@ function moveMenuDrink(id, direction) {
 
   const [drink] = menuDrinks.splice(index, 1);
   menuDrinks.splice(nextIndex, 0, drink);
-  saveMenuDrinks();
+  persistMenuDrinks();
   renderDrinksMenu();
   renderMenuEditorList();
+}
+
+function persistMenuDrinks() {
+  saveMenuDrinksLocal();
+  saveMenuDrinks();
 }
 
 function updateMenuEntryMeta() {
@@ -381,7 +454,7 @@ function setMenuEditorIcon(iconId, { editingId = null } = {}) {
     const drink = menuDrinks.find((item) => item.id === editingId);
     if (drink) {
       drink.icon = menuEditorSelectedIcon;
-      saveMenuDrinks();
+      persistMenuDrinks();
       renderDrinksMenu();
       renderMenuEditorList();
     }
@@ -549,8 +622,8 @@ function closeMenuEditor() {
   document.body.classList.remove('menu-editor-open');
 }
 
-function initMenu() {
-  menuDrinks = loadMenuDrinks();
+async function initMenu() {
+  menuDrinks = await loadMenuDrinks();
   renderDrinksMenu();
   updateMenuEntryMeta();
 }
