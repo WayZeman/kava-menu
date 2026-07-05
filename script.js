@@ -142,19 +142,23 @@ const DEFAULT_DRINKS = [
 
 const DRINK_ICON_OPTIONS = [
   { id: 'espresso', label: 'Еспресо' },
+  { id: 'double-espresso', label: '2× еспресо' },
   { id: 'americano', label: 'Американо' },
   { id: 'americano-milk', label: 'З молоком' },
   { id: 'cappuccino', label: 'Капучино' },
   { id: 'latte', label: 'Лате' },
+  { id: 'iced-latte', label: 'Лате з льодом' },
   { id: 'generic', label: 'Чашка' },
 ];
 
 const DRINK_ICONS = {
   espresso: '<rect x="14" y="18" width="20" height="22" rx="3" fill="#2f1a0f"/><path d="M34 24h4a3 3 0 0 1 0 6h-4" fill="none" stroke="#2f1a0f" stroke-width="2"/><ellipse cx="24" cy="18" rx="10" ry="3" fill="#d4a853"/>',
+  'double-espresso': '<rect x="9" y="20" width="13" height="18" rx="2.5" fill="#2f1a0f"/><ellipse cx="15.5" cy="20" rx="6.5" ry="2" fill="#d4a853"/><rect x="26" y="20" width="13" height="18" rx="2.5" fill="#2f1a0f"/><ellipse cx="32.5" cy="20" rx="6.5" ry="2" fill="#d4a853"/><path d="M22 28h4" stroke="#d4a853" stroke-width="2" stroke-linecap="round"/>',
   americano: '<path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 16h12v18H18z" fill="#5c3a28"/><ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>',
   'americano-milk': '<path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 20h12v14H18z" fill="#5c3a28"/><path d="M18 16h12v6H18z" fill="#f5f0e8"/><ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>',
   cappuccino: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#f5f0e8"/>',
   latte: '<path d="M17 8h14l3 32a3 3 0 0 1-3 2.5H17a3 3 0 0 1-3-2.5L17 8z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="19" y="28" width="10" height="10" fill="#5c3a28"/><rect x="19" y="18" width="10" height="8" fill="#d4a853"/><rect x="19" y="12" width="10" height="5" fill="#f5f0e8"/>',
+  'iced-latte': '<path d="M17 10h14l-2.5 30a2.5 2.5 0 0 1-2.5 2H22a2.5 2.5 0 0 1-2.5-2L17 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="19" y="30" width="10" height="9" fill="#5c3a28"/><rect x="19" y="22" width="10" height="8" fill="#f5f0e8"/><rect x="20" y="24" width="4" height="4" rx="0.8" fill="#b8dff0" stroke="#7eb8d4" stroke-width="1"/><rect x="26" y="27" width="3.5" height="3.5" rx="0.8" fill="#b8dff0" stroke="#7eb8d4" stroke-width="1"/><path d="M31 8v16" stroke="#d4a853" stroke-width="2" stroke-linecap="round"/>',
   generic: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#d4a853"/>',
 };
 
