@@ -16,6 +16,11 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  background: var(--cream);
+}
+
+html.is-standalone {
+  height: 100%;
 }
 
 body {
@@ -25,6 +30,12 @@ body {
   background: var(--cream);
   color: var(--brown);
   -webkit-font-smoothing: antialiased;
+}
+
+html.is-standalone body {
+  min-height: 100%;
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
 }
 
 .bg-animation {
@@ -83,6 +94,31 @@ body {
 
 body.has-cart .page {
   padding-bottom: calc(112px + env(safe-area-inset-bottom));
+}
+
+@media (display-mode: standalone) {
+  .page {
+    padding-top: max(28px, calc(10px + env(safe-area-inset-top)));
+    padding-bottom: max(36px, calc(20px + env(safe-area-inset-bottom)));
+  }
+
+  body.has-cart .page {
+    padding-bottom: calc(120px + env(safe-area-inset-bottom));
+  }
+
+  .cart {
+    left: max(16px, env(safe-area-inset-left));
+    right: max(16px, env(safe-area-inset-right));
+    bottom: max(16px, env(safe-area-inset-bottom));
+  }
+
+  .hero {
+    margin-bottom: 20px;
+  }
+
+  .hero h1 {
+    font-size: 1.65rem;
+  }
 }
 
 .hero {

@@ -90,7 +90,7 @@ const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '49';
+const APP_VERSION = '50';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -1543,6 +1543,15 @@ window.addEventListener('pageshow', (event) => {
   dismissOverlays();
 });
 
+function initStandaloneMode() {
+  const isStandalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+  if (isStandalone) {
+    document.documentElement.classList.add('is-standalone');
+  }
+}
+
+initStandaloneMode();
 initMenu();
 initPaymentReturn();
 updateCart();
