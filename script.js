@@ -30,6 +30,7 @@ const menuEditorIconPicker = document.getElementById('menu-editor-icon-picker');
 const menuEditorIconHint = document.getElementById('menu-editor-icon-hint');
 const menuEditorList = document.getElementById('menu-editor-list');
 const menuEditorEmpty = document.getElementById('menu-editor-empty');
+const menuEditorSaveBtn = document.getElementById('menu-editor-save');
 const menuSettingsBtn = document.getElementById('stats-menu-settings');
 const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
@@ -89,7 +90,7 @@ const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '47';
+const APP_VERSION = '48';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -176,6 +177,7 @@ const DRINK_ICONS = {
 };
 
 let menuDrinks = [];
+let menuEditorDraft = [];
 let menuEditorSelectedIcon = 'generic';
 let menuEditorEditingId = null;
 
@@ -424,64 +426,52 @@ function renderDrinksMenu() {
 }
 
 function addMenuDrink(name, amount, icon = menuEditorSelectedIcon) {
-  const existingIds = new Set(menuDrinks.map((drink) => drink.id));
+  const existingIds = new Set(menuEditorDraft.map((drink) => drink.id));
   const drink = {
     id: makeDrinkId(name, existingIds),
     name,
     amount: Math.round(amount),
     icon: DRINK_ICONS[icon] ? icon : 'generic',
   };
-  menuDrinks.push(drink);
-  persistMenuDrinks();
-  renderDrinksMenu();
+  menuEditorDraft.push(drink);
   renderMenuEditorList();
-  updateMenuEntryMeta();
 }
 
 function updateMenuDrink(id, name, amount, icon) {
-  const drink = menuDrinks.find((item) => item.id === id);
+  const drink = menuEditorDraft.find((item) => item.id === id);
   if (!drink) return;
 
   drink.name = name;
   drink.amount = Math.round(amount);
   if (icon && DRINK_ICONS[icon]) drink.icon = icon;
-  persistMenuDrinks();
-  renderDrinksMenu();
   renderMenuEditorList();
 }
 
 function removeMenuDrink(id) {
-  menuDrinks = menuDrinks.filter((drink) => drink.id !== id);
-  cartItems.delete(id);
+  menuEditorDraft = menuEditorDraft.filter((drink) => drink.id !== id);
   if (menuEditorEditingId === id) {
     menuEditorEditingId = null;
     menuEditorSelectedIcon = 'generic';
     renderMenuEditorIconPicker();
   }
-  persistMenuDrinks();
-  renderDrinksMenu();
   renderMenuEditorList();
-  updateMenuEntryMeta();
-  updateCart();
 }
 
 function moveMenuDrink(id, direction) {
-  const index = menuDrinks.findIndex((drink) => drink.id === id);
+  const index = menuEditorDraft.findIndex((drink) => drink.id === id);
   if (index < 0) return;
 
   const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= menuDrinks.length) return;
+  if (nextIndex < 0 || nextIndex >= menuEditorDraft.length) return;
 
-  const [drink] = menuDrinks.splice(index, 1);
-  menuDrinks.splice(nextIndex, 0, drink);
-  persistMenuDrinks();
-  renderDrinksMenu();
+  const [drink] = menuEditorDraft.splice(index, 1);
+  menuEditorDraft.splice(nextIndex, 0, drink);
   renderMenuEditorList();
 }
 
-function persistMenuDrinks() {
+async function persistMenuDrinks() {
   saveMenuDrinksLocal();
-  saveMenuDrinks();
+  await saveMenuDrinks();
 }
 
 function updateMenuEntryMeta() {
@@ -498,11 +488,9 @@ function setMenuEditorIcon(iconId, { editingId = null } = {}) {
   menuEditorEditingId = editingId;
 
   if (editingId) {
-    const drink = menuDrinks.find((item) => item.id === editingId);
+    const drink = menuEditorDraft.find((item) => item.id === editingId);
     if (drink) {
       drink.icon = menuEditorSelectedIcon;
-      persistMenuDrinks();
-      renderDrinksMenu();
       renderMenuEditorList();
     }
   }
@@ -517,7 +505,7 @@ function renderMenuEditorIconPicker() {
 
   if (menuEditorIconHint) {
     if (menuEditorEditingId) {
-      const drink = menuDrinks.find((item) => item.id === menuEditorEditingId);
+      const drink = menuEditorDraft.find((item) => item.id === menuEditorEditingId);
       menuEditorIconHint.textContent = drink
         ? `Значок для «${drink.name}»`
         : 'Оберіть значок';
@@ -557,16 +545,17 @@ function renderMenuEditorList() {
 
   menuEditorList.innerHTML = '';
 
-  if (!menuDrinks.length) {
+  if (!menuEditorDraft.length) {
     if (menuEditorEmpty) menuEditorEmpty.hidden = false;
     return;
   }
 
   if (menuEditorEmpty) menuEditorEmpty.hidden = true;
 
-  menuDrinks.forEach((drink, index) => {
+  menuEditorDraft.forEach((drink, index) => {
     const li = document.createElement('li');
     li.className = 'menu-editor-item';
+    li.dataset.drinkId = drink.id;
     if (menuEditorEditingId === drink.id) {
       li.classList.add('is-editing-icon');
     }
@@ -586,7 +575,7 @@ function renderMenuEditorList() {
     downBtn.type = 'button';
     downBtn.className = 'menu-editor-move-btn';
     downBtn.textContent = '↓';
-    downBtn.disabled = index === menuDrinks.length - 1;
+    downBtn.disabled = index === menuEditorDraft.length - 1;
     downBtn.setAttribute('aria-label', 'Опустити нижче');
     downBtn.addEventListener('click', () => moveMenuDrink(drink.id, 1));
 
@@ -648,11 +637,60 @@ function renderMenuEditor() {
   renderMenuEditorList();
 }
 
+function collectMenuEditorDraftFromDom() {
+  if (!menuEditorList) return;
+
+  menuEditorList.querySelectorAll('.menu-editor-item').forEach((item) => {
+    const drink = menuEditorDraft.find((entry) => entry.id === item.dataset.drinkId);
+    if (!drink) return;
+
+    const name = item.querySelector('.menu-editor-item-name')?.value.trim();
+    const amount = Number(item.querySelector('.menu-editor-item-amount')?.value);
+    if (!name || !Number.isFinite(amount) || amount <= 0) return;
+
+    drink.name = name;
+    drink.amount = Math.round(amount);
+  });
+}
+
+async function saveMenuEditor() {
+  if (!menuEditorSaveBtn) return;
+
+  collectMenuEditorDraftFromDom();
+  menuEditorSaveBtn.disabled = true;
+  menuEditorSaveBtn.textContent = 'Зберігається…';
+
+  menuDrinks = menuEditorDraft.map((item) => ({ ...item }));
+  Array.from(cartItems.keys()).forEach((id) => {
+    if (!menuDrinks.some((drink) => drink.id === id)) {
+      cartItems.delete(id);
+    }
+  });
+
+  try {
+    await persistMenuDrinks();
+    renderDrinksMenu();
+    updateMenuEntryMeta();
+    menuEditorSaveBtn.textContent = 'Збережено ✓';
+    window.setTimeout(() => {
+      closeMenuEditor();
+    }, 450);
+  } catch {
+    menuEditorSaveBtn.textContent = 'Помилка — спробуйте ще';
+    menuEditorSaveBtn.disabled = false;
+  }
+}
+
 function openMenuEditor() {
   if (!menuEditor) return;
 
+  menuEditorDraft = menuDrinks.map((item) => ({ ...item }));
   menuEditorEditingId = null;
   menuEditorSelectedIcon = 'generic';
+  if (menuEditorSaveBtn) {
+    menuEditorSaveBtn.disabled = false;
+    menuEditorSaveBtn.textContent = 'Зберегти меню';
+  }
   renderMenuEditor();
   menuEditor.hidden = false;
   document.body.classList.add('menu-editor-open');
@@ -1399,6 +1437,9 @@ menuAddForm?.addEventListener('submit', (event) => {
 });
 
 menuSettingsBtn?.addEventListener('click', openMenuEditor);
+menuEditorSaveBtn?.addEventListener('click', () => {
+  saveMenuEditor();
+});
 menuEditor?.querySelector('[data-menu-editor-back]')?.addEventListener('click', closeMenuEditor);
 
 carWashSheet?.querySelectorAll('[data-car-wash-level]').forEach((button) => {

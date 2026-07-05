@@ -11,7 +11,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '47';
+      var version = '48';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -37,8 +37,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=47">
-  <link rel="stylesheet" href="gradual-blur.css?v=47">
+  <link rel="stylesheet" href="styles.css?v=48">
+  <link rel="stylesheet" href="gradual-blur.css?v=48">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -417,7 +417,7 @@
       <header class="menu-editor-header">
         <button class="stats-back" type="button" data-menu-editor-back aria-label="Назад до статистики">← Статистика</button>
         <h2 class="stats-title">Редагування меню</h2>
-        <p class="stats-subtitle">Додайте, приберіть або змініть порядок напоїв</p>
+        <p class="stats-subtitle">Змініть напої та натисніть «Зберегти меню»</p>
       </header>
 
       <section class="menu-editor-section" aria-label="Новий напій">
@@ -436,12 +436,16 @@
         <ul id="menu-editor-list" class="menu-editor-list"></ul>
         <p id="menu-editor-empty" class="menu-editor-empty" hidden>Напоїв поки немає</p>
       </section>
+
+      <footer class="menu-editor-footer">
+        <button id="menu-editor-save" class="menu-editor-save-btn" type="button">Зберегти меню</button>
+      </footer>
     </div>
   </div>
 
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <script src="gradual-blur.js?v=47"></script>
-  <script src="script.js?v=47"></script>
+  <script src="gradual-blur.js?v=48"></script>
+  <script src="script.js?v=48"></script>
 </body>
 </html>

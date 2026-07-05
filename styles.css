@@ -1738,6 +1738,9 @@ body.menu-editor-open {
 }
 
 .menu-editor-panel {
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
   max-width: 430px;
   margin: 0 auto;
   padding:
@@ -1975,6 +1978,38 @@ body.menu-editor-open {
 
 .menu-editor-empty[hidden] {
   display: none;
+}
+
+.menu-editor-footer {
+  position: sticky;
+  bottom: 0;
+  margin-top: auto;
+  padding: 16px 0 calc(16px + env(safe-area-inset-bottom, 0px));
+  background: linear-gradient(180deg, rgba(245, 240, 232, 0) 0%, rgba(245, 240, 232, 0.92) 24%, #f5f0e8 100%);
+}
+
+.menu-editor-save-btn {
+  width: 100%;
+  min-height: 52px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--gold);
+  color: var(--brown);
+  font: inherit;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(212, 168, 83, 0.28);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-editor-save-btn:disabled {
+  opacity: 0.72;
+  cursor: default;
+}
+
+.menu-editor-save-btn:active:not(:disabled) {
+  transform: scale(0.98);
 }
 
 .stats-tabs {
