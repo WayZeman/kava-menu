@@ -147,7 +147,7 @@ const DRINK_ICON_OPTIONS = [
   { id: 'americano-milk', label: 'З молоком' },
   { id: 'cappuccino', label: 'Капучино' },
   { id: 'latte', label: 'Лате' },
-  { id: 'iced-latte', label: 'Лате з льодом' },
+  { id: 'iced-latte', label: 'Айс Лате' },
   { id: 'generic', label: 'Чашка' },
 ];
 
