@@ -4,7 +4,7 @@
   },
   "scripts": {
     "seed:db": "node --env-file=.env.local scripts/seed-db.mjs",
-    "deploy": "vercel deploy --prod --yes"
+    "deploy": "npx vercel deploy --prod --yes"
   },
   "devDependencies": {
     "playwright-core": "^1.61.0"
