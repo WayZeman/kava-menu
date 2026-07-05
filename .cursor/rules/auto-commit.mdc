@@ -1,16 +1,28 @@
 ---
-description: Commit immediately after every code change in this project
+description: Commit, push, and deploy to Vercel after every change
 alwaysApply: true
 ---
 
-# Auto-commit after changes
+# Commit, push, and deploy
 
 After completing any file changes in this repository:
 
 1. Run `git status` and `git diff` to review what changed.
 2. Stage only relevant files (never `.env*`, secrets, or unrelated edits).
 3. Create a commit immediately with a concise message focused on **why**.
-4. Do not wait for the user to ask for a commit — this project expects commits after each task.
-5. Push to `origin` only when the user asks, or when deploy/sync to GitHub/Vercel is part of the task.
+4. Push to `origin main` right after the commit.
+5. Deploy to production so the user can see results immediately:
+   ```bash
+   npm run deploy
+   ```
+   Or: `npx vercel deploy --prod --yes`
+
+Do not wait for the user to ask for commit, push, or deploy — this project expects all three after each task.
 
 Use HEREDOC for commit messages. Never amend unless the user explicitly requests it.
+
+If `git push` fails, report the error and still attempt deploy if possible.
+
+If deploy fails, report the error; do not skip commit/push.
+
+When GitHub is connected in Vercel, push may trigger auto-deploy — still run `npm run deploy` until that integration is confirmed working.

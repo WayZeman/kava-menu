@@ -3,7 +3,8 @@
     "@neondatabase/serverless": "^0.10.4"
   },
   "scripts": {
-    "seed:db": "node --env-file=.env.local scripts/seed-db.mjs"
+    "seed:db": "node --env-file=.env.local scripts/seed-db.mjs",
+    "deploy": "vercel deploy --prod --yes"
   },
   "devDependencies": {
     "playwright-core": "^1.61.0"
