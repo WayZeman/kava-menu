@@ -1,0 +1,16 @@
+---
+description: Commit immediately after every code change in this project
+alwaysApply: true
+---
+
+# Auto-commit after changes
+
+After completing any file changes in this repository:
+
+1. Run `git status` and `git diff` to review what changed.
+2. Stage only relevant files (never `.env*`, secrets, or unrelated edits).
+3. Create a commit immediately with a concise message focused on **why**.
+4. Do not wait for the user to ask for a commit — this project expects commits after each task.
+5. Push to `origin` only when the user asks, or when deploy/sync to GitHub/Vercel is part of the task.
+
+Use HEREDOC for commit messages. Never amend unless the user explicitly requests it.
