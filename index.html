@@ -14,8 +14,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=38">
-  <link rel="stylesheet" href="gradual-blur.css?v=38">
+  <link rel="stylesheet" href="styles.css?v=39">
+  <link rel="stylesheet" href="gradual-blur.css?v=39">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -276,45 +276,17 @@
         </article>
       </div>
 
-      <section class="stats-bank-balances" aria-label="Баланси оплати">
-        <div class="stats-bank-balances-head">
-          <h3 class="stats-section-heading">Баланси оплати</h3>
-          <span class="stats-bank-balances-hint">оновлюється після замовлення</span>
-        </div>
-        <div class="stats-bank-balances-grid">
-          <article class="stats-bank-card stats-bank-card--mono">
-            <span class="stats-bank-label">Monobank</span>
-            <strong id="stats-mono-balance" class="stats-bank-value is-unavailable">—</strong>
-            <span id="stats-mono-meta" class="stats-bank-meta">Банка</span>
-          </article>
-          <article class="stats-bank-card stats-bank-card--privat">
-            <span class="stats-bank-label">Приват24</span>
-            <strong id="stats-privat-balance" class="stats-bank-value is-unavailable">—</strong>
-            <span id="stats-privat-meta" class="stats-bank-meta">Конверт</span>
-          </article>
-        </div>
-      </section>
-
       <section class="stats-breakdown" aria-label="Дохід за категоріями">
         <article class="stats-breakdown-card stats-breakdown-card--coffee">
           <span class="stats-breakdown-label">Кава</span>
           <strong id="stats-coffee-total" class="stats-breakdown-value">0 грн</strong>
           <span id="stats-coffee-meta" class="stats-breakdown-meta">0 напоїв</span>
         </article>
-        <div id="stats-haircut-chip" class="stats-haircut-chip" aria-label="Стрижки">
-          <span class="stats-haircut-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-              <circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-              <path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-              <path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>
-            </svg>
-          </span>
-          <span id="stats-haircut-count" class="stats-haircut-count">0</span>
-          <span id="stats-haircut-sum" class="stats-haircut-sum">0 грн</span>
-        </div>
+        <article class="stats-breakdown-card stats-breakdown-card--haircut">
+          <span class="stats-breakdown-label">Стрижка</span>
+          <strong id="stats-haircut-total" class="stats-breakdown-value">0 грн</strong>
+          <span id="stats-haircut-meta" class="stats-breakdown-meta">0 разів</span>
+        </article>
       </section>
 
       <section class="stats-chart-section">
@@ -441,6 +413,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
   <script src="gradual-blur.js?v=37"></script>
-  <script src="script.js?v=38"></script>
+  <script src="script.js?v=39"></script>
 </body>
 </html>

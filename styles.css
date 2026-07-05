@@ -1903,93 +1903,9 @@ body.stats-gate-open {
 
 .stats-breakdown {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 10px;
-  align-items: stretch;
-  margin-bottom: 14px;
-}
-
-.stats-bank-balances {
-  margin-bottom: 14px;
-  padding: 14px;
-  border-radius: 16px;
-  background: #fffef8;
-  border: 2px solid rgba(61, 35, 20, 0.08);
-}
-
-.stats-bank-balances-head {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  gap: 8px;
-  margin-bottom: 10px;
-}
-
-.stats-bank-balances-head .stats-section-heading {
-  margin: 0;
-}
-
-.stats-bank-balances-hint {
-  font-size: 0.68rem;
-  font-weight: 600;
-  color: var(--brown-light);
-  white-space: nowrap;
-}
-
-.stats-bank-balances-grid {
-  display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
-}
-
-.stats-bank-card {
-  padding: 12px 10px;
-  border-radius: 14px;
-  border: 2px solid rgba(61, 35, 20, 0.08);
-  background: linear-gradient(180deg, #fffef8 0%, #faf6ee 100%);
-}
-
-.stats-bank-card--mono {
-  border-color: rgba(0, 0, 0, 0.12);
-}
-
-.stats-bank-card--privat {
-  border-color: rgba(76, 140, 74, 0.28);
-}
-
-.stats-bank-card.is-loading .stats-bank-value {
-  opacity: 0.45;
-}
-
-.stats-bank-label {
-  display: block;
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--brown-light);
-}
-
-.stats-bank-value {
-  display: block;
-  margin-top: 6px;
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--brown);
-  font-variant-numeric: tabular-nums;
-}
-
-.stats-bank-value.is-unavailable {
-  color: var(--brown-light);
-}
-
-.stats-bank-meta {
-  display: block;
-  margin-top: 4px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--brown-light);
-  line-height: 1.3;
+  margin-bottom: 14px;
 }
 
 .stats-breakdown-card {
@@ -2002,55 +1918,6 @@ body.stats-gate-open {
 
 .stats-breakdown-card--coffee {
   border-color: rgba(92, 58, 40, 0.14);
-}
-
-.stats-haircut-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 4px;
-  min-width: 84px;
-  padding: 12px 10px;
-  border-radius: 16px;
-  border: 2px solid rgba(212, 168, 83, 0.35);
-  background: linear-gradient(180deg, #fffef8 0%, #faf6ee 100%);
-  box-shadow: 0 4px 14px rgba(61, 35, 20, 0.06);
-}
-
-.stats-haircut-chip.is-empty {
-  opacity: 0.55;
-}
-
-.stats-haircut-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-}
-
-.stats-haircut-icon svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-
-.stats-haircut-count {
-  font-size: 1.05rem;
-  font-weight: 800;
-  color: var(--brown);
-  font-variant-numeric: tabular-nums;
-  line-height: 1;
-}
-
-.stats-haircut-sum {
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: var(--brown-light);
-  font-variant-numeric: tabular-nums;
-  line-height: 1.2;
-  text-align: center;
 }
 
 .stats-breakdown-card--haircut {

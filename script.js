@@ -73,19 +73,14 @@ const statsGatePassword = document.getElementById('stats-gate-password');
 const statsGateError = document.getElementById('stats-gate-error');
 const statsCoffeeTotal = document.getElementById('stats-coffee-total');
 const statsCoffeeMeta = document.getElementById('stats-coffee-meta');
-const statsHaircutChip = document.getElementById('stats-haircut-chip');
-const statsHaircutCount = document.getElementById('stats-haircut-count');
-const statsHaircutSum = document.getElementById('stats-haircut-sum');
+const statsHaircutTotal = document.getElementById('stats-haircut-total');
+const statsHaircutMeta = document.getElementById('stats-haircut-meta');
 const statsDailyChart = document.getElementById('stats-daily-chart');
 const statsChartHeading = document.getElementById('stats-chart-heading');
 const statsChartPeriodButtons = document.querySelectorAll('[data-chart-period]');
 const statsTotalIncome = document.getElementById('stats-total-income');
 const statsTotalExpenses = document.getElementById('stats-total-expenses');
 const statsBalanceTotal = document.getElementById('stats-balance-total');
-const statsMonoBalance = document.getElementById('stats-mono-balance');
-const statsMonoMeta = document.getElementById('stats-mono-meta');
-const statsPrivatBalance = document.getElementById('stats-privat-balance');
-const statsPrivatMeta = document.getElementById('stats-privat-meta');
 
 const STATS_AUTH_KEY = 'kava-stats-auth';
 const STATS_PASSWORD = '1111';
@@ -162,8 +157,6 @@ let receiptBuildTimer = null;
 let pendingOrder = null;
 let pendingOrderId = null;
 let awaitingPayment = false;
-let balancesRefreshTimer = null;
-const BALANCE_REFRESH_DELAY_MS = 2500;
 let otherPaymentRecorded = false;
 let cartWasHidden = true;
 
@@ -854,7 +847,6 @@ async function copyCardNumber() {
         cardPayCopy.textContent = original;
       }, 1500);
     }
-    schedulePaymentBalancesRefresh();
     finishOtherPayment();
   } catch {
     if (cardPayCopy) cardPayCopy.textContent = 'Не вдалося скопіювати';
@@ -916,19 +908,16 @@ function notifyOrder(order, provider, orderId) {
   // Інші банки: користувач лишається на сторінці — fetch надійніший за sendBeacon
   if (provider === 'other') {
     postOrder();
-    schedulePaymentBalancesRefresh();
     return;
   }
 
   if (navigator.sendBeacon) {
     const blob = new Blob([payload], { type: 'application/json' });
     navigator.sendBeacon('/api/order', blob);
-    schedulePaymentBalancesRefresh();
     return;
   }
 
   postOrder();
-  schedulePaymentBalancesRefresh();
 }
 
 function goToPayment(provider) {
@@ -1125,7 +1114,6 @@ function confirmPaymentSuccess() {
   awaitingPayment = false;
   closeConfirmSheet();
   clearCart();
-  schedulePaymentBalancesRefresh();
   showThanks();
 }
 
@@ -1714,76 +1702,6 @@ async function fetchStats() {
   }
 }
 
-async function fetchPaymentBalances() {
-  try {
-    const response = await fetch('/api/balances', { cache: 'no-store' });
-    if (!response.ok) return null;
-    return await response.json();
-  } catch {
-    return null;
-  }
-}
-
-function setBankCardsLoading(isLoading) {
-  document.querySelectorAll('.stats-bank-card').forEach((card) => {
-    card.classList.toggle('is-loading', isLoading);
-  });
-}
-
-function renderBankBalance(valueEl, metaEl, data, fallbackLabel) {
-  if (!valueEl) return;
-
-  const card = valueEl.closest('.stats-bank-card');
-
-  if (data?.ok && Number.isFinite(data.amount)) {
-    valueEl.textContent = formatStatsMoney(data.amount);
-    valueEl.classList.remove('is-unavailable');
-    if (metaEl) metaEl.textContent = data.label || fallbackLabel;
-  } else {
-    valueEl.textContent = '—';
-    valueEl.classList.add('is-unavailable');
-    if (metaEl) {
-      const error = data?.error;
-      metaEl.textContent = error === 'unavailable' || error === 'not_configured'
-        ? 'Публічне API недоступне'
-        : 'Не вдалося оновити';
-    }
-  }
-
-  card?.classList.remove('is-loading');
-}
-
-function renderPaymentBalances(payload) {
-  if (!payload) {
-    setBankCardsLoading(false);
-    return;
-  }
-
-  renderBankBalance(statsMonoBalance, statsMonoMeta, payload.mono, 'Банка Monobank');
-  renderBankBalance(statsPrivatBalance, statsPrivatMeta, payload.privat, 'Конверт Приват24');
-}
-
-function schedulePaymentBalancesRefresh(delayMs = BALANCE_REFRESH_DELAY_MS) {
-  if (balancesRefreshTimer) clearTimeout(balancesRefreshTimer);
-  setBankCardsLoading(true);
-  balancesRefreshTimer = setTimeout(async () => {
-    balancesRefreshTimer = null;
-    const data = await fetchPaymentBalances();
-    renderPaymentBalances(data);
-  }, delayMs);
-}
-
-async function refreshPaymentBalances() {
-  if (balancesRefreshTimer) {
-    clearTimeout(balancesRefreshTimer);
-    balancesRefreshTimer = null;
-  }
-
-  setBankCardsLoading(true);
-  const data = await fetchPaymentBalances();
-  renderPaymentBalances(data);
-}
-
 function renderIncomeItem(item) {
   const li = document.createElement('li');
   const category = incomeCategory(item);
@@ -1884,14 +1802,8 @@ function renderStatsView(data) {
   statsCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
   const coffeeDrinks = summary.coffeeDrinks + summary.manualCoffeeCount;
   statsCoffeeMeta.textContent = formatCountLabel(coffeeDrinks, 'напій', 'напої', 'напоїв');
-
-  if (statsHaircutCount) {
-    statsHaircutCount.textContent = String(summary.haircutCount);
-  }
-  if (statsHaircutSum) {
-    statsHaircutSum.textContent = formatStatsMoney(summary.haircut);
-  }
-  statsHaircutChip?.classList.toggle('is-empty', summary.haircutCount <= 0);
+  statsHaircutTotal.textContent = formatStatsMoney(summary.haircut);
+  statsHaircutMeta.textContent = formatCountLabel(summary.haircutCount, 'раз', 'рази', 'разів');
 
   statsTotalIncome.textContent = formatStatsMoney(coffeeIncome);
   statsTotalExpenses.textContent = formatStatsMoney(expenses);
@@ -1925,7 +1837,6 @@ async function refreshStats() {
   const data = await fetchStats();
   currentStatsData = data;
   renderStatsView(data);
-  refreshPaymentBalances();
 }
 
 function isStatsAuthenticated() {
