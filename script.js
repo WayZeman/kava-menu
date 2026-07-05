@@ -27,6 +27,7 @@ const rows = document.querySelectorAll('.menu--services .row');
 const drinksMenu = document.getElementById('drinks-menu');
 const menuSettingsSheet = document.getElementById('menu-settings-sheet');
 const menuSettingsBtn = document.getElementById('stats-menu-settings');
+const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
 const menuAddName = document.getElementById('menu-add-name');
 const menuAddAmount = document.getElementById('menu-add-amount');
@@ -292,6 +293,7 @@ function renderDrinksMenu() {
   });
 
   updateCart();
+  updateMenuEntryMeta();
 }
 
 function addMenuDrink(name, amount) {
@@ -326,6 +328,15 @@ function removeMenuDrink(id) {
   renderDrinksMenu();
   renderMenuSettingsList();
   updateCart();
+}
+
+function updateMenuEntryMeta() {
+  if (!statsMenuEntryMeta) return;
+  const count = menuDrinks.length;
+  const label = count === 1 ? 'напій' : count >= 2 && count <= 4 ? 'напої' : 'напоїв';
+  statsMenuEntryMeta.textContent = count
+    ? `${count} ${label} · додати або прибрати`
+    : 'Додати або прибрати напої';
 }
 
 function renderMenuSettingsList() {
@@ -368,8 +379,8 @@ function renderMenuSettingsList() {
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.className = 'menu-settings-delete stats-delete-btn';
-    deleteBtn.textContent = '×';
-    deleteBtn.setAttribute('aria-label', 'Видалити напій');
+    deleteBtn.textContent = '−';
+    deleteBtn.setAttribute('aria-label', 'Прибрати позицію');
 
     const commit = () => {
       const name = nameInput.value.trim();
@@ -414,6 +425,7 @@ function closeMenuSettings() {
 function initMenu() {
   menuDrinks = loadMenuDrinks();
   renderDrinksMenu();
+  updateMenuEntryMeta();
 }
 
 function isMobile() {
@@ -1949,6 +1961,7 @@ function openStats() {
   if (!statsPanel) return;
   statsPanel.hidden = false;
   document.body.classList.add('stats-open');
+  updateMenuEntryMeta();
   refreshStats();
 }
 

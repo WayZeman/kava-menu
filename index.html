@@ -14,8 +14,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=37">
-  <link rel="stylesheet" href="gradual-blur.css?v=37">
+  <link rel="stylesheet" href="styles.css?v=38">
+  <link rel="stylesheet" href="gradual-blur.css?v=38">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -244,19 +244,24 @@
     <div class="stats-panel">
       <header class="stats-header">
         <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
-        <div class="stats-header-row">
-          <div class="stats-header-text">
-            <h2 class="stats-title">Статистика окупності</h2>
-            <p class="stats-subtitle">Кава та витрати</p>
-          </div>
-          <button id="stats-menu-settings" class="stats-settings-btn" type="button" aria-label="Редагувати меню напоїв">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/>
-              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </button>
-        </div>
+        <h2 class="stats-title">Статистика окупності</h2>
+        <p class="stats-subtitle">Кава та витрати</p>
       </header>
+
+      <section class="stats-menu-entry" aria-label="Налаштування меню">
+        <button id="stats-menu-settings" class="stats-menu-entry-btn" type="button">
+          <span class="stats-menu-entry-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </span>
+          <span class="stats-menu-entry-text">
+            <strong>Редагування меню</strong>
+            <span id="stats-menu-entry-meta">Додати або прибрати напої</span>
+          </span>
+          <span class="stats-menu-entry-chevron" aria-hidden="true">›</span>
+        </button>
+      </section>
 
       <div class="stats-cards">
         <article class="stats-card stats-card--roi">
@@ -416,14 +421,17 @@
     <div class="service-sheet-backdrop" data-menu-settings-close></div>
     <div class="service-sheet-card menu-settings-card" role="dialog" aria-modal="true" aria-labelledby="menu-settings-title">
       <p class="service-sheet-label">Налаштування</p>
-      <p id="menu-settings-title" class="service-sheet-title">Меню напоїв</p>
+      <p id="menu-settings-title" class="service-sheet-title">Редагування меню</p>
+      <p class="menu-settings-hint">Додайте новий напій або приберіть зайву позицію</p>
       <form id="menu-add-form" class="menu-settings-form">
+        <p class="menu-settings-form-label">Нова позиція</p>
         <div class="menu-settings-form-row">
           <input id="menu-add-name" class="stats-input menu-settings-input" type="text" maxlength="80" placeholder="Назва напою" required>
           <input id="menu-add-amount" class="stats-input menu-settings-input menu-settings-input--amount" type="number" min="1" step="1" placeholder="Ціна" required>
           <button class="stats-add-btn menu-settings-add" type="submit" aria-label="Додати напій">+</button>
         </div>
       </form>
+      <p class="menu-settings-form-label">Поточне меню</p>
       <ul id="menu-settings-list" class="menu-settings-list"></ul>
       <p id="menu-settings-empty" class="menu-settings-empty" hidden>Напоїв поки немає</p>
       <button class="service-sheet-cancel" type="button" data-menu-settings-close>Готово</button>
@@ -433,6 +441,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
   <script src="gradual-blur.js?v=37"></script>
-  <script src="script.js?v=37"></script>
+  <script src="script.js?v=38"></script>
 </body>
 </html>
