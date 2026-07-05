@@ -939,6 +939,10 @@ body.stats-gate-open {
   display: none;
 }
 
+#menu-settings-sheet {
+  z-index: 300;
+}
+
 .service-sheet-backdrop {
   position: absolute;
   inset: 0;
