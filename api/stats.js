@@ -3,28 +3,29 @@ import {
   insertExpense,
   insertIncome,
   listTransactions,
-  syncTransactions,
   updateTransaction,
 } from './db.js';
 
 function normalizeIncome(body) {
   const label = String(body?.label || '').trim();
   const amount = Number(body?.amount);
+  const id = String(body?.id || '').trim() || null;
 
   if (!label || label.length > 120) return null;
   if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) return null;
 
-  return { label, amount, source: 'cash', provider: 'cash' };
+  return { id, label, amount, source: 'cash', provider: 'cash' };
 }
 
 function normalizeExpense(body) {
   const label = String(body?.label || '').trim();
   const amount = Number(body?.amount);
+  const id = String(body?.id || '').trim() || null;
 
   if (!label || label.length > 120) return null;
   if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) return null;
 
-  return { label, amount };
+  return { id, label, amount };
 }
 
 function normalizeOrder(body) {
@@ -43,7 +44,12 @@ function normalizeOrder(body) {
     if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
 
     total += amount * qty;
-    lines.push({ name, qty, amount });
+    lines.push({
+      id: String(item?.id || '').trim() || null,
+      name,
+      qty,
+      amount,
+    });
   }
 
   const parsedTotal = Number(body?.total);
@@ -78,6 +84,15 @@ function normalizeUpdate(body) {
 }
 
 export default async function handler(req, res) {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    res.status(200).end();
+    return;
+  }
+
   if (req.method === 'GET') {
     const data = await listTransactions();
     res.status(200).json({ ok: true, ...data });
@@ -98,13 +113,13 @@ export default async function handler(req, res) {
       return;
     }
 
-    const saved = await insertIncome(income);
-    if (!saved) {
+    const result = await insertIncome(income);
+    if (!result?.record) {
       res.status(503).json({ ok: false, error: 'db_unavailable' });
       return;
     }
 
-    res.status(200).json({ ok: true, income: saved });
+    res.status(200).json({ ok: true, income: result.record });
     return;
   }
 
@@ -115,13 +130,13 @@ export default async function handler(req, res) {
       return;
     }
 
-    const saved = await insertIncome(order);
-    if (!saved) {
+    const result = await insertIncome(order);
+    if (!result?.record) {
       res.status(503).json({ ok: false, error: 'db_unavailable' });
       return;
     }
 
-    res.status(200).json({ ok: true, income: saved });
+    res.status(200).json({ ok: true, income: result.record });
     return;
   }
 
@@ -173,30 +188,6 @@ export default async function handler(req, res) {
     }
 
     res.status(200).json({ ok: true });
-    return;
-  }
-
-  if (type === 'sync') {
-    const incomes = Array.isArray(req.body?.incomes) ? req.body.incomes : [];
-    const expenses = Array.isArray(req.body?.expenses) ? req.body.expenses : [];
-
-    if (!incomes.length && !expenses.length) {
-      res.status(400).json({ ok: false, error: 'empty_sync' });
-      return;
-    }
-
-    if (incomes.length > 500 || expenses.length > 500) {
-      res.status(400).json({ ok: false, error: 'too_many_items' });
-      return;
-    }
-
-    const result = await syncTransactions({ incomes, expenses });
-    if (!result) {
-      res.status(503).json({ ok: false, error: 'db_unavailable' });
-      return;
-    }
-
-    res.status(200).json({ ok: true, ...result });
     return;
   }
 

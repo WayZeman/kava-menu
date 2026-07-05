@@ -13,6 +13,7 @@ function formatOrderDate() {
 function providerLabel(provider) {
   if (provider === 'mono') return 'Monobank';
   if (provider === 'privat') return 'Приват24';
+  if (provider === 'other') return 'Інші банки';
   return 'Банк';
 }
 
@@ -31,7 +32,12 @@ function buildOrderRecord(body) {
     if (!Number.isFinite(amount) || amount <= 0) continue;
 
     total += amount * qty;
-    lines.push({ name, qty, amount });
+    lines.push({
+      id: String(item?.id || '').trim() || null,
+      name,
+      qty,
+      amount,
+    });
   }
 
   if (!lines.length) return null;
@@ -41,7 +47,10 @@ function buildOrderRecord(body) {
     total = parsedTotal;
   }
 
+  const id = String(body?.id || '').trim() || null;
+
   return {
+    id,
     label: buildOrderLabel(lines),
     amount: total,
     source: 'order',
@@ -50,17 +59,20 @@ function buildOrderRecord(body) {
   };
 }
 
+async function sendTelegramMessage(token, chatId, text) {
+  const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ chat_id: chatId, text }),
+  });
+
+  const data = await telegramResponse.json();
+  return Boolean(data.ok);
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).send('Method not allowed');
-    return;
-  }
-
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!token || !chatId) {
-    res.status(503).json({ ok: false, error: 'not_configured' });
     return;
   }
 
@@ -93,46 +105,53 @@ export default async function handler(req, res) {
     lines.push(`• ${name} × ${qty} — ${lineTotal} грн`);
   }
 
-  const provider = providerLabel(String(req.body?.provider || ''));
-  const text = [
-    '🧾 Чек замовлення',
-    '',
-    ...lines,
-    '',
-    `Разом: ${total} грн`,
-    `Оплата: ${provider}`,
-    `🕐 ${formatOrderDate()}`,
-  ].join('\n');
+  const providerRaw = String(req.body?.provider || '').trim() || 'bank';
+  const provider = providerLabel(providerRaw);
 
-  try {
-    const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text }),
-    });
+  const orderRecord = buildOrderRecord({
+    id: req.body?.id,
+    items,
+    total,
+    provider: providerRaw,
+  });
 
-    const data = await telegramResponse.json();
-    if (!data.ok) {
-      res.status(502).json({ ok: false, error: 'telegram_error' });
-      return;
+  let saved = null;
+  let isNewOrder = false;
+  if (orderRecord) {
+    try {
+      const result = await insertIncome(orderRecord);
+      saved = result?.record || null;
+      isNewOrder = Boolean(result?.isNew);
+    } catch {
+      saved = null;
     }
-
-    const orderRecord = buildOrderRecord({
-      items,
-      total,
-      provider: String(req.body?.provider || '').trim() || 'bank',
-    });
-
-    if (orderRecord) {
-      try {
-        await insertIncome(orderRecord);
-      } catch {
-        // stats logging should not block payment notification
-      }
-    }
-
-    res.status(200).json({ ok: true });
-  } catch {
-    res.status(502).json({ ok: false, error: 'telegram_error' });
   }
+
+  if (!saved) {
+    res.status(503).json({ ok: false, error: 'db_unavailable' });
+    return;
+  }
+
+  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const chatId = process.env.TELEGRAM_CHAT_ID;
+
+  if (isNewOrder && token && chatId) {
+    const text = [
+      '🧾 Чек замовлення',
+      '',
+      ...lines,
+      '',
+      `Разом: ${total} грн`,
+      `Оплата: ${provider}`,
+      `🕐 ${formatOrderDate()}`,
+    ].join('\n');
+
+    try {
+      await sendTelegramMessage(token, chatId, text);
+    } catch {
+      // income is already saved; telegram is optional
+    }
+  }
+
+  res.status(200).json({ ok: true, income: saved });
 }

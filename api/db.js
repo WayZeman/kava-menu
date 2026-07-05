@@ -10,6 +10,11 @@ function makeId(prefix) {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
+function serializeItems(items) {
+  if (!items) return null;
+  return JSON.stringify(items);
+}
+
 function mapRow(row) {
   return {
     id: row.id,
@@ -48,6 +53,7 @@ export async function listTransactions() {
 }
 
 export async function insertIncome({
+  id,
   label,
   amount,
   source = 'order',
@@ -57,32 +63,76 @@ export async function insertIncome({
   const sql = getSql();
   if (!sql) return null;
 
-  const id = makeId('income');
+  if (id) {
+    const existing = await sql`
+      SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+      FROM transactions
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+    if (existing[0]) return { record: mapRow(existing[0]), isNew: false };
+  }
+
+  const recent = await sql`
+    SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+    FROM transactions
+    WHERE kind = 'income'
+      AND label = ${label}
+      AND amount = ${amount}
+      AND created_at > NOW() - INTERVAL '5 seconds'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  if (recent[0]) return { record: mapRow(recent[0]), isNew: false };
+
+  const txnId = id || makeId('income');
   const rows = await sql`
     INSERT INTO transactions (id, kind, label, amount, source, provider, items)
     VALUES (
-      ${id},
+      ${txnId},
       'income',
       ${label},
       ${amount},
       ${source},
       ${provider},
-      ${items ? items : null}
+      ${serializeItems(items)}
     )
     RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
   `;
 
-  return mapRow(rows[0]);
+  return { record: mapRow(rows[0]), isNew: true };
 }
 
-export async function insertExpense({ label, amount }) {
+export async function insertExpense({ id, label, amount }) {
   const sql = getSql();
   if (!sql) return null;
 
-  const id = makeId('expense');
+  if (id) {
+    const existing = await sql`
+      SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+      FROM transactions
+      WHERE id = ${id}
+      LIMIT 1
+    `;
+    if (existing[0]) return mapRow(existing[0]);
+  }
+
+  const recent = await sql`
+    SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+    FROM transactions
+    WHERE kind = 'expense'
+      AND label = ${label}
+      AND amount = ${amount}
+      AND created_at > NOW() - INTERVAL '5 seconds'
+    ORDER BY created_at DESC
+    LIMIT 1
+  `;
+  if (recent[0]) return mapRow(recent[0]);
+
+  const txnId = id || makeId('expense');
   const rows = await sql`
     INSERT INTO transactions (id, kind, label, amount, source, provider, items)
-    VALUES (${id}, 'expense', ${label}, ${amount}, 'manual', NULL, NULL)
+    VALUES (${txnId}, 'expense', ${label}, ${amount}, 'manual', NULL, NULL)
     RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
   `;
 
@@ -141,7 +191,7 @@ export async function upsertTransaction({
       ${amount},
       ${source},
       ${provider},
-      ${items ? items : null},
+      ${serializeItems(items)},
       COALESCE(${createdAt}::timestamptz, NOW()),
       NOW()
     )

@@ -1,6 +1,7 @@
 const MONO_JAR = 'https://send.monobank.ua/jar/4znkD4kdM5';
 const PRIVAT_ENVELOPE = 'https://www.privat24.ua/send/jzbnv';
 const MONO_ANDROID = 'com.ftband.mono';
+const OTHER_BANK_CARD = '4874100025126965';
 const PAYMENT_KEY = 'kava-pending-payment';
 const RELOAD_KEY = 'kava-payment-reload';
 
@@ -22,12 +23,23 @@ const thanksFeedback = document.getElementById('thanks-feedback');
 const thanksSend = document.getElementById('thanks-send');
 const thanksSkip = document.getElementById('thanks-skip');
 const thanksStatus = document.getElementById('thanks-status');
-const rows = document.querySelectorAll('.row');
+const rows = document.querySelectorAll('.menu--services .row');
+const drinksMenu = document.getElementById('drinks-menu');
+const menuSettingsSheet = document.getElementById('menu-settings-sheet');
+const menuSettingsBtn = document.getElementById('stats-menu-settings');
+const menuAddForm = document.getElementById('menu-add-form');
+const menuAddName = document.getElementById('menu-add-name');
+const menuAddAmount = document.getElementById('menu-add-amount');
+const menuSettingsList = document.getElementById('menu-settings-list');
+const menuSettingsEmpty = document.getElementById('menu-settings-empty');
 const payActions = document.querySelectorAll('#sheet [data-provider]');
 const confirmYes = document.getElementById('confirm-yes');
 const confirmNo = document.getElementById('confirm-no');
 const thanks = document.getElementById('thanks');
 const carWashSheet = document.getElementById('car-wash-sheet');
+const cardPaySheet = document.getElementById('card-pay-sheet');
+const cardPayAmount = document.getElementById('card-pay-amount');
+const cardPayCopy = document.getElementById('card-pay-copy');
 const carWashRow = document.querySelector('[data-picker="car-wash"]');
 const heroIcon = document.querySelector('.hero-icon');
 const statsPanel = document.getElementById('stats');
@@ -35,6 +47,12 @@ const statsIncome = document.getElementById('stats-income');
 const statsExpensesTotal = document.getElementById('stats-expenses-total');
 const statsRoiMain = document.getElementById('stats-roi-main');
 const statsRoiSub = document.getElementById('stats-roi-sub');
+const statsRoiFill = document.getElementById('stats-roi-fill');
+const statsRoiCard = document.querySelector('.stats-card--roi');
+const statsTabIncome = document.getElementById('stats-tab-income');
+const statsTabExpense = document.getElementById('stats-tab-expense');
+const statsPanelIncome = document.getElementById('stats-panel-income');
+const statsPanelExpense = document.getElementById('stats-panel-expense');
 const statsIncomes = document.getElementById('stats-incomes');
 const statsIncomesMore = document.getElementById('stats-incomes-more');
 const statsExpenseList = document.getElementById('stats-expense-list');
@@ -52,13 +70,45 @@ const statsGate = document.getElementById('stats-gate');
 const statsGateForm = document.getElementById('stats-gate-form');
 const statsGatePassword = document.getElementById('stats-gate-password');
 const statsGateError = document.getElementById('stats-gate-error');
+const statsCoffeeTotal = document.getElementById('stats-coffee-total');
+const statsCoffeeMeta = document.getElementById('stats-coffee-meta');
+const statsHaircutChip = document.getElementById('stats-haircut-chip');
+const statsHaircutCount = document.getElementById('stats-haircut-count');
+const statsHaircutSum = document.getElementById('stats-haircut-sum');
+const statsDailyChart = document.getElementById('stats-daily-chart');
+const statsChartHeading = document.getElementById('stats-chart-heading');
+const statsChartPeriodButtons = document.querySelectorAll('[data-chart-period]');
+const statsTotalIncome = document.getElementById('stats-total-income');
+const statsTotalExpenses = document.getElementById('stats-total-expenses');
+const statsBalanceTotal = document.getElementById('stats-balance-total');
+const statsMonoBalance = document.getElementById('stats-mono-balance');
+const statsMonoMeta = document.getElementById('stats-mono-meta');
+const statsPrivatBalance = document.getElementById('stats-privat-balance');
+const statsPrivatMeta = document.getElementById('stats-privat-meta');
 
-const STATS_LOCAL_KEY = 'kava-business-stats';
 const STATS_AUTH_KEY = 'kava-stats-auth';
 const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
+const MENU_KEY = 'kava-menu-drinks';
+const HAIRCUT_ID = 'haircut';
+const CHART_PERIOD_CONFIG = {
+  week: {
+    className: 'stats-daily-chart--week',
+    heading: 'Замовлення кави по днях',
+  },
+  month: {
+    className: 'stats-daily-chart--month',
+    heading: 'Замовлення кави по днях',
+  },
+  year: {
+    className: 'stats-daily-chart--year',
+    heading: 'Замовлення кави по місяцях',
+  },
+};
+let statsChartPeriod = 'week';
 let incomesListExpanded = false;
 let expensesListExpanded = false;
+let statsActiveTab = 'income';
 let currentStatsData = { incomes: [], expenses: [] };
 let editingTransactionId = null;
 
@@ -84,14 +134,287 @@ const CAR_WASH_LEVELS = [
 
 const CAR_WASH_IDS = CAR_WASH_LEVELS.map((level) => level.id);
 
+const DEFAULT_DRINKS = [
+  { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
+  { id: 'americano', name: 'Американо', amount: 20, icon: 'americano' },
+  { id: 'americano-milk', name: 'Американо з молоком', amount: 30, icon: 'americano-milk' },
+  { id: 'cappuccino', name: 'Капучино', amount: 35, icon: 'cappuccino' },
+  { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
+];
+
+const DRINK_ICONS = {
+  espresso: '<rect x="14" y="18" width="20" height="22" rx="3" fill="#2f1a0f"/><path d="M34 24h4a3 3 0 0 1 0 6h-4" fill="none" stroke="#2f1a0f" stroke-width="2"/><ellipse cx="24" cy="18" rx="10" ry="3" fill="#d4a853"/>',
+  americano: '<path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 16h12v18H18z" fill="#5c3a28"/><ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>',
+  'americano-milk': '<path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 20h12v14H18z" fill="#5c3a28"/><path d="M18 16h12v6H18z" fill="#f5f0e8"/><ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>',
+  cappuccino: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#f5f0e8"/>',
+  latte: '<path d="M17 8h14l3 32a3 3 0 0 1-3 2.5H17a3 3 0 0 1-3-2.5L17 8z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="19" y="28" width="10" height="10" fill="#5c3a28"/><rect x="19" y="18" width="10" height="8" fill="#d4a853"/><rect x="19" y="12" width="10" height="5" fill="#f5f0e8"/>',
+  generic: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#d4a853"/>',
+};
+
+let menuDrinks = [];
+
 const cartItems = new Map();
 let paymentTotal = 0;
 let recoverTimer = null;
 let thanksTimer = null;
 let receiptBuildTimer = null;
 let pendingOrder = null;
+let pendingOrderId = null;
 let awaitingPayment = false;
+let balancesRefreshTimer = null;
+const BALANCE_REFRESH_DELAY_MS = 2500;
+let otherPaymentRecorded = false;
 let cartWasHidden = true;
+
+function getMenuRows() {
+  return document.querySelectorAll('.menu .row');
+}
+
+function normalizeDrink(raw) {
+  const name = String(raw?.name || '').trim();
+  const amount = Number(raw?.amount);
+  const id = String(raw?.id || '').trim();
+  if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+  return {
+    id,
+    name,
+    amount: Math.round(amount),
+    icon: String(raw?.icon || 'generic').trim() || 'generic',
+  };
+}
+
+function loadMenuDrinks() {
+  try {
+    const raw = localStorage.getItem(MENU_KEY);
+    if (!raw) return DEFAULT_DRINKS.map((item) => ({ ...item }));
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return DEFAULT_DRINKS.map((item) => ({ ...item }));
+    const drinks = parsed.map(normalizeDrink).filter(Boolean);
+    return drinks.length ? drinks : DEFAULT_DRINKS.map((item) => ({ ...item }));
+  } catch {
+    return DEFAULT_DRINKS.map((item) => ({ ...item }));
+  }
+}
+
+function saveMenuDrinks() {
+  try {
+    localStorage.setItem(MENU_KEY, JSON.stringify(menuDrinks));
+  } catch {
+    // ignore quota errors
+  }
+}
+
+function makeDrinkId(name, existingIds) {
+  const transliterated = String(name || '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[^\w\s-]/g, '')
+    .trim()
+    .replace(/\s+/g, '-')
+    .slice(0, 40);
+  let base = transliterated || `drink-${Date.now()}`;
+  if (!existingIds.has(base)) return base;
+  let index = 2;
+  while (existingIds.has(`${base}-${index}`)) index += 1;
+  return `${base}-${index}`;
+}
+
+function drinkIconMarkup(iconKey) {
+  const inner = DRINK_ICONS[iconKey] || DRINK_ICONS.generic;
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+function bindMenuRow(row) {
+  row.classList.add('is-entering');
+  row.addEventListener('animationend', (event) => {
+    if (event.animationName === 'row-in') {
+      row.classList.remove('is-entering');
+    }
+  });
+
+  row.querySelectorAll('.qty-btn').forEach((button) => {
+    button.addEventListener('click', (event) => {
+      event.stopPropagation();
+      const delta = button.dataset.action === 'plus' ? 1 : -1;
+      changeQty(row, delta, button);
+    });
+  });
+}
+
+function createDrinkRow(drink) {
+  const row = document.createElement('article');
+  row.className = 'row';
+  row.dataset.id = drink.id;
+  row.dataset.name = drink.name;
+  row.dataset.amount = String(drink.amount);
+
+  row.innerHTML = `
+    <span class="drink-icon" aria-hidden="true">${drinkIconMarkup(drink.icon)}</span>
+    <div class="row-main">
+      <span class="name"></span>
+    </div>
+    <span class="price"></span>
+    <div class="qty">
+      <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
+      <span class="qty-value">0</span>
+      <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
+    </div>
+  `;
+
+  row.querySelector('.name').textContent = drink.name;
+  row.querySelector('.price').textContent = `${drink.amount} грн`;
+  return row;
+}
+
+function renderDrinksMenu() {
+  if (!drinksMenu) return;
+
+  const prevQty = new Map();
+  drinksMenu.querySelectorAll('.row').forEach((row) => {
+    const qty = cartItems.get(row.dataset.id)?.qty;
+    if (qty) prevQty.set(row.dataset.id, qty);
+  });
+
+  drinksMenu.innerHTML = '';
+  menuDrinks.forEach((drink) => {
+    const row = createDrinkRow(drink);
+    drinksMenu.appendChild(row);
+    bindMenuRow(row);
+    if (prevQty.has(drink.id)) {
+      setRowQty(row, prevQty.get(drink.id));
+    }
+  });
+
+  Array.from(cartItems.keys()).forEach((id) => {
+    if (!menuDrinks.some((drink) => drink.id === id)) {
+      cartItems.delete(id);
+    }
+  });
+
+  updateCart();
+}
+
+function addMenuDrink(name, amount) {
+  const existingIds = new Set(menuDrinks.map((drink) => drink.id));
+  const drink = {
+    id: makeDrinkId(name, existingIds),
+    name,
+    amount: Math.round(amount),
+    icon: 'generic',
+  };
+  menuDrinks.push(drink);
+  saveMenuDrinks();
+  renderDrinksMenu();
+  renderMenuSettingsList();
+}
+
+function updateMenuDrink(id, name, amount) {
+  const drink = menuDrinks.find((item) => item.id === id);
+  if (!drink) return;
+
+  drink.name = name;
+  drink.amount = Math.round(amount);
+  saveMenuDrinks();
+  renderDrinksMenu();
+  renderMenuSettingsList();
+}
+
+function removeMenuDrink(id) {
+  menuDrinks = menuDrinks.filter((drink) => drink.id !== id);
+  cartItems.delete(id);
+  saveMenuDrinks();
+  renderDrinksMenu();
+  renderMenuSettingsList();
+  updateCart();
+}
+
+function renderMenuSettingsList() {
+  if (!menuSettingsList) return;
+
+  menuSettingsList.innerHTML = '';
+
+  if (!menuDrinks.length) {
+    if (menuSettingsEmpty) menuSettingsEmpty.hidden = false;
+    return;
+  }
+
+  if (menuSettingsEmpty) menuSettingsEmpty.hidden = true;
+
+  menuDrinks.forEach((drink) => {
+    const li = document.createElement('li');
+    li.className = 'menu-settings-item';
+
+    const nameInput = document.createElement('input');
+    nameInput.className = 'menu-settings-item-name stats-input';
+    nameInput.type = 'text';
+    nameInput.maxLength = 80;
+    nameInput.value = drink.name;
+    nameInput.setAttribute('aria-label', 'Назва напою');
+
+    const amountInput = document.createElement('input');
+    amountInput.className = 'menu-settings-item-amount stats-input';
+    amountInput.type = 'number';
+    amountInput.min = '1';
+    amountInput.step = '1';
+    amountInput.value = String(drink.amount);
+    amountInput.setAttribute('aria-label', 'Ціна');
+
+    const saveBtn = document.createElement('button');
+    saveBtn.type = 'button';
+    saveBtn.className = 'menu-settings-save stats-edit-btn';
+    saveBtn.textContent = '✓';
+    saveBtn.setAttribute('aria-label', 'Зберегти зміни');
+
+    const deleteBtn = document.createElement('button');
+    deleteBtn.type = 'button';
+    deleteBtn.className = 'menu-settings-delete stats-delete-btn';
+    deleteBtn.textContent = '×';
+    deleteBtn.setAttribute('aria-label', 'Видалити напій');
+
+    const commit = () => {
+      const name = nameInput.value.trim();
+      const amount = Number(amountInput.value);
+      if (!name || !Number.isFinite(amount) || amount <= 0) return;
+      updateMenuDrink(drink.id, name, amount);
+    };
+
+    saveBtn.addEventListener('click', commit);
+    deleteBtn.addEventListener('click', () => removeMenuDrink(drink.id));
+    nameInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') commit();
+    });
+    amountInput.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter') commit();
+    });
+
+    li.append(nameInput, amountInput, saveBtn, deleteBtn);
+    menuSettingsList.appendChild(li);
+  });
+}
+
+function openMenuSettings() {
+  if (!menuSettingsSheet) return;
+  renderMenuSettingsList();
+  menuSettingsSheet.hidden = false;
+  document.body.classList.add('sheet-open');
+  menuAddName?.focus();
+}
+
+function closeMenuSettings() {
+  if (!menuSettingsSheet) return;
+  menuSettingsSheet.hidden = true;
+  menuAddForm?.reset();
+  if (sheet.hidden && confirmSheet.hidden
+    && (!cardPaySheet || cardPaySheet.hidden)
+    && (!carWashSheet || carWashSheet.hidden)) {
+    document.body.classList.remove('sheet-open');
+  }
+}
+
+function initMenu() {
+  menuDrinks = loadMenuDrinks();
+  renderDrinksMenu();
+}
 
 function isMobile() {
   return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -135,9 +458,10 @@ function getCartSummary() {
   return { items, totalQty, total };
 }
 
-function savePendingPayment(order) {
+function savePendingPayment(order, orderId) {
   sessionStorage.setItem(PAYMENT_KEY, JSON.stringify({
     order,
+    orderId: orderId || null,
     savedAt: Date.now(),
   }));
 }
@@ -153,7 +477,12 @@ function loadPendingPayment() {
       return null;
     }
 
-    return data.order;
+    if (!data.order) return null;
+
+    return {
+      order: data.order,
+      orderId: data.orderId || null,
+    };
   } catch {
     sessionStorage.removeItem(PAYMENT_KEY);
     return null;
@@ -302,7 +631,8 @@ function openCarWashSheet() {
 function closeCarWashSheet() {
   if (!carWashSheet) return;
   carWashSheet.hidden = true;
-  if (sheet.hidden && confirmSheet.hidden) {
+  if (sheet.hidden && confirmSheet.hidden
+    && (!cardPaySheet || cardPaySheet.hidden)) {
     document.body.classList.remove('sheet-open');
   }
 }
@@ -395,7 +725,7 @@ function changeQty(row, delta, button) {
 
 function clearCart() {
   cartItems.clear();
-  rows.forEach((row) => {
+  getMenuRows().forEach((row) => {
     row.classList.remove('has-qty');
     const qtyEl = row.querySelector('.qty-value');
     if (qtyEl) qtyEl.textContent = '0';
@@ -440,6 +770,7 @@ function dismissOverlays() {
   loader.hidden = true;
   sheet.hidden = true;
   if (carWashSheet) carWashSheet.hidden = true;
+  if (cardPaySheet) cardPaySheet.hidden = true;
   document.body.classList.remove('sheet-open');
   loaderText.textContent = 'Відкриваємо застосунок…';
   paymentTotal = 0;
@@ -468,10 +799,54 @@ function openSheet() {
 
 function closeSheet() {
   sheet.hidden = true;
-  if (confirmSheet.hidden && (!carWashSheet || carWashSheet.hidden)) {
+  if (confirmSheet.hidden
+    && (!carWashSheet || carWashSheet.hidden)
+    && (!cardPaySheet || cardPaySheet.hidden)) {
     document.body.classList.remove('sheet-open');
   }
   paymentTotal = 0;
+}
+
+function openCardPaySheet(total) {
+  if (!cardPaySheet) return;
+
+  if (cardPayAmount) cardPayAmount.textContent = `${total} грн`;
+  cardPaySheet.hidden = false;
+  document.body.classList.add('sheet-open');
+}
+
+function closeCardPaySheet() {
+  if (!cardPaySheet) return;
+
+  cardPaySheet.hidden = true;
+  if (sheet.hidden && confirmSheet.hidden
+    && (!carWashSheet || carWashSheet.hidden)) {
+    document.body.classList.remove('sheet-open');
+  }
+}
+
+async function copyCardNumber() {
+  if (!pendingOrder || !pendingOrderId) return;
+
+  if (!otherPaymentRecorded) {
+    notifyOrder(pendingOrder, 'other', pendingOrderId);
+    otherPaymentRecorded = true;
+  }
+
+  try {
+    await navigator.clipboard.writeText(OTHER_BANK_CARD);
+    if (cardPayCopy) {
+      const original = cardPayCopy.textContent;
+      cardPayCopy.textContent = 'Скопійовано';
+      setTimeout(() => {
+        cardPayCopy.textContent = original;
+      }, 1500);
+    }
+    schedulePaymentBalancesRefresh();
+    finishOtherPayment();
+  } catch {
+    if (cardPayCopy) cardPayCopy.textContent = 'Не вдалося скопіювати';
+  }
 }
 
 function openConfirmSheet() {
@@ -505,23 +880,19 @@ function snapshotOrder() {
   };
 }
 
-function notifyOrder(order, provider) {
+function makeOrderId() {
+  return `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+}
+
+function notifyOrder(order, provider, orderId) {
   const payload = JSON.stringify({
+    id: orderId,
     items: order.items,
     total: order.total,
     provider,
   });
 
-  if (navigator.sendBeacon) {
-    const blob = new Blob([payload], { type: 'application/json' });
-    const queued = navigator.sendBeacon('/api/order', blob);
-    if (queued) {
-      queueLocalOrder(order, provider);
-      return;
-    }
-  }
-
-  fetch('/api/order', {
+  const postOrder = () => fetch('/api/order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
@@ -530,22 +901,48 @@ function notifyOrder(order, provider) {
     // payment flow should continue even if notification fails
   });
 
-  queueLocalOrder(order, provider);
+  // Інші банки: користувач лишається на сторінці — fetch надійніший за sendBeacon
+  if (provider === 'other') {
+    postOrder();
+    schedulePaymentBalancesRefresh();
+    return;
+  }
+
+  if (navigator.sendBeacon) {
+    const blob = new Blob([payload], { type: 'application/json' });
+    navigator.sendBeacon('/api/order', blob);
+    schedulePaymentBalancesRefresh();
+    return;
+  }
+
+  postOrder();
+  schedulePaymentBalancesRefresh();
 }
 
 function goToPayment(provider) {
   const order = snapshotOrder();
   if (!order.items.length) return;
 
+  const orderId = makeOrderId();
   pendingOrder = order;
+  pendingOrderId = orderId;
   awaitingPayment = true;
-  savePendingPayment(order);
-
-  const url = getPaymentUrl(provider, order.total);
+  savePendingPayment(order, orderId);
 
   payActions.forEach((action) => {
     action.disabled = true;
   });
+
+  if (provider === 'other') {
+    otherPaymentRecorded = false;
+    closeSheet();
+    openCardPaySheet(order.total);
+    return;
+  }
+
+  notifyOrder(order, provider, orderId);
+
+  const url = getPaymentUrl(provider, order.total);
 
   closeSheet();
   loader.hidden = false;
@@ -553,7 +950,6 @@ function goToPayment(provider) {
     ? `Відкриваємо конверт… Введіть ${order.total} грн`
     : 'Відкриваємо Monobank…';
 
-  notifyOrder(order, provider);
   openPaymentUrl(url);
 
   recoverTimer = setTimeout(() => {
@@ -565,19 +961,20 @@ function handleReturnFromPayment() {
   if (sessionStorage.getItem(RELOAD_KEY)) return;
   if (!awaitingPayment || !pendingOrder) return;
 
-  savePendingPayment(pendingOrder);
+  savePendingPayment(pendingOrder, pendingOrderId);
   reloadAfterPaymentReturn();
 }
 
 function initPaymentReturn() {
   sessionStorage.removeItem(RELOAD_KEY);
 
-  const order = loadPendingPayment();
-  if (!order) return;
+  const saved = loadPendingPayment();
+  if (!saved) return;
 
-  pendingOrder = order;
+  pendingOrder = saved.order;
+  pendingOrderId = saved.orderId;
   dismissOverlays();
-  restoreCartFromOrder(order);
+  restoreCartFromOrder(saved.order);
   openConfirmSheet();
 }
 
@@ -664,38 +1061,90 @@ async function handleThanksSubmit(event) {
   }
 }
 
+function resetPendingPayment() {
+  pendingOrderId = null;
+  otherPaymentRecorded = false;
+  clearPendingPayment();
+  pendingOrder = null;
+  awaitingPayment = false;
+  payActions.forEach((action) => {
+    action.disabled = false;
+  });
+}
+
+async function revokePendingOrderIncome() {
+  const orderId = pendingOrderId;
+  pendingOrderId = null;
+  if (!orderId) return;
+
+  try {
+    await fetch('/api/stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        type: 'delete',
+        id: orderId,
+      }),
+      keepalive: true,
+    });
+  } catch {
+    // ignore delete failures
+  }
+}
+
+function finishOtherPayment() {
+  pendingOrderId = null;
+  otherPaymentRecorded = false;
+  clearPendingPayment();
+  pendingOrder = null;
+  awaitingPayment = false;
+  closeCardPaySheet();
+  payActions.forEach((action) => {
+    action.disabled = false;
+  });
+  clearCart();
+  showThanks();
+}
 function confirmPaymentSuccess() {
+  pendingOrderId = null;
+  otherPaymentRecorded = false;
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
   clearCart();
+  schedulePaymentBalancesRefresh();
   showThanks();
 }
 
 function cancelPendingPayment() {
+  revokePendingOrderIncome();
+  otherPaymentRecorded = false;
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
+  payActions.forEach((action) => {
+    action.disabled = false;
+  });
   clearCart();
 }
 
-rows.forEach((row) => {
-  row.classList.add('is-entering');
-  row.addEventListener('animationend', (event) => {
-    if (event.animationName === 'row-in') {
-      row.classList.remove('is-entering');
-    }
-  });
+rows.forEach(bindMenuRow);
 
-  row.querySelectorAll('.qty-btn').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const delta = button.dataset.action === 'plus' ? 1 : -1;
-      changeQty(row, delta, button);
-    });
-  });
+menuAddForm?.addEventListener('submit', (event) => {
+  event.preventDefault();
+  const name = menuAddName?.value.trim();
+  const amount = Number(menuAddAmount?.value);
+  if (!name || !Number.isFinite(amount) || amount <= 0) return;
+  addMenuDrink(name, amount);
+  menuAddForm.reset();
+  menuAddName?.focus();
+});
+
+menuSettingsBtn?.addEventListener('click', openMenuSettings);
+menuSettingsSheet?.querySelectorAll('[data-menu-settings-close]').forEach((el) => {
+  el.addEventListener('click', closeMenuSettings);
 });
 
 carWashSheet?.querySelectorAll('[data-car-wash-level]').forEach((button) => {
@@ -741,6 +1190,15 @@ payActions.forEach((action) => {
   });
 });
 
+cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
+  el.addEventListener('click', () => {
+    closeCardPaySheet();
+    if (!otherPaymentRecorded) resetPendingPayment();
+  });
+});
+
+cardPayCopy?.addEventListener('click', copyCardNumber);
+
 sheet.querySelectorAll('[data-close]').forEach((el) => {
   el.addEventListener('click', closeSheet);
 });
@@ -755,9 +1213,14 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    if (statsGate && !statsGate.hidden) closeStatsGate();
+    if (menuSettingsSheet && !menuSettingsSheet.hidden) closeMenuSettings();
+    else if (statsGate && !statsGate.hidden) closeStatsGate();
     else if (statsPanel && !statsPanel.hidden) closeStats();
     else if (carWashSheet && !carWashSheet.hidden) closeCarWashSheet();
+    else if (cardPaySheet && !cardPaySheet.hidden) {
+      closeCardPaySheet();
+      if (!otherPaymentRecorded) resetPendingPayment();
+    }
     else if (!confirmSheet.hidden) cancelPendingPayment();
     else if (!sheet.hidden) closeSheet();
   }
@@ -785,71 +1248,13 @@ window.addEventListener('pageshow', (event) => {
   dismissOverlays();
 });
 
+initMenu();
 initPaymentReturn();
 updateCart();
-
-function loadLocalStats() {
-  try {
-    const raw = localStorage.getItem(STATS_LOCAL_KEY);
-    if (!raw) return { incomes: [], expenses: [] };
-    const data = JSON.parse(raw);
-    if (Array.isArray(data.incomes) || Array.isArray(data.expenses)) {
-      return {
-        incomes: Array.isArray(data.incomes) ? data.incomes : [],
-        expenses: Array.isArray(data.expenses) ? data.expenses : [],
-      };
-    }
-    const incomes = Array.isArray(data.orders)
-      ? data.orders.map((order) => ({
-          id: order.id,
-          label: formatOrderSummary(order.items || []),
-          amount: Number(order.total || 0),
-          source: 'order',
-          provider: order.provider || 'bank',
-          items: order.items || [],
-          createdAt: order.createdAt,
-        }))
-      : [];
-    return {
-      incomes,
-      expenses: Array.isArray(data.expenses) ? data.expenses : [],
-    };
-  } catch {
-    return { incomes: [], expenses: [] };
-  }
-}
-
-function saveLocalStats(data) {
-  localStorage.setItem(STATS_LOCAL_KEY, JSON.stringify(data));
-}
-
-function mergeStats(localData, remoteData) {
-  const incomes = [...remoteData.incomes, ...localData.incomes];
-  const expenses = [...remoteData.expenses, ...localData.expenses];
-  const seenIncomes = new Set();
-  const seenExpenses = new Set();
-
-  const uniqueIncomes = incomes.filter((item) => {
-    const key = item.id || `${item.createdAt}-${item.amount}-${item.label}`;
-    if (seenIncomes.has(key)) return false;
-    seenIncomes.add(key);
-    return true;
-  });
-
-  const uniqueExpenses = expenses.filter((item) => {
-    const key = item.id || `${item.createdAt}-${item.amount}-${item.label}`;
-    if (seenExpenses.has(key)) return false;
-    seenExpenses.add(key);
-    return true;
-  });
-
-  uniqueIncomes.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-  uniqueExpenses.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
-
-  return {
-    incomes: uniqueIncomes.slice(0, 500),
-    expenses: uniqueExpenses.slice(0, 500),
-  };
+try {
+  localStorage.removeItem('kava-business-stats');
+} catch {
+  // ignore
 }
 
 function formatStatsMoney(value) {
@@ -870,50 +1275,372 @@ function formatOrderSummary(items) {
   return items.map((item) => `${item.name} × ${item.qty}`).join(', ');
 }
 
+function isHaircutName(value) {
+  return String(value || '').toLowerCase().includes('стрижк');
+}
+
+function isHaircutLine(line) {
+  const id = String(line?.id || '').toLowerCase();
+  return id === HAIRCUT_ID || isHaircutName(line?.name);
+}
+
+function getLineAmount(line) {
+  return Number(line?.amount || 0) * Number(line?.qty || 1);
+}
+
+function getLineQty(line) {
+  const qty = Number(line?.qty);
+  if (!Number.isFinite(qty) || qty <= 0) return 1;
+  return Math.min(qty, 99);
+}
+
+function splitIncomeRecord(record) {
+  const amount = Number(record.amount || 0);
+  let coffee = 0;
+  let haircut = 0;
+  let coffeeDrinks = 0;
+  let haircutCount = 0;
+  let manualCoffeeCount = 0;
+
+  if (record.source === 'order') {
+    if (Array.isArray(record.items) && record.items.length) {
+      record.items.forEach((line) => {
+        const lineAmount = getLineAmount(line);
+        const qty = getLineQty(line);
+
+        if (isHaircutLine(line)) {
+          haircut += lineAmount;
+          haircutCount += qty;
+        } else {
+          coffee += lineAmount;
+          coffeeDrinks += qty;
+        }
+      });
+    } else if (isHaircutName(record.label)) {
+      haircut += amount;
+      haircutCount += 1;
+    } else {
+      coffee += amount;
+      coffeeDrinks += 1;
+    }
+    return { coffee, haircut, coffeeDrinks, haircutCount, manualCoffeeCount };
+  }
+
+  if (isHaircutName(record.label)) {
+    haircut += amount;
+    haircutCount += 1;
+  } else {
+    coffee += amount;
+    manualCoffeeCount += 1;
+  }
+
+  return { coffee, haircut, coffeeDrinks, haircutCount, manualCoffeeCount };
+}
+
+function getCoffeeOnlyIncomes(incomes) {
+  return incomes.flatMap((record) => {
+    const part = splitIncomeRecord(record);
+    if (part.coffee <= 0) return [];
+
+    if (record.source === 'order' && Array.isArray(record.items) && record.items.length) {
+      const coffeeItems = record.items.filter((line) => !isHaircutLine(line));
+      if (!coffeeItems.length) return [];
+
+      return [{
+        ...record,
+        amount: part.coffee,
+        items: coffeeItems,
+      }];
+    }
+
+    if (isHaircutName(record.label)) return [];
+
+    return [{
+      ...record,
+      amount: part.coffee,
+    }];
+  });
+}
+
+function summarizeIncomes(incomes) {
+  return incomes.reduce((summary, record) => {
+    const part = splitIncomeRecord(record);
+    summary.coffee += part.coffee;
+    summary.haircut += part.haircut;
+    summary.coffeeDrinks += part.coffeeDrinks;
+    summary.haircutCount += part.haircutCount;
+    summary.manualCoffeeCount += part.manualCoffeeCount;
+    return summary;
+  }, {
+    coffee: 0,
+    haircut: 0,
+    coffeeDrinks: 0,
+    haircutCount: 0,
+    manualCoffeeCount: 0,
+  });
+}
+
+function localDayKey(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function localMonthKey(value) {
+  const date = new Date(value);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  return `${year}-${month}`;
+}
+
+function coffeeDrinkCount(income) {
+  const part = splitIncomeRecord(income);
+  if (income.source === 'order') return part.coffeeDrinks;
+  if (part.manualCoffeeCount > 0) return 1;
+  return 0;
+}
+
+function formatChartBucketLabel(date, period) {
+  const day = date.getDate();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+
+  if (period === 'month') {
+    return `${day}.${month}.`;
+  }
+
+  if (period === 'year') {
+    return `${month}.${year}`;
+  }
+
+  const weekday = new Intl.DateTimeFormat('uk-UA', { weekday: 'short' }).format(date);
+  return `${weekday} ${day}`;
+}
+
+function buildDailyChartBuckets(dayCount, period) {
+  const buckets = [];
+
+  for (let offset = dayCount - 1; offset >= 0; offset -= 1) {
+    const date = new Date();
+    date.setHours(0, 0, 0, 0);
+    date.setDate(date.getDate() - offset);
+
+    buckets.push({
+      key: localDayKey(date),
+      label: formatChartBucketLabel(date, period),
+      count: 0,
+    });
+  }
+
+  return buckets;
+}
+
+function buildMonthlyChartBuckets(monthCount = 12) {
+  const buckets = [];
+
+  for (let offset = monthCount - 1; offset >= 0; offset -= 1) {
+    const date = new Date();
+    date.setDate(1);
+    date.setHours(0, 0, 0, 0);
+    date.setMonth(date.getMonth() - offset);
+
+    buckets.push({
+      key: localMonthKey(date),
+      label: formatChartBucketLabel(date, 'year'),
+      count: 0,
+    });
+  }
+
+  return buckets;
+}
+
+function buildChartBuckets(period) {
+  if (period === 'year') return buildMonthlyChartBuckets(12);
+  if (period === 'month') return buildDailyChartBuckets(30, 'month');
+  return buildDailyChartBuckets(7, 'week');
+}
+
+function fillChartBuckets(buckets, incomes, period) {
+  const map = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket]));
+  const useMonths = period === 'year';
+
+  incomes.forEach((income) => {
+    const drinks = coffeeDrinkCount(income);
+    if (!drinks) return;
+
+    const key = useMonths
+      ? localMonthKey(income.createdAt)
+      : localDayKey(income.createdAt);
+
+    if (map[key]) map[key].count += drinks;
+  });
+
+  return buckets;
+}
+
+function setChartPeriod(period) {
+  if (!CHART_PERIOD_CONFIG[period]) return;
+  statsChartPeriod = period;
+
+  statsChartPeriodButtons.forEach((button) => {
+    const isActive = button.dataset.chartPeriod === period;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  if (statsChartHeading) {
+    statsChartHeading.textContent = CHART_PERIOD_CONFIG[period].heading;
+  }
+  if (statsDailyChart) {
+    statsDailyChart.className = `stats-daily-chart ${CHART_PERIOD_CONFIG[period].className}`;
+  }
+}
+
+function renderOrderChart(incomes) {
+  if (!statsDailyChart) return;
+
+  const buckets = fillChartBuckets(buildChartBuckets(statsChartPeriod), incomes, statsChartPeriod);
+  const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
+
+  statsDailyChart.innerHTML = '';
+  statsDailyChart.setAttribute(
+    'aria-label',
+    buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(', '),
+  );
+
+  buckets.forEach((bucket) => {
+    const bar = document.createElement('div');
+    bar.className = 'stats-chart-bar';
+
+    const track = document.createElement('div');
+    track.className = 'stats-chart-bar-track';
+
+    const fill = document.createElement('div');
+    fill.className = 'stats-chart-bar-fill';
+    const heightPercent = bucket.count > 0
+      ? Math.max(8, Math.round((bucket.count / maxCount) * 100))
+      : 0;
+    fill.style.height = `${heightPercent}%`;
+    if (bucket.count === 0) fill.classList.add('is-zero');
+
+    track.appendChild(fill);
+
+    const count = document.createElement('span');
+    count.className = 'stats-chart-count';
+    count.textContent = String(bucket.count);
+
+    const label = document.createElement('span');
+    label.className = 'stats-chart-day';
+    label.textContent = bucket.label;
+
+    bar.append(track, count, label);
+    statsDailyChart.appendChild(bar);
+  });
+}
+
+function formatCountLabel(count, one, few, many) {
+  const mod10 = count % 10;
+  const mod100 = count % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${count} ${one}`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${count} ${few}`;
+  return `${count} ${many}`;
+}
+
+function formatBalanceMoney(value) {
+  const rounded = Math.round(value);
+  const formatted = Math.abs(rounded).toLocaleString('uk-UA');
+  if (rounded > 0) return `+${formatted} грн`;
+  if (rounded < 0) return `-${formatted} грн`;
+  return `${formatted} грн`;
+}
+
+function incomeCategory(record) {
+  const part = splitIncomeRecord(record);
+  if (part.haircut > 0 && part.coffee <= 0) return 'haircut';
+  if (part.haircut > 0 && part.coffee > 0) return 'mixed';
+  return 'coffee';
+}
+
+function formatRoiPercent(value) {
+  return `${value.toLocaleString('uk-UA', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
+function setStatsTab(tab, { keepEdit = false } = {}) {
+  const isIncome = tab === 'income';
+  statsActiveTab = tab;
+
+  statsTabIncome?.classList.toggle('is-active', isIncome);
+  statsTabExpense?.classList.toggle('is-active', !isIncome);
+  statsTabIncome?.setAttribute('aria-selected', isIncome ? 'true' : 'false');
+  statsTabExpense?.setAttribute('aria-selected', isIncome ? 'false' : 'true');
+
+  if (statsPanelIncome) {
+    statsPanelIncome.hidden = !isIncome;
+    statsPanelIncome.classList.toggle('is-active', isIncome);
+  }
+
+  if (statsPanelExpense) {
+    statsPanelExpense.hidden = isIncome;
+    statsPanelExpense.classList.toggle('is-active', !isIncome);
+  }
+
+  if (!keepEdit && editingTransactionId) closeEditTransaction();
+}
+
 function renderRoi(income, expenses) {
   if (!statsRoiMain || !statsRoiSub) return;
+
+  statsRoiCard?.classList.remove('stats-card--roi-complete');
 
   if (expenses <= 0) {
     statsRoiMain.textContent = '—';
     statsRoiSub.hidden = true;
     statsRoiSub.textContent = '';
+    if (statsRoiFill) statsRoiFill.style.width = '0%';
     return;
   }
+
+  const rawPercent = (income / expenses) * 100;
+  const barPercent = Math.min(100, rawPercent);
+
+  if (statsRoiFill) statsRoiFill.style.width = `${barPercent}%`;
 
   if (income >= expenses) {
     const profit = income - expenses;
-    statsRoiMain.textContent = '100%';
-    statsRoiSub.textContent = profit > 0 ? `+${formatStatsMoney(profit)}` : formatStatsMoney(0);
+    statsRoiMain.textContent = formatRoiPercent(100);
+    statsRoiSub.textContent = profit > 0
+      ? `Окуплено · прибуток ${formatStatsMoney(profit)}`
+      : 'Окуплено';
     statsRoiSub.hidden = false;
+    statsRoiCard?.classList.add('stats-card--roi-complete');
     return;
   }
 
-  const percent = Math.round((income / expenses) * 100);
   const left = expenses - income;
-  statsRoiMain.textContent = `${percent}%`;
-  statsRoiSub.textContent = `ще ${formatStatsMoney(left)}`;
+  statsRoiMain.textContent = formatRoiPercent(rawPercent);
+  statsRoiSub.textContent = `Ще ${formatStatsMoney(left)} до повної окупності`;
   statsRoiSub.hidden = false;
-}
-
-function queueLocalOrder(order, provider) {
-  const data = loadLocalStats();
-  data.incomes.unshift({
-    id: `income-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    label: formatOrderSummary(order.items || []),
-    amount: order.total,
-    source: 'order',
-    provider,
-    items: order.items.map((item) => ({ ...item })),
-    createdAt: new Date().toISOString(),
-  });
-  data.incomes = data.incomes.slice(0, 500);
-  saveLocalStats(data);
 }
 
 function incomeTitle(item) {
   if (item.source === 'order' && Array.isArray(item.items) && item.items.length) {
-    return formatOrderSummary(item.items);
+    const category = incomeCategory(item);
+    const summary = formatOrderSummary(item.items);
+    if (category === 'haircut') return summary;
+    if (category === 'mixed') return `Кава + стрижка · ${summary}`;
+    return summary;
   }
+
+  if (isHaircutName(item.label)) {
+    const label = String(item.label || '').trim();
+    return label || 'Стрижка';
+  }
+
   return item.label || 'Дохід';
 }
 
@@ -927,7 +1654,9 @@ function incomeMeta(item) {
       ? 'Monobank'
       : item.provider === 'privat'
         ? 'Приват24'
-        : 'банк';
+        : item.provider === 'other'
+          ? 'Інші банки'
+          : 'банк';
     return `${date} · ${provider}`;
   }
   return date;
@@ -959,7 +1688,7 @@ function createTransactionActions(item, kind) {
   return actions;
 }
 
-async function fetchRemoteStats() {
+async function fetchStats() {
   try {
     const response = await fetch('/api/stats');
     if (!response.ok) return { incomes: [], expenses: [] };
@@ -973,9 +1702,82 @@ async function fetchRemoteStats() {
   }
 }
 
+async function fetchPaymentBalances() {
+  try {
+    const response = await fetch('/api/balances', { cache: 'no-store' });
+    if (!response.ok) return null;
+    return await response.json();
+  } catch {
+    return null;
+  }
+}
+
+function setBankCardsLoading(isLoading) {
+  document.querySelectorAll('.stats-bank-card').forEach((card) => {
+    card.classList.toggle('is-loading', isLoading);
+  });
+}
+
+function renderBankBalance(valueEl, metaEl, data, fallbackLabel) {
+  if (!valueEl) return;
+
+  const card = valueEl.closest('.stats-bank-card');
+
+  if (data?.ok && Number.isFinite(data.amount)) {
+    valueEl.textContent = formatStatsMoney(data.amount);
+    valueEl.classList.remove('is-unavailable');
+    if (metaEl) metaEl.textContent = data.label || fallbackLabel;
+  } else {
+    valueEl.textContent = '—';
+    valueEl.classList.add('is-unavailable');
+    if (metaEl) {
+      const error = data?.error;
+      metaEl.textContent = error === 'unavailable' || error === 'not_configured'
+        ? 'Публічне API недоступне'
+        : 'Не вдалося оновити';
+    }
+  }
+
+  card?.classList.remove('is-loading');
+}
+
+function renderPaymentBalances(payload) {
+  if (!payload) {
+    setBankCardsLoading(false);
+    return;
+  }
+
+  renderBankBalance(statsMonoBalance, statsMonoMeta, payload.mono, 'Банка Monobank');
+  renderBankBalance(statsPrivatBalance, statsPrivatMeta, payload.privat, 'Конверт Приват24');
+}
+
+function schedulePaymentBalancesRefresh(delayMs = BALANCE_REFRESH_DELAY_MS) {
+  if (balancesRefreshTimer) clearTimeout(balancesRefreshTimer);
+  setBankCardsLoading(true);
+  balancesRefreshTimer = setTimeout(async () => {
+    balancesRefreshTimer = null;
+    const data = await fetchPaymentBalances();
+    renderPaymentBalances(data);
+  }, delayMs);
+}
+
+async function refreshPaymentBalances() {
+  if (balancesRefreshTimer) {
+    clearTimeout(balancesRefreshTimer);
+    balancesRefreshTimer = null;
+  }
+
+  setBankCardsLoading(true);
+  const data = await fetchPaymentBalances();
+  renderPaymentBalances(data);
+}
+
 function renderIncomeItem(item) {
   const li = document.createElement('li');
+  const category = incomeCategory(item);
   li.className = 'stats-list-item';
+  if (category === 'haircut') li.classList.add('stats-list-item--haircut');
+  if (category === 'mixed') li.classList.add('stats-list-item--mixed');
 
   const main = document.createElement('div');
   main.className = 'stats-list-main';
@@ -1059,17 +1861,39 @@ function renderTransactionSection({
 }
 
 function renderStatsView(data) {
-  const income = data.incomes.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const summary = summarizeIncomes(data.incomes);
+  const coffeeIncome = summary.coffee;
   const expenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const balance = coffeeIncome - expenses;
+  const coffeeIncomes = getCoffeeOnlyIncomes(data.incomes);
 
-  statsIncome.textContent = formatStatsMoney(income);
+  statsIncome.textContent = formatStatsMoney(coffeeIncome);
   statsExpensesTotal.textContent = formatStatsMoney(expenses);
-  renderRoi(income, expenses);
+  statsCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
+  const coffeeDrinks = summary.coffeeDrinks + summary.manualCoffeeCount;
+  statsCoffeeMeta.textContent = formatCountLabel(coffeeDrinks, 'напій', 'напої', 'напоїв');
+
+  if (statsHaircutCount) {
+    statsHaircutCount.textContent = String(summary.haircutCount);
+  }
+  if (statsHaircutSum) {
+    statsHaircutSum.textContent = formatStatsMoney(summary.haircut);
+  }
+  statsHaircutChip?.classList.toggle('is-empty', summary.haircutCount <= 0);
+
+  statsTotalIncome.textContent = formatStatsMoney(coffeeIncome);
+  statsTotalExpenses.textContent = formatStatsMoney(expenses);
+  statsBalanceTotal.textContent = formatBalanceMoney(balance);
+  statsBalanceTotal.classList.toggle('is-negative', balance < 0);
+  statsBalanceTotal.classList.toggle('is-positive', balance > 0);
+
+  renderRoi(summary.coffee, expenses);
+  renderOrderChart(data.incomes);
 
   renderTransactionSection({
     listEl: statsIncomes,
     moreBtn: statsIncomesMore,
-    items: data.incomes,
+    items: coffeeIncomes,
     expanded: incomesListExpanded,
     emptyText: 'Доходів ще немає',
     renderItem: renderIncomeItem,
@@ -1085,41 +1909,11 @@ function renderStatsView(data) {
   });
 }
 
-async function syncLocalToRemote(localData, remoteData) {
-  const remoteIncomeIds = new Set(remoteData.incomes.map((item) => item.id).filter(Boolean));
-  const remoteExpenseIds = new Set(remoteData.expenses.map((item) => item.id).filter(Boolean));
-
-  const incomes = localData.incomes.filter((item) => item.id && !remoteIncomeIds.has(item.id));
-  const expenses = localData.expenses.filter((item) => item.id && !remoteExpenseIds.has(item.id));
-
-  if (!incomes.length && !expenses.length) return remoteData;
-
-  try {
-    const response = await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'sync',
-        incomes,
-        expenses,
-      }),
-    });
-
-    if (!response.ok) return remoteData;
-    return await fetchRemoteStats();
-  } catch {
-    return remoteData;
-  }
-}
-
 async function refreshStats() {
-  const local = loadLocalStats();
-  let remote = await fetchRemoteStats();
-  remote = await syncLocalToRemote(local, remote);
-  const merged = mergeStats(local, remote);
-  saveLocalStats(merged);
-  currentStatsData = merged;
-  renderStatsView(merged);
+  const data = await fetchStats();
+  currentStatsData = data;
+  renderStatsView(data);
+  refreshPaymentBalances();
 }
 
 function isStatsAuthenticated() {
@@ -1162,24 +1956,16 @@ function closeStats() {
   if (!statsPanel) return;
   statsPanel.hidden = true;
   document.body.classList.remove('stats-open');
+  closeMenuSettings();
   incomesListExpanded = false;
   expensesListExpanded = false;
+  setStatsTab('income');
+  setChartPeriod('week');
   closeEditTransaction();
 }
 
 async function addCashIncome(label, amount) {
-  const income = {
-    id: `income-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    label,
-    amount,
-    source: 'cash',
-    provider: 'cash',
-    createdAt: new Date().toISOString(),
-  };
-
-  const local = loadLocalStats();
-  local.incomes.unshift(income);
-  saveLocalStats(local);
+  const id = `income-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   try {
     await fetch('/api/stats', {
@@ -1187,28 +1973,20 @@ async function addCashIncome(label, amount) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'income',
+        id,
         label,
         amount,
       }),
     });
   } catch {
-    // keep local copy even if sync fails
+    // online-only: failed request will show on next refresh
   }
 
   await refreshStats();
 }
 
 async function addExpense(label, amount) {
-  const expense = {
-    id: `expense-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    label,
-    amount,
-    createdAt: new Date().toISOString(),
-  };
-
-  const local = loadLocalStats();
-  local.expenses.unshift(expense);
-  saveLocalStats(local);
+  const id = `expense-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   try {
     await fetch('/api/stats', {
@@ -1216,23 +1994,31 @@ async function addExpense(label, amount) {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         type: 'expense',
+        id,
         label,
         amount,
       }),
     });
   } catch {
-    // keep local copy even if sync fails
+    // online-only: failed request will show on next refresh
   }
 
   await refreshStats();
 }
 
-async function deleteTransaction(id) {
-  const local = loadLocalStats();
-  local.incomes = local.incomes.filter((item) => item.id !== id);
-  local.expenses = local.expenses.filter((item) => item.id !== id);
-  saveLocalStats(local);
+let statsSubmitLock = false;
 
+async function submitStatsForm(handler, label, amount) {
+  if (statsSubmitLock) return;
+  statsSubmitLock = true;
+  try {
+    await handler(label, amount);
+  } finally {
+    statsSubmitLock = false;
+  }
+}
+
+async function deleteTransaction(id) {
   try {
     await fetch('/api/stats', {
       method: 'POST',
@@ -1243,7 +2029,7 @@ async function deleteTransaction(id) {
       }),
     });
   } catch {
-    // keep local copy even if sync fails
+    // online-only: failed request will show on next refresh
   }
 
   if (editingTransactionId === id) closeEditTransaction();
@@ -1252,6 +2038,10 @@ async function deleteTransaction(id) {
 
 function openEditTransaction(item) {
   if (!statsEditForm) return;
+
+  const isIncome = currentStatsData.incomes.some((entry) => entry.id === item.id);
+  setStatsTab(isIncome ? 'income' : 'expense', { keepEdit: true });
+
   editingTransactionId = item.id;
   statsEditLabel.value = item.label || incomeTitle(item);
   statsEditAmount.value = String(item.amount || '');
@@ -1270,20 +2060,6 @@ function closeEditTransaction() {
 async function saveEditedTransaction(label, amount) {
   if (!editingTransactionId) return;
 
-  const local = loadLocalStats();
-  const income = local.incomes.find((item) => item.id === editingTransactionId);
-  const expense = local.expenses.find((item) => item.id === editingTransactionId);
-
-  if (income) {
-    income.label = label;
-    income.amount = amount;
-  }
-  if (expense) {
-    expense.label = label;
-    expense.amount = amount;
-  }
-  saveLocalStats(local);
-
   try {
     await fetch('/api/stats', {
       method: 'POST',
@@ -1296,7 +2072,7 @@ async function saveEditedTransaction(label, amount) {
       }),
     });
   } catch {
-    // keep local copy even if sync fails
+    // online-only: failed request will show on next refresh
   }
 
   closeEditTransaction();
@@ -1324,6 +2100,16 @@ statsGateForm?.addEventListener('submit', (event) => {
 
 statsPanel?.querySelector('[data-stats-close]')?.addEventListener('click', closeStats);
 
+statsTabIncome?.addEventListener('click', () => setStatsTab('income'));
+statsTabExpense?.addEventListener('click', () => setStatsTab('expense'));
+
+statsChartPeriodButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setChartPeriod(button.dataset.chartPeriod);
+    renderOrderChart(currentStatsData.incomes);
+  });
+});
+
 statsIncomesMore?.addEventListener('click', () => {
   incomesListExpanded = !incomesListExpanded;
   renderStatsView(currentStatsData);
@@ -1342,7 +2128,7 @@ statsIncomeForm?.addEventListener('submit', async (event) => {
 
   if (!label || !Number.isFinite(amount) || amount <= 0) return;
 
-  await addCashIncome(label, amount);
+  await submitStatsForm(addCashIncome, label, amount);
   statsIncomeForm.reset();
 });
 
@@ -1354,7 +2140,7 @@ statsExpenseForm?.addEventListener('submit', async (event) => {
 
   if (!label || !Number.isFinite(amount) || amount <= 0) return;
 
-  await addExpense(label, amount);
+  await submitStatsForm(addExpense, label, amount);
   statsExpenseForm.reset();
 });
 

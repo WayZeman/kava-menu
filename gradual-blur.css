@@ -1,0 +1,57 @@
+.gradual-blur-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.gradual-blur-inner > div {
+  -webkit-backdrop-filter: inherit;
+  backdrop-filter: inherit;
+}
+
+.gradual-blur {
+  isolation: isolate;
+}
+
+@supports not (backdrop-filter: blur(1px)) {
+  .gradual-blur-inner > div {
+    background: rgba(245, 240, 232, 0.55);
+    opacity: 0.65;
+  }
+}
+
+.gradual-blur--site.gradual-blur-top .gradual-blur-inner::after {
+  background: linear-gradient(to top, transparent, var(--cream));
+}
+
+.gradual-blur--site.gradual-blur-bottom .gradual-blur-inner::after {
+  background: linear-gradient(to bottom, transparent, var(--cream));
+}
+
+.gradual-blur--site .gradual-blur-inner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  opacity: 0.42;
+  pointer-events: none;
+}
+
+.gradual-blur-page {
+  left: 0;
+  right: 0;
+}
+
+.gradual-blur-top.gradual-blur-page {
+  top: 0;
+}
+
+.gradual-blur-bottom.gradual-blur-page {
+  bottom: 0;
+}
+
+body.sheet-open .gradual-blur--site,
+body.stats-open .gradual-blur--site,
+body.stats-gate-open .gradual-blur--site {
+  opacity: 0;
+  transition: opacity 0.25s ease-out;
+}

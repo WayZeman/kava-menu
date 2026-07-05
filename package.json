@@ -4,5 +4,8 @@
   },
   "scripts": {
     "seed:db": "node --env-file=.env.local scripts/seed-db.mjs"
+  },
+  "devDependencies": {
+    "playwright-core": "^1.61.0"
   }
 }

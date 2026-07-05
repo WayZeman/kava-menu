@@ -14,7 +14,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="styles.css?v=37">
+  <link rel="stylesheet" href="gradual-blur.css?v=37">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -37,158 +38,45 @@
       <p class="lead">Що бажаєте сьогодні?</p>
     </header>
 
-    <section class="menu menu--drinks" aria-label="Меню напоїв">
-      <article class="row" data-id="espresso" data-name="Еспресо" data-amount="20">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="14" y="18" width="20" height="22" rx="3" fill="#2f1a0f"/>
-            <path d="M34 24h4a3 3 0 0 1 0 6h-4" fill="none" stroke="#2f1a0f" stroke-width="2"/>
-            <ellipse cx="24" cy="18" rx="10" ry="3" fill="#d4a853"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Еспресо</span>
-        </div>
-        <span class="price">20 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше еспресо">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше еспресо">+</button>
-        </div>
-      </article>
-      <article class="row" data-id="double-espresso" data-name="Подвійний еспресо" data-amount="30">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect x="8" y="20" width="14" height="18" rx="2.5" fill="#2f1a0f"/>
-            <rect x="26" y="20" width="14" height="18" rx="2.5" fill="#2f1a0f"/>
-            <ellipse cx="15" cy="20" rx="7" ry="2.5" fill="#d4a853"/>
-            <ellipse cx="33" cy="20" rx="7" ry="2.5" fill="#d4a853"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Подвійний еспресо</span>
-        </div>
-        <span class="price">30 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-      <article class="row" data-id="americano" data-name="Американо" data-amount="20">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 10h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/>
-            <path d="M18 16h12v18H18z" fill="#5c3a28"/>
-            <ellipse cx="24" cy="16" rx="6" ry="2" fill="#d4a853"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Американо</span>
-        </div>
-        <span class="price">20 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-      <article class="row" data-id="cappuccino" data-name="Капучино" data-amount="35">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/>
-            <rect x="14" y="30" width="20" height="8" fill="#5c3a28"/>
-            <ellipse cx="24" cy="20" rx="10" ry="3" fill="#f5f0e8"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Капучино</span>
-        </div>
-        <span class="price">35 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-      <article class="row" data-id="latte" data-name="Лате Макіато" data-amount="40">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M17 8h14l3 32a3 3 0 0 1-3 2.5H17a3 3 0 0 1-3-2.5L17 8z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/>
-            <rect x="19" y="28" width="10" height="10" fill="#5c3a28"/>
-            <rect x="19" y="18" width="10" height="8" fill="#d4a853"/>
-            <rect x="19" y="12" width="10" height="5" fill="#f5f0e8"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Лате Макіато</span>
-        </div>
-        <span class="price">40 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-      <article class="row" data-id="ice-coffee" data-name="Айс-кава" data-amount="40">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M16 12h16l-2 28a4 4 0 0 1-4 3.5H22a4 4 0 0 1-4-3.5L16 12z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/>
-            <path d="M18 18h12v20H18z" fill="#3d2314"/>
-            <rect x="20" y="20" width="4" height="4" rx="1" fill="#d4a853" opacity=".8"/>
-            <rect x="26" y="24" width="4" height="4" rx="1" fill="#d4a853" opacity=".8"/>
-            <rect x="22" y="30" width="4" height="4" rx="1" fill="#d4a853" opacity=".8"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Айс-кава</span>
-        </div>
-        <span class="price">40 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-    </section>
+    <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв"></section>
 
     <section class="menu menu--services" aria-label="Послуги">
       <h2 class="menu-heading">Послуги</h2>
-      <article class="row" data-id="haircut" data-name="Стрижка" data-amount="250">
-        <span class="drink-icon" aria-hidden="true">
-          <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-            <circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-            <path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-            <path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-            <circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>
-          </svg>
-        </span>
-        <div class="row-main">
-          <span class="name">Стрижка</span>
-        </div>
-        <span class="price">250 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-        </div>
-      </article>
-      <article class="row row--picker row--hidden" data-picker="car-wash" aria-label="Помивка машини" hidden>
-        <span class="drink-icon drink-icon--car" aria-hidden="true">
-          <img src="logos/car.png" width="34" height="34" alt="">
-        </span>
-        <div class="row-main">
-          <span class="name">Помивка машини</span>
-        </div>
-        <span class="price">300 грн</span>
-        <div class="qty">
-          <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-          <span class="qty-value">0</span>
-          <button class="qty-btn" type="button" data-action="plus" aria-label="Обрати забруднення">+</button>
-        </div>
-      </article>
+        <article class="row" data-id="haircut" data-name="Стрижка" data-amount="250">
+          <span class="drink-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
+              <circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
+              <path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>
+            </svg>
+          </span>
+          <div class="row-main">
+            <span class="name">Стрижка</span>
+          </div>
+          <span class="price">250 грн</span>
+          <div class="qty">
+            <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
+            <span class="qty-value">0</span>
+            <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
+          </div>
+        </article>
+        <article class="row row--picker row--hidden" data-picker="car-wash" aria-label="Помивка машини" hidden>
+          <span class="drink-icon drink-icon--car" aria-hidden="true">
+            <img src="logos/car.png" width="34" height="34" alt="">
+          </span>
+          <div class="row-main">
+            <span class="name">Помивка машини</span>
+          </div>
+          <span class="price">300 грн</span>
+          <div class="qty">
+            <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
+            <span class="qty-value">0</span>
+            <button class="qty-btn" type="button" data-action="plus" aria-label="Обрати забруднення">+</button>
+          </div>
+        </article>
     </section>
   </main>
 
@@ -221,7 +109,7 @@
           <span id="sheet-title" class="receipt-total-sum"></span>
         </div>
 
-        <p class="receipt-note">Відкриється у застосунку банку</p>
+        <p class="receipt-note">Monobank, Приват24 або переказ на картку</p>
 
         <div class="receipt-rule receipt-rule--light" aria-hidden="true"></div>
 
@@ -232,6 +120,7 @@
           <button class="receipt-pay-icon" type="button" data-provider="privat" aria-label="Приват24">
             <img src="logos/privat.png" width="52" height="52" alt="">
           </button>
+          <button class="receipt-pay-other" type="button" data-provider="other">Інші банки</button>
         </div>
 
         <div class="receipt-edge" aria-hidden="true"></div>
@@ -264,6 +153,18 @@
         </button>
       </div>
       <button class="service-sheet-cancel" type="button" data-car-wash-close>Скасувати</button>
+    </div>
+  </div>
+
+  <div id="card-pay-sheet" class="service-sheet" hidden>
+    <div class="service-sheet-backdrop" data-card-pay-close></div>
+    <div class="service-sheet-card card-pay-card" role="dialog" aria-modal="true" aria-labelledby="card-pay-title">
+      <p class="service-sheet-label">Інші банки</p>
+      <p id="card-pay-title" class="service-sheet-title">Переказ на картку</p>
+      <p id="card-pay-amount" class="card-pay-amount">0 грн</p>
+      <p class="card-pay-number" id="card-pay-number">4874&nbsp;1000&nbsp;2512&nbsp;6965</p>
+      <button id="card-pay-copy" class="card-pay-copy" type="button">Скопіювати номер</button>
+      <button class="service-sheet-cancel" type="button" data-card-pay-close>Скасувати</button>
     </div>
   </div>
 
@@ -343,57 +244,161 @@
     <div class="stats-panel">
       <header class="stats-header">
         <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
-        <h2 class="stats-title">Статистика окупності</h2>
-        <p class="stats-subtitle">Доходи, готівка та витрати</p>
+        <div class="stats-header-row">
+          <div class="stats-header-text">
+            <h2 class="stats-title">Статистика окупності</h2>
+            <p class="stats-subtitle">Кава та витрати</p>
+          </div>
+          <button id="stats-menu-settings" class="stats-settings-btn" type="button" aria-label="Редагувати меню напоїв">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7Z" stroke="currentColor" stroke-width="1.8"/>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9c.26.604.852.997 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+        </div>
       </header>
 
       <div class="stats-cards">
-        <article class="stats-card">
-          <span class="stats-card-label">Дохід</span>
-          <strong id="stats-income" class="stats-card-value">0 грн</strong>
-        </article>
-        <article class="stats-card">
-          <span class="stats-card-label">Витрати</span>
-          <strong id="stats-expenses-total" class="stats-card-value">0 грн</strong>
-        </article>
         <article class="stats-card stats-card--roi">
-          <span class="stats-card-label">Окупність</span>
-          <div class="stats-card-roi">
-            <strong id="stats-roi-main" class="stats-card-value">—</strong>
-            <span id="stats-roi-sub" class="stats-card-subvalue" hidden></span>
+          <div class="stats-roi-head">
+            <span class="stats-card-label">Окупність кави</span>
+            <strong id="stats-roi-main" class="stats-roi-percent">—</strong>
           </div>
+          <div class="stats-roi-track" aria-hidden="true">
+            <div id="stats-roi-fill" class="stats-roi-fill"></div>
+          </div>
+          <p id="stats-roi-sub" class="stats-roi-caption" hidden></p>
         </article>
       </div>
 
-      <form id="stats-income-form" class="stats-form">
-        <h3 class="stats-section-title">Додати готівковий дохід</h3>
-        <div class="stats-form-row">
-          <input id="stats-income-label" class="stats-input" type="text" maxlength="120" placeholder="Напр. кава готівкою" required>
-          <input id="stats-income-amount" class="stats-input stats-input--amount" type="number" min="1" step="1" placeholder="Сума" required>
-          <button class="stats-add-btn" type="submit">+</button>
+      <section class="stats-bank-balances" aria-label="Баланси оплати">
+        <div class="stats-bank-balances-head">
+          <h3 class="stats-section-heading">Баланси оплати</h3>
+          <span class="stats-bank-balances-hint">оновлюється після замовлення</span>
         </div>
-      </form>
-
-      <form id="stats-expense-form" class="stats-form">
-        <h3 class="stats-section-title">Додати витрату</h3>
-        <div class="stats-form-row">
-          <input id="stats-expense-label" class="stats-input" type="text" maxlength="120" placeholder="Назва витрати" required>
-          <input id="stats-expense-amount" class="stats-input stats-input--amount" type="number" min="1" step="1" placeholder="Сума" required>
-          <button class="stats-add-btn" type="submit">+</button>
+        <div class="stats-bank-balances-grid">
+          <article class="stats-bank-card stats-bank-card--mono">
+            <span class="stats-bank-label">Monobank</span>
+            <strong id="stats-mono-balance" class="stats-bank-value is-unavailable">—</strong>
+            <span id="stats-mono-meta" class="stats-bank-meta">Банка</span>
+          </article>
+          <article class="stats-bank-card stats-bank-card--privat">
+            <span class="stats-bank-label">Приват24</span>
+            <strong id="stats-privat-balance" class="stats-bank-value is-unavailable">—</strong>
+            <span id="stats-privat-meta" class="stats-bank-meta">Конверт</span>
+          </article>
         </div>
-      </form>
-
-      <section class="stats-section">
-        <h3 class="stats-section-title">Доходи</h3>
-        <ul id="stats-incomes" class="stats-list"></ul>
-        <button id="stats-incomes-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
       </section>
 
-      <section class="stats-section">
-        <h3 class="stats-section-title">Витрати</h3>
-        <ul id="stats-expense-list" class="stats-list"></ul>
-        <button id="stats-expenses-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
+      <section class="stats-breakdown" aria-label="Дохід за категоріями">
+        <article class="stats-breakdown-card stats-breakdown-card--coffee">
+          <span class="stats-breakdown-label">Кава</span>
+          <strong id="stats-coffee-total" class="stats-breakdown-value">0 грн</strong>
+          <span id="stats-coffee-meta" class="stats-breakdown-meta">0 напоїв</span>
+        </article>
+        <div id="stats-haircut-chip" class="stats-haircut-chip" aria-label="Стрижки">
+          <span class="stats-haircut-icon" aria-hidden="true">
+            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
+              <circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
+              <path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
+              <path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>
+            </svg>
+          </span>
+          <span id="stats-haircut-count" class="stats-haircut-count">0</span>
+          <span id="stats-haircut-sum" class="stats-haircut-sum">0 грн</span>
+        </div>
       </section>
+
+      <section class="stats-chart-section">
+        <div class="stats-chart-head">
+          <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
+          <div class="stats-chart-period" role="tablist" aria-label="Період статистики">
+            <button type="button" class="stats-chart-period-btn is-active" data-chart-period="week" aria-selected="true">Тиждень</button>
+            <button type="button" class="stats-chart-period-btn" data-chart-period="month" aria-selected="false">Місяць</button>
+            <button type="button" class="stats-chart-period-btn" data-chart-period="year" aria-selected="false">Рік</button>
+          </div>
+        </div>
+        <div class="stats-chart-scroll">
+          <div id="stats-daily-chart" class="stats-daily-chart stats-daily-chart--week" role="img" aria-label="Діаграма замовлень"></div>
+        </div>
+      </section>
+
+      <div class="stats-tabs" role="tablist" aria-label="Доходи та витрати">
+        <button
+          id="stats-tab-income"
+          class="stats-tab is-active"
+          type="button"
+          role="tab"
+          data-stats-tab="income"
+          aria-selected="true"
+          aria-controls="stats-panel-income"
+        >
+          <span class="stats-tab-label">Дохід</span>
+          <strong id="stats-income" class="stats-tab-value">0 грн</strong>
+        </button>
+        <button
+          id="stats-tab-expense"
+          class="stats-tab"
+          type="button"
+          role="tab"
+          data-stats-tab="expense"
+          aria-selected="false"
+          aria-controls="stats-panel-expense"
+        >
+          <span class="stats-tab-label">Витрати</span>
+          <strong id="stats-expenses-total" class="stats-tab-value">0 грн</strong>
+        </button>
+      </div>
+
+      <div id="stats-panel-income" class="stats-tab-panel is-active" role="tabpanel" aria-labelledby="stats-tab-income">
+        <form id="stats-income-form" class="stats-form">
+          <h3 class="stats-section-title">Додати готівковий дохід</h3>
+          <div class="stats-form-row">
+            <input id="stats-income-label" class="stats-input" type="text" maxlength="120" placeholder="Напр. кава готівкою" required>
+            <input id="stats-income-amount" class="stats-input stats-input--amount" type="number" min="1" step="1" placeholder="Сума" required>
+            <button class="stats-add-btn" type="submit">+</button>
+          </div>
+        </form>
+
+        <section class="stats-section">
+          <ul id="stats-incomes" class="stats-list"></ul>
+          <button id="stats-incomes-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
+        </section>
+      </div>
+
+      <div id="stats-panel-expense" class="stats-tab-panel" role="tabpanel" aria-labelledby="stats-tab-expense" hidden>
+        <form id="stats-expense-form" class="stats-form">
+          <h3 class="stats-section-title">Додати витрату</h3>
+          <div class="stats-form-row">
+            <input id="stats-expense-label" class="stats-input" type="text" maxlength="120" placeholder="Назва витрати" required>
+            <input id="stats-expense-amount" class="stats-input stats-input--amount" type="number" min="1" step="1" placeholder="Сума" required>
+            <button class="stats-add-btn" type="submit">+</button>
+          </div>
+        </form>
+
+        <section class="stats-section">
+          <ul id="stats-expense-list" class="stats-list"></ul>
+          <button id="stats-expenses-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
+        </section>
+      </div>
+
+      <footer class="stats-balance">
+        <div class="stats-balance-row">
+          <span>Дохід (кава)</span>
+          <strong id="stats-total-income">0 грн</strong>
+        </div>
+        <div class="stats-balance-row">
+          <span>Витрати</span>
+          <strong id="stats-total-expenses">0 грн</strong>
+        </div>
+        <div class="stats-balance-row stats-balance-row--total">
+          <span>Загальний баланс</span>
+          <strong id="stats-balance-total">0 грн</strong>
+        </div>
+      </footer>
 
       <form id="stats-edit-form" class="stats-edit" hidden>
         <h3 class="stats-section-title">Редагувати запис</h3>
@@ -407,8 +412,27 @@
     </div>
   </div>
 
+  <div id="menu-settings-sheet" class="service-sheet" hidden>
+    <div class="service-sheet-backdrop" data-menu-settings-close></div>
+    <div class="service-sheet-card menu-settings-card" role="dialog" aria-modal="true" aria-labelledby="menu-settings-title">
+      <p class="service-sheet-label">Налаштування</p>
+      <p id="menu-settings-title" class="service-sheet-title">Меню напоїв</p>
+      <form id="menu-add-form" class="menu-settings-form">
+        <div class="menu-settings-form-row">
+          <input id="menu-add-name" class="stats-input menu-settings-input" type="text" maxlength="80" placeholder="Назва напою" required>
+          <input id="menu-add-amount" class="stats-input menu-settings-input menu-settings-input--amount" type="number" min="1" step="1" placeholder="Ціна" required>
+          <button class="stats-add-btn menu-settings-add" type="submit" aria-label="Додати напій">+</button>
+        </div>
+      </form>
+      <ul id="menu-settings-list" class="menu-settings-list"></ul>
+      <p id="menu-settings-empty" class="menu-settings-empty" hidden>Напоїв поки немає</p>
+      <button class="service-sheet-cancel" type="button" data-menu-settings-close>Готово</button>
+    </div>
+  </div>
+
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <script src="script.js"></script>
+  <script src="gradual-blur.js?v=37"></script>
+  <script src="script.js?v=37"></script>
 </body>
 </html>
