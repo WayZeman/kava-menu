@@ -88,7 +88,8 @@ const STATS_AUTH_KEY = 'kava-stats-auth';
 const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
-const APP_VERSION = '46';
+const MENU_UPDATED_KEY = 'kava-menu-updated-at';
+const APP_VERSION = '47';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -134,6 +135,15 @@ const CAR_WASH_LEVELS = [
 const CAR_WASH_IDS = CAR_WASH_LEVELS.map((level) => level.id);
 
 const DEFAULT_DRINKS = [
+  { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
+  { id: 'double-espresso', name: 'Подвійний еспресо', amount: 30, icon: 'double-espresso' },
+  { id: 'americano', name: 'Американо', amount: 20, icon: 'americano' },
+  { id: 'cappuccino', name: 'Капучино', amount: 35, icon: 'cappuccino' },
+  { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
+  { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
+];
+
+const LEGACY_DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
   { id: 'americano', name: 'Американо', amount: 20, icon: 'americano' },
   { id: 'americano-milk', name: 'Американо з молоком', amount: 30, icon: 'americano-milk' },
@@ -210,8 +220,37 @@ function loadMenuDrinksFromStorage() {
   }
 }
 
+function menusEqual(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b) || a.length !== b.length) return false;
+  return JSON.stringify(a) === JSON.stringify(b);
+}
+
+function isDefaultMenu(drinks) {
+  return menusEqual(drinks, DEFAULT_DRINKS) || menusEqual(drinks, LEGACY_DEFAULT_DRINKS);
+}
+
+async function uploadMenuDrinks(drinks) {
+  try {
+    const response = await fetch('/api/menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ drinks }),
+      cache: 'no-store',
+    });
+    if (!response.ok) return null;
+    const data = await response.json();
+    if (data.updatedAt) {
+      localStorage.setItem(MENU_UPDATED_KEY, data.updatedAt);
+    }
+    return data;
+  } catch {
+    return null;
+  }
+}
+
 async function loadMenuDrinks() {
   const local = loadMenuDrinksFromStorage();
+  const localUpdatedAt = localStorage.getItem(MENU_UPDATED_KEY);
   let remote = null;
   let remoteUpdatedAt = null;
 
@@ -228,38 +267,39 @@ async function loadMenuDrinks() {
     // fall back to local copy
   }
 
-  if (local?.length && (!remoteUpdatedAt || isDefaultMenu(remote))) {
-    localStorage.setItem(MENU_KEY, JSON.stringify(local));
-    try {
-      await fetch('/api/menu', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ drinks: local }),
-      });
-    } catch {
-      // local menu still works offline
+  if (local?.length && remote?.length && !menusEqual(local, remote)) {
+    const remoteTime = remoteUpdatedAt ? Date.parse(remoteUpdatedAt) : 0;
+    const localTime = localUpdatedAt ? Date.parse(localUpdatedAt) : 0;
+
+    if (localTime > remoteTime || isDefaultMenu(remote)) {
+      localStorage.setItem(MENU_KEY, JSON.stringify(local));
+      await uploadMenuDrinks(local);
+      return local;
     }
+
+    localStorage.setItem(MENU_KEY, JSON.stringify(remote));
+    if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
+    return remote;
+  }
+
+  if (local?.length && (!remote?.length || isDefaultMenu(remote))) {
+    localStorage.setItem(MENU_KEY, JSON.stringify(local));
+    await uploadMenuDrinks(local);
     return local;
   }
 
-  if (remote?.length) {
+  if (remote?.length && !isDefaultMenu(remote)) {
     localStorage.setItem(MENU_KEY, JSON.stringify(remote));
+    if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
     return remote;
   }
 
   if (local?.length) return local;
 
-  return DEFAULT_DRINKS.map((item) => ({ ...item }));
-}
-
-function isDefaultMenu(drinks) {
-  if (!Array.isArray(drinks) || drinks.length !== DEFAULT_DRINKS.length) return false;
-  return DEFAULT_DRINKS.every((item, index) => {
-    const drink = drinks[index];
-    return drink?.id === item.id
-      && drink?.name === item.name
-      && drink?.amount === item.amount;
-  });
+  const drinks = DEFAULT_DRINKS.map((item) => ({ ...item }));
+  localStorage.setItem(MENU_KEY, JSON.stringify(drinks));
+  await uploadMenuDrinks(drinks);
+  return drinks;
 }
 
 function saveMenuDrinksLocal() {
@@ -272,14 +312,21 @@ function saveMenuDrinksLocal() {
 
 async function saveMenuDrinks() {
   saveMenuDrinksLocal();
+  const updatedAt = new Date().toISOString();
+  localStorage.setItem(MENU_UPDATED_KEY, updatedAt);
 
   try {
-    await fetch('/api/menu', {
+    const response = await fetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ drinks: menuDrinks }),
       keepalive: true,
+      cache: 'no-store',
     });
+    if (response.ok) {
+      const data = await response.json();
+      if (data.updatedAt) localStorage.setItem(MENU_UPDATED_KEY, data.updatedAt);
+    }
   } catch {
     // menu still saved locally; server sync retries on next edit
   }

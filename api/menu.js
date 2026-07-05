@@ -2,10 +2,11 @@ import { getMenuDrinksFromDb, saveMenuDrinksToDb } from './db.js';
 
 const DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
+  { id: 'double-espresso', name: 'Подвійний еспресо', amount: 30, icon: 'double-espresso' },
   { id: 'americano', name: 'Американо', amount: 20, icon: 'americano' },
-  { id: 'americano-milk', name: 'Американо з молоком', amount: 30, icon: 'americano-milk' },
   { id: 'cappuccino', name: 'Капучино', amount: 35, icon: 'cappuccino' },
   { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
+  { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
 ];
 
 function normalizeDrink(raw) {
