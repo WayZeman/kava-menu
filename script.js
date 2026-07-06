@@ -114,7 +114,7 @@ const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
-const APP_VERSION = '63';
+const APP_VERSION = '64';
 const HAIRCUT_ID = 'haircut';
 const STATS_CATEGORIES = {
   drinks: {
@@ -127,7 +127,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. кава готівкою',
     expensePlaceholder: 'Напр. зерно, молоко',
     countLabels: ['напій', 'напої', 'напоїв'],
-    showRoi: true,
+    roiLabel: 'Окупність кави',
   },
   extras: {
     id: 'extras',
@@ -139,7 +139,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. булочка готівкою',
     expensePlaceholder: 'Напр. закупівля снеків',
     countLabels: ['позиція', 'позиції', 'позицій'],
-    showRoi: false,
+    roiLabel: 'Окупність «До кави»',
   },
   services: {
     id: 'services',
@@ -151,7 +151,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. стрижка готівкою',
     expensePlaceholder: 'Напр. інструменти',
     countLabels: ['раз', 'рази', 'разів'],
-    showRoi: false,
+    roiLabel: 'Окупність послуг',
   },
 };
 const CHART_PERIOD_CONFIG = {
@@ -3073,7 +3073,9 @@ function renderStatsCategoryView(data) {
   const expenseLabelInput = document.getElementById('stats-expense-label');
   if (expenseLabelInput) expenseLabelInput.placeholder = config.expensePlaceholder;
 
-  if (statsRoiWrap) statsRoiWrap.hidden = !config.showRoi;
+  const roiLabelEl = document.querySelector('.stats-card--roi .stats-card-label');
+  if (roiLabelEl) roiLabelEl.textContent = config.roiLabel || 'Окупність';
+  if (statsRoiWrap) statsRoiWrap.hidden = false;
 
   statsIncome.textContent = formatStatsMoney(categoryIncome);
   statsExpensesTotal.textContent = formatStatsMoney(expensesTotal);
@@ -3087,9 +3089,7 @@ function renderStatsCategoryView(data) {
   statsBalanceTotal.classList.toggle('is-negative', balance < 0);
   statsBalanceTotal.classList.toggle('is-positive', balance > 0);
 
-  if (config.showRoi) {
-    renderRoi(categoryIncome, expensesTotal);
-  }
+  renderRoi(categoryIncome, expensesTotal);
 
   renderOrderChart(data.incomes, category);
   updateMenuEntryMeta();
