@@ -102,7 +102,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '53';
+const APP_VERSION = '54';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -170,7 +170,23 @@ const SERVICE_ICONS = {
   generic: '<rect x="14" y="16" width="20" height="18" rx="4" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 24h12M18 28h8" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/>',
 };
 
-const EXTRA_ICON = '<path d="M14 14h20l-2 24a3 3 0 0 1-3 2.5H19a3 3 0 0 1-3-2.5L14 14z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M17 14V11a5 5 0 0 1 10 0v3" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="3" fill="#d4a853"/>';
+const EXTRA_ICON_OPTIONS = [
+  { id: 'candy', label: 'Цукерка' },
+  { id: 'bar', label: 'Батончик' },
+  { id: 'bun', label: 'Булочка' },
+  { id: 'chocolate', label: 'Шоколадка' },
+  { id: 'cookie', label: 'Печиво' },
+  { id: 'generic', label: 'Товар' },
+];
+
+const EXTRA_ICONS = {
+  candy: '<rect x="15" y="18" width="18" height="14" rx="3" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M15 22h-4a2 2 0 0 1 0-4h4M33 22h4a2 2 0 0 0 0-4h-4M15 28h-4a2 2 0 0 0 0 4h4M33 28h4a2 2 0 0 1 0 4h-4" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><path d="M19 24h10v2H19z" fill="#d4a853"/>',
+  bar: '<rect x="14" y="20" width="20" height="12" rx="2.5" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><rect x="16" y="22" width="16" height="3" rx="1" fill="#d4a853"/><path d="M16 27h16" stroke="#f5f0e8" stroke-width="1.5" stroke-linecap="round"/><path d="M16 29.5h10" stroke="#f5f0e8" stroke-width="1.5" stroke-linecap="round"/>',
+  bun: '<ellipse cx="24" cy="30" rx="13" ry="7" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M13 28c2-6 7-10 11-10s9 4 11 10" fill="#d4a853" stroke="#2f1a0f" stroke-width="2"/><path d="M20 24.5 24 21l4 3.5" stroke="#2f1a0f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
+  chocolate: '<rect x="13" y="18" width="22" height="14" rx="2" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><path d="M19 18v14M24 18v14M29 18v14M13 25h22" stroke="#2f1a0f" stroke-width="1.5"/><rect x="14.5" y="19.5" width="6" height="4.5" rx="0.8" fill="#d4a853" opacity="0.85"/>',
+  cookie: '<circle cx="24" cy="26" r="11" fill="#d4a853" stroke="#2f1a0f" stroke-width="2"/><circle cx="19" cy="23" r="1.6" fill="#5c3a28"/><circle cx="27" cy="22" r="1.6" fill="#5c3a28"/><circle cx="25" cy="28" r="1.6" fill="#5c3a28"/><circle cx="20" cy="29" r="1.4" fill="#5c3a28"/><circle cx="29" cy="27" r="1.4" fill="#5c3a28"/>',
+  generic: '<path d="M14 14h20l-2 24a3 3 0 0 1-3 2.5H19a3 3 0 0 1-3-2.5L14 14z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M17 14V11a5 5 0 0 1 10 0v3" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="3" fill="#d4a853"/>',
+};
 
 const LEGACY_DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
@@ -248,11 +264,13 @@ function normalizeExtra(raw) {
   const stock = Number(raw?.stock);
   const id = String(raw?.id || '').trim();
   if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+  const icon = String(raw?.icon || 'generic').trim() || 'generic';
   return {
     id,
     name,
     amount: Math.round(amount),
     stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+    icon: EXTRA_ICONS[icon] ? icon : 'generic',
   };
 }
 
@@ -481,8 +499,9 @@ function serviceIconMarkup(iconKey) {
   return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 }
 
-function extraIconMarkup() {
-  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${EXTRA_ICON}</svg>`;
+function extraIconMarkup(iconKey) {
+  const inner = EXTRA_ICONS[iconKey] || EXTRA_ICONS.generic;
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
 }
 
 function getAllMenuIds() {
@@ -559,7 +578,7 @@ function createExtraRow(extra) {
   if (extra.stock <= 0) {
     row.classList.add('row--out-of-stock');
     row.innerHTML = `
-      <span class="drink-icon" aria-hidden="true">${extraIconMarkup()}</span>
+      <span class="drink-icon" aria-hidden="true">${extraIconMarkup(extra.icon)}</span>
       <div class="row-main">
         <span class="name"></span>
       </div>
@@ -720,6 +739,7 @@ function addMenuEditorItem(name, amount, stock = 0) {
     item.icon = SERVICE_ICONS[menuEditorSelectedIcon] ? menuEditorSelectedIcon : 'generic';
   } else {
     item.stock = Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0;
+    item.icon = EXTRA_ICONS[menuEditorSelectedIcon] ? menuEditorSelectedIcon : 'generic';
   }
 
   draft.push(item);
@@ -743,6 +763,9 @@ function updateMenuEditorItem(id, name, amount, extra = {}) {
   if (menuEditorSection === 'extras' && extra.stock !== undefined) {
     const stock = Number(extra.stock);
     item.stock = Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0;
+  }
+  if (menuEditorSection === 'extras' && extra.icon && EXTRA_ICONS[extra.icon]) {
+    item.icon = extra.icon;
   }
 
   renderMenuEditorList();
@@ -785,6 +808,8 @@ function updateMenuEntryMeta() {
 function setMenuEditorIcon(iconId, { editingId = null } = {}) {
   if (menuEditorSection === 'services') {
     menuEditorSelectedIcon = SERVICE_ICONS[iconId] ? iconId : 'generic';
+  } else if (menuEditorSection === 'extras') {
+    menuEditorSelectedIcon = EXTRA_ICONS[iconId] ? iconId : 'generic';
   } else {
     menuEditorSelectedIcon = DRINK_ICONS[iconId] ? iconId : 'generic';
   }
@@ -828,8 +853,8 @@ function updateMenuEditorSectionUi() {
         : 'Послуги';
   }
 
-  if (menuEditorIconPicker) menuEditorIconPicker.hidden = isExtras;
-  if (menuEditorIconHint) menuEditorIconHint.hidden = isExtras;
+  if (menuEditorIconPicker) menuEditorIconPicker.hidden = false;
+  if (menuEditorIconHint) menuEditorIconHint.hidden = false;
   if (menuAddStock) menuAddStock.hidden = !isExtras;
   menuAddForm?.classList.toggle('menu-editor-form--extras', isExtras);
 
@@ -850,12 +875,24 @@ function setMenuEditorSection(section) {
 }
 
 function renderMenuEditorIconPicker() {
-  if (!menuEditorIconPicker || menuEditorSection === 'extras') return;
+  if (!menuEditorIconPicker) return;
 
   menuEditorIconPicker.innerHTML = '';
-  const options = menuEditorSection === 'services' ? SERVICE_ICON_OPTIONS : DRINK_ICON_OPTIONS;
-  const markup = menuEditorSection === 'services' ? serviceIconMarkup : drinkIconMarkup;
-  const icons = menuEditorSection === 'services' ? SERVICE_ICONS : DRINK_ICONS;
+  const options = menuEditorSection === 'services'
+    ? SERVICE_ICON_OPTIONS
+    : menuEditorSection === 'extras'
+      ? EXTRA_ICON_OPTIONS
+      : DRINK_ICON_OPTIONS;
+  const markup = menuEditorSection === 'services'
+    ? serviceIconMarkup
+    : menuEditorSection === 'extras'
+      ? extraIconMarkup
+      : drinkIconMarkup;
+  const icons = menuEditorSection === 'services'
+    ? SERVICE_ICONS
+    : menuEditorSection === 'extras'
+      ? EXTRA_ICONS
+      : DRINK_ICONS;
 
   if (menuEditorIconHint) {
     if (menuEditorEditingId) {
@@ -866,7 +903,9 @@ function renderMenuEditorIconPicker() {
     } else {
       menuEditorIconHint.textContent = menuEditorSection === 'services'
         ? 'Оберіть значок для нової послуги'
-        : 'Оберіть значок для нового напою';
+        : menuEditorSection === 'extras'
+          ? 'Оберіть значок для товару'
+          : 'Оберіть значок для нового напою';
     }
   }
 
@@ -913,7 +952,6 @@ function renderMenuEditorList() {
   draft.forEach((item, index) => {
     const li = document.createElement('li');
     li.className = 'menu-editor-item';
-    if (menuEditorSection === 'extras') li.classList.add('menu-editor-item--extras');
     li.dataset.drinkId = item.id;
     if (menuEditorEditingId === item.id) {
       li.classList.add('is-editing-icon');
@@ -958,6 +996,7 @@ function renderMenuEditorList() {
     amountInput.value = String(item.amount);
     amountInput.setAttribute('aria-label', 'Ціна');
 
+    let stockInput = null;
     const commit = () => {
       const name = nameInput.value.trim();
       const amount = Number(amountInput.value);
@@ -974,7 +1013,6 @@ function renderMenuEditorList() {
 
     fields.append(nameInput, amountInput);
 
-    let stockInput = null;
     if (menuEditorSection === 'extras') {
       stockInput = document.createElement('input');
       stockInput.className = 'menu-editor-item-stock';
@@ -988,23 +1026,24 @@ function renderMenuEditorList() {
         const amount = Number(amountInput.value);
         const stock = Number(stockInput.value);
         if (!name || !Number.isFinite(amount) || amount <= 0) return;
-        updateMenuEditorItem(item.id, name, amount, { stock });
+        updateMenuEditorItem(item.id, name, amount, { stock, icon: item.icon });
       });
       fields.append(stockInput);
-      li.append(orderWrap, fields);
-    } else {
-      const iconBtn = document.createElement('button');
-      iconBtn.type = 'button';
-      iconBtn.className = 'menu-editor-item-icon';
-      iconBtn.innerHTML = menuEditorSection === 'services'
-        ? serviceIconMarkup(item.icon)
-        : drinkIconMarkup(item.icon);
-      iconBtn.setAttribute('aria-label', `Змінити значок для ${item.name}`);
-      iconBtn.addEventListener('click', () => {
-        setMenuEditorIcon(item.icon, { editingId: item.id });
-      });
-      li.append(orderWrap, iconBtn, fields);
     }
+
+    const iconBtn = document.createElement('button');
+    iconBtn.type = 'button';
+    iconBtn.className = 'menu-editor-item-icon';
+    iconBtn.innerHTML = menuEditorSection === 'services'
+      ? serviceIconMarkup(item.icon)
+      : menuEditorSection === 'extras'
+        ? extraIconMarkup(item.icon)
+        : drinkIconMarkup(item.icon);
+    iconBtn.setAttribute('aria-label', `Змінити значок для ${item.name}`);
+    iconBtn.addEventListener('click', () => {
+      setMenuEditorIcon(item.icon, { editingId: item.id });
+    });
+    li.append(orderWrap, iconBtn, fields);
 
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';

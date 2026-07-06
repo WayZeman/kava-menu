@@ -39,6 +39,7 @@ function normalizeExtra(raw) {
     name,
     amount: Math.round(amount),
     stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+    icon: String(raw?.icon || 'generic').trim() || 'generic',
   };
 }
 

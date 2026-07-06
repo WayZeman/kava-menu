@@ -361,6 +361,7 @@ function normalizeMenuExtras(value) {
         name,
         amount: Math.round(amount),
         stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+        icon: String(item?.icon || 'generic').trim() || 'generic',
       };
     })
     .filter(Boolean);
