@@ -104,7 +104,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '60';
+const APP_VERSION = '61';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -182,12 +182,12 @@ const EXTRA_ICON_OPTIONS = [
 ];
 
 const EXTRA_ICONS = {
-  candy: '<rect x="15" y="18" width="18" height="14" rx="3" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M15 22h-4a2 2 0 0 1 0-4h4M33 22h4a2 2 0 0 0 0-4h-4M15 28h-4a2 2 0 0 0 0 4h4M33 28h4a2 2 0 0 1 0 4h-4" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><path d="M19 24h10v2H19z" fill="#d4a853"/>',
-  bar: '<rect x="14" y="20" width="20" height="12" rx="2.5" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><rect x="16" y="22" width="16" height="3" rx="1" fill="#d4a853"/><path d="M16 27h16" stroke="#f5f0e8" stroke-width="1.5" stroke-linecap="round"/><path d="M16 29.5h10" stroke="#f5f0e8" stroke-width="1.5" stroke-linecap="round"/>',
-  bun: '<ellipse cx="24" cy="30" rx="13" ry="7" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M13 28c2-6 7-10 11-10s9 4 11 10" fill="#d4a853" stroke="#2f1a0f" stroke-width="2"/><path d="M20 24.5 24 21l4 3.5" stroke="#2f1a0f" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>',
-  chocolate: '<rect x="13" y="18" width="22" height="14" rx="2" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><path d="M19 18v14M24 18v14M29 18v14M13 25h22" stroke="#2f1a0f" stroke-width="1.5"/><rect x="14.5" y="19.5" width="6" height="4.5" rx="0.8" fill="#d4a853" opacity="0.85"/>',
-  cookie: '<circle cx="24" cy="26" r="11" fill="#d4a853" stroke="#2f1a0f" stroke-width="2"/><circle cx="19" cy="23" r="1.6" fill="#5c3a28"/><circle cx="27" cy="22" r="1.6" fill="#5c3a28"/><circle cx="25" cy="28" r="1.6" fill="#5c3a28"/><circle cx="20" cy="29" r="1.4" fill="#5c3a28"/><circle cx="29" cy="27" r="1.4" fill="#5c3a28"/>',
-  generic: '<path d="M14 14h20l-2 24a3 3 0 0 1-3 2.5H19a3 3 0 0 1-3-2.5L14 14z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M17 14V11a5 5 0 0 1 10 0v3" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="3" fill="#d4a853"/>',
+  candy: '<circle cx="24" cy="24" r="10" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M24 14v20M14 24h20" stroke="#d4a853" stroke-width="2" stroke-linecap="round"/><path d="M17.8 17.8 30.2 30.2M30.2 17.8 17.8 30.2" stroke="#d4a853" stroke-width="1.5" stroke-linecap="round" opacity="0.55"/>',
+  bar: '<rect x="18" y="11" width="12" height="26" rx="3" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><rect x="20" y="13" width="8" height="6" rx="1.5" fill="#d4a853"/><path d="M20 21.5h8M20 25h8M20 28.5h5.5" stroke="#f5f0e8" stroke-width="1.5" stroke-linecap="round" opacity="0.9"/>',
+  bun: '<path d="M13 30c0-9 5-14 11-14s11 5 11 14" fill="#d4a853" stroke="#2f1a0f" stroke-width="2" stroke-linejoin="round"/><ellipse cx="24" cy="30" rx="11" ry="5" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M17 24.5c1.5-4 4-6.5 7-6.5s5.5 2.5 7 6.5" stroke="#2f1a0f" stroke-width="1.5" stroke-linecap="round" fill="none" opacity="0.28"/>',
+  chocolate: '<rect x="12" y="17" width="24" height="14" rx="2.5" fill="#5c3a28" stroke="#2f1a0f" stroke-width="2"/><path d="M12 24h24M24 17v14M18 17v14M30 17v14" stroke="#2f1a0f" stroke-width="1.3"/><rect x="13.5" y="18.5" width="9" height="5" rx="1" fill="#d4a853" opacity="0.6"/>',
+  cookie: '<circle cx="24" cy="24" r="11.5" fill="#d4a853" stroke="#2f1a0f" stroke-width="2"/><circle cx="18.5" cy="21" r="1.7" fill="#5c3a28"/><circle cx="27.5" cy="20" r="1.7" fill="#5c3a28"/><circle cx="29" cy="26.5" r="1.5" fill="#5c3a28"/><circle cx="22" cy="29" r="1.4" fill="#5c3a28"/><circle cx="17" cy="26" r="1.3" fill="#5c3a28"/>',
+  generic: '<path d="M16 15h16l-1.8 22a2.5 2.5 0 0 1-2.5 2.2H20.3a2.5 2.5 0 0 1-2.5-2.2L16 15z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2" stroke-linejoin="round"/><path d="M18 15V12a6 6 0 0 1 12 0v3" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="4" fill="#d4a853" stroke="#2f1a0f" stroke-width="1.5"/>',
 };
 
 const LEGACY_DEFAULT_DRINKS = [
