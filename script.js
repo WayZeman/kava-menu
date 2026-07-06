@@ -102,7 +102,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '54';
+const APP_VERSION = '55';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -589,7 +589,7 @@ function createExtraRow(extra) {
   }
 
   row.innerHTML = `
-    <span class="drink-icon" aria-hidden="true">${extraIconMarkup()}</span>
+    <span class="drink-icon" aria-hidden="true">${extraIconMarkup(extra.icon)}</span>
     <div class="row-main">
       <span class="name"></span>
     </div>
@@ -867,7 +867,7 @@ function setMenuEditorSection(section) {
   collectMenuEditorDraftFromDom();
   menuEditorSection = section;
   menuEditorEditingId = null;
-  menuEditorSelectedIcon = 'generic';
+  menuEditorSelectedIcon = section === 'extras' ? 'candy' : 'generic';
   updateMenuEditorSectionUi();
   renderMenuEditor();
   menuAddForm?.reset();
