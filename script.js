@@ -18,6 +18,7 @@ const cartTotal = document.getElementById('cart-total');
 const cartPay = document.getElementById('cart-pay');
 const fxLayer = document.getElementById('fx-layer');
 const stockToast = document.getElementById('stock-toast');
+const appSplash = document.getElementById('app-splash');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -103,7 +104,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '59';
+const APP_VERSION = '60';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -2053,8 +2054,41 @@ function initStandaloneMode() {
   }
 }
 
+let splashDismissed = false;
+
+function dismissSplash() {
+  if (splashDismissed || !appSplash) return;
+  splashDismissed = true;
+  document.body.classList.remove('is-splash-active');
+  appSplash.classList.add('is-exiting');
+  appSplash.setAttribute('aria-hidden', 'true');
+  appSplash.setAttribute('aria-busy', 'false');
+  window.setTimeout(() => {
+    appSplash.hidden = true;
+  }, 520);
+}
+
+async function bootApp() {
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const minSplashMs = reducedMotion ? 0 : 1500;
+  const started = Date.now();
+  const maxTimer = window.setTimeout(dismissSplash, 6000);
+
+  try {
+    await initMenu();
+  } catch {
+    // show menu with cached data or empty state
+  }
+
+  const wait = Math.max(0, minSplashMs - (Date.now() - started));
+  window.setTimeout(() => {
+    window.clearTimeout(maxTimer);
+    dismissSplash();
+  }, wait);
+}
+
 initStandaloneMode();
-initMenu();
+bootApp();
 initPaymentReturn();
 updateCart();
 try {
