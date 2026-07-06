@@ -69,6 +69,8 @@ const statsPanelIncome = document.getElementById('stats-panel-income');
 const statsPanelExpense = document.getElementById('stats-panel-expense');
 const statsIncomes = document.getElementById('stats-incomes');
 const statsIncomesMore = document.getElementById('stats-incomes-more');
+const statsExtrasList = document.getElementById('stats-extras-list');
+const statsExtrasMore = document.getElementById('stats-extras-more');
 const statsExpenseList = document.getElementById('stats-expense-list');
 const statsExpensesMore = document.getElementById('stats-expenses-more');
 const statsExpenseForm = document.getElementById('stats-expense-form');
@@ -104,7 +106,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '61';
+const APP_VERSION = '62';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -122,6 +124,7 @@ const CHART_PERIOD_CONFIG = {
 };
 let statsChartPeriod = 'week';
 let incomesListExpanded = false;
+let extrasListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
 let currentStatsData = { incomes: [], expenses: [] };
@@ -1419,6 +1422,7 @@ function addCarWashLevel(levelId, button) {
     name: level.name,
     amount: level.amount,
     qty: current + 1,
+    category: 'service',
   });
 
   syncCarWashRow();
@@ -1464,6 +1468,7 @@ function setRowQty(row, qty) {
     name: row.dataset.name,
     amount: Number(row.dataset.amount),
     qty,
+    category: row.dataset.category || 'drink',
   });
 
   row.classList.add('has-qty');
@@ -2124,14 +2129,20 @@ function isHaircutLine(line) {
 }
 
 function isServiceLine(line) {
+  if (line?.category === 'service') return true;
   const id = String(line?.id || '');
   if (menuServices.some((service) => service.id === id)) return true;
+  const name = String(line?.name || '').trim();
+  if (menuServices.some((service) => service.name === name)) return true;
   return isHaircutName(line?.name);
 }
 
 function isExtraLine(line) {
+  if (line?.category === 'extra') return true;
   const id = String(line?.id || '');
-  return menuExtras.some((extra) => extra.id === id);
+  if (menuExtras.some((extra) => extra.id === id)) return true;
+  const name = String(line?.name || '').trim();
+  return menuExtras.some((extra) => extra.name === name);
 }
 
 function isCoffeeLine(line) {
@@ -2308,6 +2319,27 @@ function getCoffeeOnlyIncomes(incomes) {
       ...record,
       amount: part.coffee,
     }];
+  });
+}
+
+function getExtrasOnlyIncomes(incomes) {
+  return incomes.flatMap((record) => {
+    const part = splitIncomeRecord(record);
+    if (part.extras <= 0) return [];
+
+    const items = getIncomeItems(record);
+    if (record.source === 'order' && items?.length) {
+      const extraItems = items.filter((line) => isExtraLine(line));
+      if (!extraItems.length) return [];
+
+      return [{
+        ...record,
+        amount: part.extras,
+        items: extraItems,
+      }];
+    }
+
+    return [];
   });
 }
 
@@ -2586,7 +2618,14 @@ function incomeTitle(item) {
     const category = incomeCategory(item);
     const summary = formatOrderSummary(item.items);
     if (category === 'haircut') return summary;
-    if (category === 'mixed') return `Кава + стрижка · ${summary}`;
+    if (category === 'extras') return summary;
+    if (category === 'mixed') {
+      const part = splitIncomeRecord(item);
+      if (part.coffee > 0 && part.haircut > 0) return `Кава + послуги · ${summary}`;
+      if (part.coffee > 0 && part.extras > 0) return `Кава + до кави · ${summary}`;
+      if (part.extras > 0 && part.haircut > 0) return `До кави + послуги · ${summary}`;
+      return summary;
+    }
     return summary;
   }
 
@@ -2751,6 +2790,7 @@ function renderStatsView(data) {
   const expenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const balance = coffeeIncome - expenses;
   const coffeeIncomes = getCoffeeOnlyIncomes(data.incomes);
+  const extrasIncomes = getExtrasOnlyIncomes(data.incomes);
 
   statsIncome.textContent = formatStatsMoney(coffeeIncome);
   statsExpensesTotal.textContent = formatStatsMoney(expenses);
@@ -2779,6 +2819,15 @@ function renderStatsView(data) {
     items: coffeeIncomes,
     expanded: incomesListExpanded,
     emptyText: 'Доходів ще немає',
+    renderItem: renderIncomeItem,
+  });
+
+  renderTransactionSection({
+    listEl: statsExtrasList,
+    moreBtn: statsExtrasMore,
+    items: extrasIncomes,
+    expanded: extrasListExpanded,
+    emptyText: 'Транзакцій «До кави» ще немає',
     renderItem: renderIncomeItem,
   });
 
@@ -2841,6 +2890,7 @@ function closeStats() {
   document.body.classList.remove('stats-open');
   closeMenuEditor();
   incomesListExpanded = false;
+  extrasListExpanded = false;
   expensesListExpanded = false;
   setStatsTab('income');
   setChartPeriod('week');
@@ -2995,6 +3045,11 @@ statsChartPeriodButtons.forEach((button) => {
 
 statsIncomesMore?.addEventListener('click', () => {
   incomesListExpanded = !incomesListExpanded;
+  renderStatsView(currentStatsData);
+});
+
+statsExtrasMore?.addEventListener('click', () => {
+  extrasListExpanded = !extrasListExpanded;
   renderStatsView(currentStatsData);
 });
 

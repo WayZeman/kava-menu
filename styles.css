@@ -1772,6 +1772,18 @@ body.menu-editor-open {
   margin-bottom: 18px;
 }
 
+.stats-section--extras-log {
+  margin-bottom: 16px;
+}
+
+.stats-section-note {
+  margin: -4px 0 10px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--brown-light);
+  line-height: 1.35;
+}
+
 .stats-section .stats-section-title {
   color: var(--brown-light);
 }

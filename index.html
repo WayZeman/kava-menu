@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '61';
+      var version = '62';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=61">
+  <link rel="stylesheet" href="styles.css?v=62">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -313,6 +313,13 @@
         </article>
       </section>
 
+      <section class="stats-section stats-section--extras-log" aria-label="Транзакції До кави">
+        <h3 class="stats-section-heading">Транзакції «До кави»</h3>
+        <p class="stats-section-note">Записуються окремо і не впливають на дохід та окупність кави</p>
+        <ul id="stats-extras-list" class="stats-list"></ul>
+        <button id="stats-extras-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
+      </section>
+
       <section class="stats-chart-section">
         <div class="stats-chart-head">
           <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
@@ -454,6 +461,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=61"></script>
+  <script src="script.js?v=62"></script>
 </body>
 </html>

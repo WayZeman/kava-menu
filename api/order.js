@@ -37,11 +37,13 @@ function buildOrderRecord(body) {
     if (!Number.isFinite(amount) || amount <= 0) continue;
 
     total += amount * qty;
+    const category = String(item?.category || '').trim() || null;
     lines.push({
       id: String(item?.id || '').trim() || null,
       name,
       qty,
       amount,
+      category,
     });
   }
 
