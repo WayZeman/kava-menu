@@ -102,7 +102,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '57';
+const APP_VERSION = '58';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {

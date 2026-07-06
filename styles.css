@@ -2187,8 +2187,8 @@ body.menu-editor-open {
 }
 
 .stats-breakdown {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  display: flex;
+  flex-direction: column;
   gap: 10px;
   margin-bottom: 14px;
 }
@@ -2709,30 +2709,20 @@ body.menu-editor-open {
   }
 
   .stats-breakdown-card {
-    padding: 10px 8px;
-    min-width: 0;
+    padding: 12px 14px;
   }
 
   .stats-breakdown-label {
-    font-size: 0.62rem;
-    letter-spacing: 0.04em;
-    line-height: 1.2;
+    font-size: 0.72rem;
   }
 
   .stats-breakdown-value {
-    margin-top: 4px;
-    font-size: clamp(0.88rem, 3.6vw, 1.05rem);
-    line-height: 1.15;
-    overflow-wrap: anywhere;
+    font-size: 1.1rem;
   }
 
   .stats-breakdown-meta {
-    margin-top: 2px;
-    font-size: 0.66rem;
-    line-height: 1.2;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 0.78rem;
+    white-space: normal;
   }
 
   .stats-tabs {
@@ -2943,14 +2933,6 @@ body.menu-editor-open {
 }
 
 @media (max-width: 360px) {
-  .stats-breakdown {
-    grid-template-columns: 1fr;
-  }
-
-  .stats-breakdown-meta {
-    white-space: normal;
-  }
-
   .stats-menu-entry-text strong {
     font-size: 0.88rem;
   }
