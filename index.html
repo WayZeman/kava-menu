@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '62';
+      var version = '63';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=62">
+  <link rel="stylesheet" href="styles.css?v=63">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -261,64 +261,95 @@
 
   <div id="stats" class="stats" hidden>
     <div class="stats-panel">
-      <header class="stats-header">
-        <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
-        <h2 class="stats-title">Статистика окупності</h2>
-        <p class="stats-subtitle">Кава та витрати</p>
-      </header>
+      <div id="stats-hub" class="stats-view stats-view--hub">
+        <header class="stats-header">
+          <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
+          <h2 class="stats-title">Аналітика</h2>
+          <p class="stats-subtitle">Оберіть розділ</p>
+        </header>
 
-      <section class="stats-menu-entry" aria-label="Налаштування меню">
-        <button id="stats-menu-settings" class="stats-menu-entry-btn" type="button">
-          <span class="stats-menu-entry-icon" aria-hidden="true">
-            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-            </svg>
-          </span>
-          <span class="stats-menu-entry-text">
-            <strong>Редагування меню</strong>
-            <span id="stats-menu-entry-meta">Додати або прибрати напої</span>
-          </span>
-          <span class="stats-menu-entry-chevron" aria-hidden="true">›</span>
-        </button>
-      </section>
+        <div class="stats-hub-grid" role="list" aria-label="Розділи аналітики">
+          <article class="stats-hub-card stats-hub-card--coffee" data-category="drinks" role="listitem">
+            <div class="stats-hub-card-top">
+              <span class="stats-hub-card-label">Кава</span>
+              <button type="button" class="stats-hub-eye" data-visibility-toggle="drinks" aria-label="Показати або приховати каву в меню">
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--on" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--off" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M6.3 6.3C4.2 7.8 2.6 10 2 12s3.5 7 10 7c1.8 0 3.4-.4 4.8-1.1M9.9 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.7 17.7 0 0 1-3.5 4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <button type="button" class="stats-hub-card-open" data-open-category="drinks">
+              <strong id="stats-hub-coffee-total" class="stats-hub-card-value">0 грн</strong>
+              <span id="stats-hub-coffee-meta" class="stats-hub-card-meta">0 напоїв</span>
+              <span class="stats-hub-card-hint" data-visibility-hint="drinks" hidden>Приховано в меню</span>
+            </button>
+          </article>
 
-      <div class="stats-cards">
-        <article class="stats-card stats-card--roi">
-          <div class="stats-roi-head">
-            <span class="stats-card-label">Окупність кави</span>
-            <strong id="stats-roi-main" class="stats-roi-percent">—</strong>
-          </div>
-          <div class="stats-roi-track" aria-hidden="true">
-            <div id="stats-roi-fill" class="stats-roi-fill"></div>
-          </div>
-          <p id="stats-roi-sub" class="stats-roi-caption" hidden></p>
-        </article>
+          <article class="stats-hub-card stats-hub-card--extras" data-category="extras" role="listitem">
+            <div class="stats-hub-card-top">
+              <span class="stats-hub-card-label">До кави</span>
+              <button type="button" class="stats-hub-eye" data-visibility-toggle="extras" aria-label="Показати або приховати до кави в меню">
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--on" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--off" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M6.3 6.3C4.2 7.8 2.6 10 2 12s3.5 7 10 7c1.8 0 3.4-.4 4.8-1.1M9.9 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.7 17.7 0 0 1-3.5 4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <button type="button" class="stats-hub-card-open" data-open-category="extras">
+              <strong id="stats-hub-extras-total" class="stats-hub-card-value">0 грн</strong>
+              <span id="stats-hub-extras-meta" class="stats-hub-card-meta">0 позицій</span>
+              <span class="stats-hub-card-hint" data-visibility-hint="extras" hidden>Приховано в меню</span>
+            </button>
+          </article>
+
+          <article class="stats-hub-card stats-hub-card--services" data-category="services" role="listitem">
+            <div class="stats-hub-card-top">
+              <span class="stats-hub-card-label">Послуги</span>
+              <button type="button" class="stats-hub-eye" data-visibility-toggle="services" aria-label="Показати або приховати послуги в меню">
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--on" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="3" stroke="currentColor" stroke-width="2"/></svg>
+                <svg class="stats-hub-eye-icon stats-hub-eye-icon--off" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 3l18 18M10.6 10.6a2 2 0 0 0 2.8 2.8M6.3 6.3C4.2 7.8 2.6 10 2 12s3.5 7 10 7c1.8 0 3.4-.4 4.8-1.1M9.9 5.1A10.7 10.7 0 0 1 12 5c6.5 0 10 7 10 7a17.7 17.7 0 0 1-3.5 4.6" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+              </button>
+            </div>
+            <button type="button" class="stats-hub-card-open" data-open-category="services">
+              <strong id="stats-hub-services-total" class="stats-hub-card-value">0 грн</strong>
+              <span id="stats-hub-services-meta" class="stats-hub-card-meta">0 разів</span>
+              <span class="stats-hub-card-hint" data-visibility-hint="services" hidden>Приховано в меню</span>
+            </button>
+          </article>
+        </div>
       </div>
 
-      <section class="stats-breakdown" aria-label="Дохід за категоріями">
-        <article class="stats-breakdown-card stats-breakdown-card--coffee">
-          <span class="stats-breakdown-label">Кава</span>
-          <strong id="stats-coffee-total" class="stats-breakdown-value">0 грн</strong>
-          <span id="stats-coffee-meta" class="stats-breakdown-meta">0 напоїв</span>
-        </article>
-        <article class="stats-breakdown-card stats-breakdown-card--extras">
-          <span class="stats-breakdown-label">До кави</span>
-          <strong id="stats-extras-total" class="stats-breakdown-value">0 грн</strong>
-          <span id="stats-extras-meta" class="stats-breakdown-meta">0 позицій</span>
-        </article>
-        <article class="stats-breakdown-card stats-breakdown-card--haircut">
-          <span class="stats-breakdown-label">Послуги</span>
-          <strong id="stats-haircut-total" class="stats-breakdown-value">0 грн</strong>
-          <span id="stats-haircut-meta" class="stats-breakdown-meta">0 разів</span>
-        </article>
-      </section>
+      <div id="stats-category" class="stats-view stats-view--category" hidden>
+        <header class="stats-header">
+          <button class="stats-back" type="button" data-stats-hub-back aria-label="Назад до розділів">← Розділи</button>
+          <h2 id="stats-category-title" class="stats-title">Кава</h2>
+          <p id="stats-category-subtitle" class="stats-subtitle">Дохід, витрати та меню</p>
+        </header>
 
-      <section class="stats-section stats-section--extras-log" aria-label="Транзакції До кави">
-        <h3 class="stats-section-heading">Транзакції «До кави»</h3>
-        <p class="stats-section-note">Записуються окремо і не впливають на дохід та окупність кави</p>
-        <ul id="stats-extras-list" class="stats-list"></ul>
-        <button id="stats-extras-more" class="stats-more-btn" type="button" hidden>Переглянути ще</button>
-      </section>
+        <section class="stats-menu-entry" aria-label="Налаштування меню">
+          <button id="stats-menu-settings" class="stats-menu-entry-btn" type="button">
+            <span class="stats-menu-entry-icon" aria-hidden="true">
+              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+              </svg>
+            </span>
+            <span class="stats-menu-entry-text">
+              <strong id="stats-menu-entry-title">Редагування меню</strong>
+              <span id="stats-menu-entry-meta">Додати або прибрати напої</span>
+            </span>
+            <span class="stats-menu-entry-chevron" aria-hidden="true">›</span>
+          </button>
+        </section>
+
+        <div id="stats-roi-wrap" class="stats-cards">
+          <article class="stats-card stats-card--roi">
+            <div class="stats-roi-head">
+              <span class="stats-card-label">Окупність</span>
+              <strong id="stats-roi-main" class="stats-roi-percent">—</strong>
+            </div>
+            <div class="stats-roi-track" aria-hidden="true">
+              <div id="stats-roi-fill" class="stats-roi-fill"></div>
+            </div>
+            <p id="stats-roi-sub" class="stats-roi-caption" hidden></p>
+          </article>
+        </div>
 
       <section class="stats-chart-section">
         <div class="stats-chart-head">
@@ -395,15 +426,15 @@
 
       <footer class="stats-balance">
         <div class="stats-balance-row">
-          <span>Дохід (кава)</span>
+          <span id="stats-balance-income-label">Дохід</span>
           <strong id="stats-total-income">0 грн</strong>
         </div>
         <div class="stats-balance-row">
-          <span>Витрати</span>
+          <span id="stats-balance-expense-label">Витрати</span>
           <strong id="stats-total-expenses">0 грн</strong>
         </div>
         <div class="stats-balance-row stats-balance-row--total">
-          <span>Баланс (лише кава)</span>
+          <span id="stats-balance-total-label">Баланс</span>
           <strong id="stats-balance-total">0 грн</strong>
         </div>
       </footer>
@@ -417,6 +448,7 @@
           <button class="stats-cancel-btn" type="button" data-edit-cancel>×</button>
         </div>
       </form>
+      </div>
     </div>
   </div>
 
@@ -461,6 +493,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=62"></script>
+  <script src="script.js?v=63"></script>
 </body>
 </html>

@@ -57,6 +57,21 @@ const cardPayCopy = document.getElementById('card-pay-copy');
 const carWashRow = document.querySelector('[data-picker="car-wash"]');
 const heroIcon = document.querySelector('.hero-icon');
 const statsPanel = document.getElementById('stats');
+const statsHub = document.getElementById('stats-hub');
+const statsCategoryView = document.getElementById('stats-category');
+const statsCategoryTitle = document.getElementById('stats-category-title');
+const statsCategorySubtitle = document.getElementById('stats-category-subtitle');
+const statsHubCoffeeTotal = document.getElementById('stats-hub-coffee-total');
+const statsHubCoffeeMeta = document.getElementById('stats-hub-coffee-meta');
+const statsHubExtrasTotal = document.getElementById('stats-hub-extras-total');
+const statsHubExtrasMeta = document.getElementById('stats-hub-extras-meta');
+const statsHubServicesTotal = document.getElementById('stats-hub-services-total');
+const statsHubServicesMeta = document.getElementById('stats-hub-services-meta');
+const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
+const statsRoiWrap = document.getElementById('stats-roi-wrap');
+const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
+const statsBalanceExpenseLabel = document.getElementById('stats-balance-expense-label');
+const statsBalanceTotalLabel = document.getElementById('stats-balance-total-label');
 const statsIncome = document.getElementById('stats-income');
 const statsExpensesTotal = document.getElementById('stats-expenses-total');
 const statsRoiMain = document.getElementById('stats-roi-main');
@@ -69,8 +84,6 @@ const statsPanelIncome = document.getElementById('stats-panel-income');
 const statsPanelExpense = document.getElementById('stats-panel-expense');
 const statsIncomes = document.getElementById('stats-incomes');
 const statsIncomesMore = document.getElementById('stats-incomes-more');
-const statsExtrasList = document.getElementById('stats-extras-list');
-const statsExtrasMore = document.getElementById('stats-extras-more');
 const statsExpenseList = document.getElementById('stats-expense-list');
 const statsExpensesMore = document.getElementById('stats-expenses-more');
 const statsExpenseForm = document.getElementById('stats-expense-form');
@@ -86,12 +99,6 @@ const statsGate = document.getElementById('stats-gate');
 const statsGateForm = document.getElementById('stats-gate-form');
 const statsGatePassword = document.getElementById('stats-gate-password');
 const statsGateError = document.getElementById('stats-gate-error');
-const statsCoffeeTotal = document.getElementById('stats-coffee-total');
-const statsCoffeeMeta = document.getElementById('stats-coffee-meta');
-const statsHaircutTotal = document.getElementById('stats-haircut-total');
-const statsHaircutMeta = document.getElementById('stats-haircut-meta');
-const statsExtrasTotal = document.getElementById('stats-extras-total');
-const statsExtrasMeta = document.getElementById('stats-extras-meta');
 const statsDailyChart = document.getElementById('stats-daily-chart');
 const statsChartHeading = document.getElementById('stats-chart-heading');
 const statsChartPeriodButtons = document.querySelectorAll('[data-chart-period]');
@@ -106,8 +113,47 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '62';
+const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
+const APP_VERSION = '63';
 const HAIRCUT_ID = 'haircut';
+const STATS_CATEGORIES = {
+  drinks: {
+    id: 'drinks',
+    label: 'Кава',
+    subtitle: 'Дохід, витрати та меню напоїв',
+    menuTitle: 'Редагування напоїв',
+    menuMeta: 'Додати або прибрати напої',
+    chartHeading: 'Замовлення кави по днях',
+    incomePlaceholder: 'Напр. кава готівкою',
+    expensePlaceholder: 'Напр. зерно, молоко',
+    countLabels: ['напій', 'напої', 'напоїв'],
+    showRoi: true,
+  },
+  extras: {
+    id: 'extras',
+    label: 'До кави',
+    subtitle: 'Дохід, витрати та асортимент',
+    menuTitle: 'Редагування «До кави»',
+    menuMeta: 'Додати або прибрати позиції',
+    chartHeading: 'Продажі «До кави» по днях',
+    incomePlaceholder: 'Напр. булочка готівкою',
+    expensePlaceholder: 'Напр. закупівля снеків',
+    countLabels: ['позиція', 'позиції', 'позицій'],
+    showRoi: false,
+  },
+  services: {
+    id: 'services',
+    label: 'Послуги',
+    subtitle: 'Дохід, витрати та перелік послуг',
+    menuTitle: 'Редагування послуг',
+    menuMeta: 'Додати або прибрати послуги',
+    chartHeading: 'Послуги по днях',
+    incomePlaceholder: 'Напр. стрижка готівкою',
+    expensePlaceholder: 'Напр. інструменти',
+    countLabels: ['раз', 'рази', 'разів'],
+    showRoi: false,
+  },
+};
 const CHART_PERIOD_CONFIG = {
   week: {
     className: 'stats-daily-chart--week',
@@ -123,8 +169,10 @@ const CHART_PERIOD_CONFIG = {
   },
 };
 let statsChartPeriod = 'week';
+let statsCategory = 'drinks';
+let menuEditorSingleSection = false;
+let categoryVisibility = { drinks: true, extras: true, services: true };
 let incomesListExpanded = false;
-let extrasListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
 let currentStatsData = { incomes: [], expenses: [] };
@@ -322,8 +370,28 @@ function saveFullMenuLocal() {
     localStorage.setItem(MENU_KEY, JSON.stringify(menuDrinks));
     localStorage.setItem(MENU_EXTRAS_KEY, JSON.stringify(menuExtras));
     localStorage.setItem(MENU_SERVICES_KEY, JSON.stringify(menuServices));
+    localStorage.setItem(MENU_VISIBILITY_KEY, JSON.stringify(categoryVisibility));
   } catch {
     // ignore quota errors
+  }
+}
+
+function normalizeVisibility(raw) {
+  const source = raw && typeof raw === 'object' ? raw : {};
+  return {
+    drinks: source.drinks !== false,
+    extras: source.extras !== false,
+    services: source.services !== false,
+  };
+}
+
+function loadVisibilityFromStorage() {
+  try {
+    const raw = localStorage.getItem(MENU_VISIBILITY_KEY);
+    if (!raw) return normalizeVisibility();
+    return normalizeVisibility(JSON.parse(raw));
+  } catch {
+    return normalizeVisibility();
   }
 }
 
@@ -371,6 +439,7 @@ async function loadFullMenu() {
         drinks: Array.isArray(data.drinks) ? data.drinks.map(normalizeDrink).filter(Boolean) : null,
         extras: Array.isArray(data.extras) ? data.extras.map(normalizeExtra).filter(Boolean) : [],
         services: Array.isArray(data.services) ? data.services.map(normalizeService).filter(Boolean) : null,
+        visibility: normalizeVisibility(data.visibility),
       };
       remoteUpdatedAt = data.updatedAt || null;
     }
@@ -393,11 +462,13 @@ async function loadFullMenu() {
         drinks: localDrinks,
         extras: localExtras || [],
         services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+        visibility: loadVisibilityFromStorage(),
       });
       return {
         drinks: localDrinks,
         extras: localExtras || [],
         services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+        visibility: loadVisibilityFromStorage(),
       };
     }
   }
@@ -407,11 +478,13 @@ async function loadFullMenu() {
       drinks: localDrinks,
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+      visibility: loadVisibilityFromStorage(),
     });
     return {
       drinks: localDrinks,
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+      visibility: loadVisibilityFromStorage(),
     };
   }
 
@@ -422,6 +495,7 @@ async function loadFullMenu() {
       services: remote.services?.length
         ? remote.services
         : DEFAULT_SERVICES.map((item) => ({ ...item })),
+      visibility: remote.visibility || normalizeVisibility(),
     };
     saveFullMenuLocalFrom(menu);
     if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
@@ -433,6 +507,7 @@ async function loadFullMenu() {
       drinks: localDrinks,
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+      visibility: loadVisibilityFromStorage(),
     };
   }
 
@@ -440,6 +515,7 @@ async function loadFullMenu() {
     drinks: DEFAULT_DRINKS.map((item) => ({ ...item })),
     extras: [],
     services: DEFAULT_SERVICES.map((item) => ({ ...item })),
+    visibility: normalizeVisibility(),
   };
   saveFullMenuLocalFrom(menu);
   await uploadFullMenu(menu);
@@ -450,6 +526,7 @@ function saveFullMenuLocalFrom(menu) {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
+  if (menu.visibility) categoryVisibility = normalizeVisibility(menu.visibility);
   saveFullMenuLocal();
 }
 
@@ -466,6 +543,7 @@ async function saveFullMenu() {
         drinks: menuDrinks,
         extras: menuExtras,
         services: menuServices,
+        visibility: categoryVisibility,
       }),
       keepalive: true,
       cache: 'no-store',
@@ -707,9 +785,52 @@ function renderAllMenus() {
   renderDrinksMenu();
   renderExtrasMenu();
   renderServicesMenu();
+  applyCategoryVisibility();
   pruneCartItems();
   updateCart();
   updateMenuEntryMeta();
+  renderStatsHubVisibility();
+}
+
+function applyCategoryVisibility() {
+  if (drinksMenu) {
+    drinksMenu.hidden = !categoryVisibility.drinks || !menuDrinks.length;
+  }
+
+  if (extrasMenu) {
+    extrasMenu.hidden = !categoryVisibility.extras || !menuExtras.length;
+  }
+
+  if (servicesMenu) {
+    servicesMenu.hidden = !categoryVisibility.services || !menuServices.length;
+  }
+}
+
+async function toggleCategoryVisibility(category) {
+  if (!STATS_CATEGORIES[category]) return;
+  categoryVisibility = {
+    ...categoryVisibility,
+    [category]: !categoryVisibility[category],
+  };
+  saveFullMenuLocal();
+  applyCategoryVisibility();
+  renderStatsHubVisibility();
+  try {
+    await fetch('/api/menu', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        drinks: menuDrinks,
+        extras: menuExtras,
+        services: menuServices,
+        visibility: categoryVisibility,
+      }),
+      keepalive: true,
+      cache: 'no-store',
+    });
+  } catch {
+    // local state still updated
+  }
 }
 
 function getActiveEditorDraft() {
@@ -801,13 +922,17 @@ function moveMenuEditorItem(id, direction) {
 
 function updateMenuEntryMeta() {
   if (!statsMenuEntryMeta) return;
-  const parts = [];
-  if (menuDrinks.length) parts.push(`${menuDrinks.length} нап.`);
-  if (menuExtras.length) parts.push(`${menuExtras.length} до кави`);
-  if (menuServices.length) parts.push(`${menuServices.length} посл.`);
-  statsMenuEntryMeta.textContent = parts.length
-    ? `${parts.join(' · ')} · редагувати`
-    : 'Додати або прибрати позиції';
+  const config = STATS_CATEGORIES[statsCategory] || STATS_CATEGORIES.drinks;
+  if (statsMenuEntryTitle) statsMenuEntryTitle.textContent = config.menuTitle;
+
+  let count = 0;
+  if (statsCategory === 'drinks') count = menuDrinks.length;
+  if (statsCategory === 'extras') count = menuExtras.length;
+  if (statsCategory === 'services') count = menuServices.length;
+
+  statsMenuEntryMeta.textContent = count
+    ? `${count} поз. · редагувати`
+    : config.menuMeta;
 }
 
 function setMenuEditorIcon(iconId, { editingId = null } = {}) {
@@ -1115,19 +1240,22 @@ async function saveMenuEditor() {
   }
 }
 
-function openMenuEditor() {
+function openMenuEditor(section = 'drinks', { singleSection = true } = {}) {
   if (!menuEditor) return;
 
   menuEditorDraft = menuDrinks.map((item) => ({ ...item }));
   menuEditorExtrasDraft = menuExtras.map((item) => ({ ...item }));
   menuEditorServicesDraft = menuServices.map((item) => ({ ...item }));
-  menuEditorSection = 'drinks';
+  menuEditorSection = STATS_CATEGORIES[section] ? section : 'drinks';
+  menuEditorSingleSection = singleSection;
   menuEditorEditingId = null;
-  menuEditorSelectedIcon = 'generic';
+  menuEditorSelectedIcon = menuEditorSection === 'extras' ? 'candy' : 'generic';
+  menuEditor.classList.toggle('menu-editor--single-section', menuEditorSingleSection);
   if (menuEditorSaveBtn) {
     menuEditorSaveBtn.disabled = false;
     menuEditorSaveBtn.textContent = 'Зберегти меню';
   }
+  updateMenuEditorSectionUi();
   renderMenuEditor();
   menuEditor.hidden = false;
   document.body.classList.add('menu-editor-open');
@@ -1141,6 +1269,8 @@ function closeMenuEditor() {
   menuEditorEditingId = null;
   menuEditorSelectedIcon = 'generic';
   menuEditorSection = 'drinks';
+  menuEditorSingleSection = false;
+  menuEditor.classList.remove('menu-editor--single-section');
   menuAddForm?.reset();
   document.body.classList.remove('menu-editor-open');
 }
@@ -1150,6 +1280,7 @@ async function initMenu() {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
+  categoryVisibility = normalizeVisibility(menu.visibility || loadVisibilityFromStorage());
   renderAllMenus();
 }
 
@@ -1944,7 +2075,9 @@ menuEditorSectionTabs.forEach((tab) => {
   });
 });
 
-menuSettingsBtn?.addEventListener('click', openMenuEditor);
+menuSettingsBtn?.addEventListener('click', () => {
+  openMenuEditor(statsCategory, { singleSection: true });
+});
 menuEditorSaveBtn?.addEventListener('click', () => {
   saveMenuEditor();
 });
@@ -2280,6 +2413,12 @@ function splitIncomeRecord(record) {
   if (isHaircutName(record.label)) {
     haircut += amount;
     haircutCount += 1;
+  } else if (record.source === 'cash-extras') {
+    extras += amount;
+    extrasCount += 1;
+  } else if (record.source === 'cash-services') {
+    haircut += amount;
+    haircutCount += 1;
   } else {
     coffee += amount;
     manualCoffeeCount += 1;
@@ -2339,8 +2478,79 @@ function getExtrasOnlyIncomes(incomes) {
       }];
     }
 
+    if (record.source === 'cash-extras') {
+      return [{ ...record, amount: part.extras }];
+    }
+
     return [];
   });
+}
+
+function getServiceOnlyIncomes(incomes) {
+  return incomes.flatMap((record) => {
+    const part = splitIncomeRecord(record);
+    if (part.haircut <= 0) return [];
+
+    const items = getIncomeItems(record);
+    if (record.source === 'order' && items?.length) {
+      const serviceItems = items.filter((line) => isServiceLine(line));
+      if (!serviceItems.length) return [];
+
+      return [{
+        ...record,
+        amount: part.haircut,
+        items: serviceItems,
+      }];
+    }
+
+    if (record.source === 'cash-services' || isHaircutName(record.label)) {
+      return [{ ...record, amount: part.haircut }];
+    }
+
+    return [];
+  });
+}
+
+function getExpenseCategory(expense) {
+  const source = String(expense?.source || '');
+  if (source === 'expense-extras') return 'extras';
+  if (source === 'expense-services') return 'services';
+  if (source === 'expense-drinks') return 'drinks';
+  return 'drinks';
+}
+
+function getExpensesByCategory(expenses, category) {
+  return expenses.filter((expense) => getExpenseCategory(expense) === category);
+}
+
+function getCategoryIncomes(incomes, category) {
+  if (category === 'drinks') return getCoffeeOnlyIncomes(incomes);
+  if (category === 'extras') return getExtrasOnlyIncomes(incomes);
+  return getServiceOnlyIncomes(incomes);
+}
+
+function getCategoryIncomeTotal(incomes, category) {
+  const summary = summarizeIncomes(incomes);
+  if (category === 'drinks') return summary.coffee;
+  if (category === 'extras') return summary.extras;
+  return summary.haircut;
+}
+
+function getCategoryCount(summary, category) {
+  if (category === 'drinks') return summary.coffeeDrinks + summary.manualCoffeeCount;
+  if (category === 'extras') return summary.extrasCount;
+  return summary.haircutCount;
+}
+
+function categoryChartCount(income, category) {
+  const part = splitIncomeRecord(income);
+  if (category === 'drinks') return coffeeDrinkCount(income);
+  if (category === 'extras') {
+    if (income.source === 'order') return part.extrasCount;
+    return income.source === 'cash-extras' ? 1 : 0;
+  }
+  if (income.source === 'order') return part.haircutCount;
+  return income.source === 'cash-services' || isHaircutName(income.label) ? 1 : 0;
 }
 
 function summarizeIncomes(incomes) {
@@ -2447,19 +2657,19 @@ function buildChartBuckets(period) {
   return buildDailyChartBuckets(7, 'week');
 }
 
-function fillChartBuckets(buckets, incomes, period) {
+function fillChartBuckets(buckets, incomes, period, category = 'drinks') {
   const map = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket]));
   const useMonths = period === 'year';
 
   incomes.forEach((income) => {
-    const drinks = coffeeDrinkCount(income);
-    if (!drinks) return;
+    const count = categoryChartCount(income, category);
+    if (!count) return;
 
     const key = useMonths
       ? localMonthKey(income.createdAt)
       : localDayKey(income.createdAt);
 
-    if (map[key]) map[key].count += drinks;
+    if (map[key]) map[key].count += count;
   });
 
   return buckets;
@@ -2483,10 +2693,15 @@ function setChartPeriod(period) {
   }
 }
 
-function renderOrderChart(incomes) {
+function renderOrderChart(incomes, category = statsCategory) {
   if (!statsDailyChart) return;
 
-  const buckets = fillChartBuckets(buildChartBuckets(statsChartPeriod), incomes, statsChartPeriod);
+  const buckets = fillChartBuckets(
+    buildChartBuckets(statsChartPeriod),
+    incomes,
+    statsChartPeriod,
+    category,
+  );
   const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
 
   statsDailyChart.innerHTML = '';
@@ -2784,61 +2999,151 @@ function renderTransactionSection({
   }
 }
 
-function renderStatsView(data) {
-  const summary = summarizeIncomes(data.incomes);
-  const coffeeIncome = summary.coffee;
-  const expenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const balance = coffeeIncome - expenses;
-  const coffeeIncomes = getCoffeeOnlyIncomes(data.incomes);
-  const extrasIncomes = getExtrasOnlyIncomes(data.incomes);
+function renderStatsHubVisibility() {
+  document.querySelectorAll('[data-visibility-toggle]').forEach((button) => {
+    const category = button.dataset.visibilityToggle;
+    const visible = categoryVisibility[category] !== false;
+    button.classList.toggle('is-off', !visible);
+    button.setAttribute('aria-pressed', visible ? 'true' : 'false');
+  });
 
-  statsIncome.textContent = formatStatsMoney(coffeeIncome);
-  statsExpensesTotal.textContent = formatStatsMoney(expenses);
-  statsCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
-  const coffeeDrinks = summary.coffeeDrinks + summary.manualCoffeeCount;
-  statsCoffeeMeta.textContent = formatCountLabel(coffeeDrinks, 'напій', 'напої', 'напоїв');
-  statsHaircutTotal.textContent = formatStatsMoney(summary.haircut);
-  statsHaircutMeta.textContent = formatCountLabel(summary.haircutCount, 'раз', 'рази', 'разів');
-  if (statsExtrasTotal) statsExtrasTotal.textContent = formatStatsMoney(summary.extras);
-  if (statsExtrasMeta) {
-    statsExtrasMeta.textContent = formatCountLabel(summary.extrasCount, 'позиція', 'позиції', 'позицій');
+  document.querySelectorAll('.stats-hub-card[data-category]').forEach((card) => {
+    const category = card.dataset.category;
+    const visible = categoryVisibility[category] !== false;
+    card.classList.toggle('is-menu-hidden', !visible);
+    const hint = card.querySelector(`[data-visibility-hint="${category}"]`);
+    if (hint) hint.hidden = visible;
+  });
+}
+
+function renderStatsHub(data) {
+  const summary = summarizeIncomes(data.incomes);
+  const config = STATS_CATEGORIES;
+
+  if (statsHubCoffeeTotal) {
+    statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
+  }
+  if (statsHubCoffeeMeta) {
+    statsHubCoffeeMeta.textContent = formatCountLabel(
+      getCategoryCount(summary, 'drinks'),
+      ...config.drinks.countLabels,
+    );
+  }
+  if (statsHubExtrasTotal) {
+    statsHubExtrasTotal.textContent = formatStatsMoney(summary.extras);
+  }
+  if (statsHubExtrasMeta) {
+    statsHubExtrasMeta.textContent = formatCountLabel(
+      getCategoryCount(summary, 'extras'),
+      ...config.extras.countLabels,
+    );
+  }
+  if (statsHubServicesTotal) {
+    statsHubServicesTotal.textContent = formatStatsMoney(summary.haircut);
+  }
+  if (statsHubServicesMeta) {
+    statsHubServicesMeta.textContent = formatCountLabel(
+      getCategoryCount(summary, 'services'),
+      ...config.services.countLabels,
+    );
   }
 
-  statsTotalIncome.textContent = formatStatsMoney(coffeeIncome);
-  statsTotalExpenses.textContent = formatStatsMoney(expenses);
+  renderStatsHubVisibility();
+}
+
+function renderStatsCategoryView(data) {
+  const category = statsCategory;
+  const config = STATS_CATEGORIES[category] || STATS_CATEGORIES.drinks;
+  const categoryIncome = getCategoryIncomeTotal(data.incomes, category);
+  const categoryExpenses = getExpensesByCategory(data.expenses, category);
+  const expensesTotal = categoryExpenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const balance = categoryIncome - expensesTotal;
+  const categoryIncomes = getCategoryIncomes(data.incomes, category);
+
+  if (statsCategoryTitle) statsCategoryTitle.textContent = config.label;
+  if (statsCategorySubtitle) statsCategorySubtitle.textContent = config.subtitle;
+  if (statsChartHeading) statsChartHeading.textContent = config.chartHeading;
+
+  const incomeFormTitle = document.querySelector('#stats-income-form .stats-section-title');
+  if (incomeFormTitle) incomeFormTitle.textContent = 'Додати готівковий дохід';
+  const expenseFormTitle = document.querySelector('#stats-expense-form .stats-section-title');
+  if (expenseFormTitle) expenseFormTitle.textContent = 'Додати витрату';
+  const incomeLabelInput = document.getElementById('stats-income-label');
+  if (incomeLabelInput) incomeLabelInput.placeholder = config.incomePlaceholder;
+  const expenseLabelInput = document.getElementById('stats-expense-label');
+  if (expenseLabelInput) expenseLabelInput.placeholder = config.expensePlaceholder;
+
+  if (statsRoiWrap) statsRoiWrap.hidden = !config.showRoi;
+
+  statsIncome.textContent = formatStatsMoney(categoryIncome);
+  statsExpensesTotal.textContent = formatStatsMoney(expensesTotal);
+
+  if (statsBalanceIncomeLabel) statsBalanceIncomeLabel.textContent = `Дохід (${config.label.toLowerCase()})`;
+  if (statsBalanceExpenseLabel) statsBalanceExpenseLabel.textContent = 'Витрати';
+  if (statsBalanceTotalLabel) statsBalanceTotalLabel.textContent = 'Баланс';
+  statsTotalIncome.textContent = formatStatsMoney(categoryIncome);
+  statsTotalExpenses.textContent = formatStatsMoney(expensesTotal);
   statsBalanceTotal.textContent = formatBalanceMoney(balance);
   statsBalanceTotal.classList.toggle('is-negative', balance < 0);
   statsBalanceTotal.classList.toggle('is-positive', balance > 0);
 
-  renderRoi(summary.coffee, expenses);
-  renderOrderChart(data.incomes);
+  if (config.showRoi) {
+    renderRoi(categoryIncome, expensesTotal);
+  }
+
+  renderOrderChart(data.incomes, category);
+  updateMenuEntryMeta();
 
   renderTransactionSection({
     listEl: statsIncomes,
     moreBtn: statsIncomesMore,
-    items: coffeeIncomes,
+    items: categoryIncomes,
     expanded: incomesListExpanded,
     emptyText: 'Доходів ще немає',
     renderItem: renderIncomeItem,
   });
 
   renderTransactionSection({
-    listEl: statsExtrasList,
-    moreBtn: statsExtrasMore,
-    items: extrasIncomes,
-    expanded: extrasListExpanded,
-    emptyText: 'Транзакцій «До кави» ще немає',
-    renderItem: renderIncomeItem,
-  });
-
-  renderTransactionSection({
     listEl: statsExpenseList,
     moreBtn: statsExpensesMore,
-    items: data.expenses,
+    items: categoryExpenses,
     expanded: expensesListExpanded,
     emptyText: 'Витрат ще немає',
     renderItem: renderExpenseItem,
   });
+}
+
+function renderStatsView(data) {
+  if (statsHub && statsCategoryView) {
+    const inCategory = !statsCategoryView.hidden;
+    if (inCategory) renderStatsCategoryView(data);
+    else renderStatsHub(data);
+  }
+}
+
+function showStatsHub() {
+  if (statsHub) statsHub.hidden = false;
+  if (statsCategoryView) statsCategoryView.hidden = true;
+  incomesListExpanded = false;
+  expensesListExpanded = false;
+  setStatsTab('income');
+  setChartPeriod('week');
+  closeEditTransaction();
+  renderStatsHub(currentStatsData);
+}
+
+function openStatsCategory(category) {
+  if (!STATS_CATEGORIES[category]) return;
+  statsCategory = category;
+  if (statsHub) statsHub.hidden = true;
+  if (statsCategoryView) statsCategoryView.hidden = false;
+  incomesListExpanded = false;
+  expensesListExpanded = false;
+  setStatsTab('income');
+  setChartPeriod('week');
+  closeEditTransaction();
+  updateMenuEntryMeta();
+  renderStatsCategoryView(currentStatsData);
 }
 
 async function refreshStats() {
@@ -2880,7 +3185,7 @@ function openStats() {
   if (!statsPanel) return;
   statsPanel.hidden = false;
   document.body.classList.add('stats-open');
-  updateMenuEntryMeta();
+  showStatsHub();
   refreshStats();
 }
 
@@ -2889,15 +3194,10 @@ function closeStats() {
   statsPanel.hidden = true;
   document.body.classList.remove('stats-open');
   closeMenuEditor();
-  incomesListExpanded = false;
-  extrasListExpanded = false;
-  expensesListExpanded = false;
-  setStatsTab('income');
-  setChartPeriod('week');
-  closeEditTransaction();
+  showStatsHub();
 }
 
-async function addCashIncome(label, amount) {
+async function addCashIncome(label, amount, category = statsCategory) {
   const id = `income-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   try {
@@ -2909,6 +3209,7 @@ async function addCashIncome(label, amount) {
         id,
         label,
         amount,
+        category,
       }),
     });
   } catch {
@@ -2918,7 +3219,7 @@ async function addCashIncome(label, amount) {
   await refreshStats();
 }
 
-async function addExpense(label, amount) {
+async function addExpense(label, amount, category = statsCategory) {
   const id = `expense-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 
   try {
@@ -2930,6 +3231,7 @@ async function addExpense(label, amount) {
         id,
         label,
         amount,
+        category,
       }),
     });
   } catch {
@@ -3033,29 +3335,39 @@ statsGateForm?.addEventListener('submit', (event) => {
 
 statsPanel?.querySelector('[data-stats-close]')?.addEventListener('click', closeStats);
 
+statsHub?.querySelectorAll('[data-open-category]').forEach((button) => {
+  button.addEventListener('click', () => {
+    openStatsCategory(button.dataset.openCategory);
+  });
+});
+
+statsHub?.querySelectorAll('[data-visibility-toggle]').forEach((button) => {
+  button.addEventListener('click', (event) => {
+    event.stopPropagation();
+    toggleCategoryVisibility(button.dataset.visibilityToggle);
+  });
+});
+
+statsCategoryView?.querySelector('[data-stats-hub-back]')?.addEventListener('click', showStatsHub);
+
 statsTabIncome?.addEventListener('click', () => setStatsTab('income'));
 statsTabExpense?.addEventListener('click', () => setStatsTab('expense'));
 
 statsChartPeriodButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setChartPeriod(button.dataset.chartPeriod);
-    renderOrderChart(currentStatsData.incomes);
+    renderOrderChart(currentStatsData.incomes, statsCategory);
   });
 });
 
 statsIncomesMore?.addEventListener('click', () => {
   incomesListExpanded = !incomesListExpanded;
-  renderStatsView(currentStatsData);
-});
-
-statsExtrasMore?.addEventListener('click', () => {
-  extrasListExpanded = !extrasListExpanded;
-  renderStatsView(currentStatsData);
+  renderStatsCategoryView(currentStatsData);
 });
 
 statsExpensesMore?.addEventListener('click', () => {
   expensesListExpanded = !expensesListExpanded;
-  renderStatsView(currentStatsData);
+  renderStatsCategoryView(currentStatsData);
 });
 
 statsIncomeForm?.addEventListener('submit', async (event) => {

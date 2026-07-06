@@ -80,12 +80,20 @@ function buildMenuResponse(stored) {
   const services = stored?.services?.length
     ? normalizeServices(stored.services)
     : DEFAULT_SERVICES;
+  const visibility = stored?.visibility && typeof stored.visibility === 'object'
+    ? {
+      drinks: stored.visibility.drinks !== false,
+      extras: stored.visibility.extras !== false,
+      services: stored.visibility.services !== false,
+    }
+    : { drinks: true, extras: true, services: true };
 
   return {
     ok: true,
     drinks,
     extras,
     services,
+    visibility,
     updatedAt: stored?.updatedAt || null,
   };
 }
@@ -119,12 +127,16 @@ export default async function handler(req, res) {
       ? normalizeServices(req.body.services)
       : normalizeServices(current?.services?.length ? current.services : DEFAULT_SERVICES);
 
+    const visibility = req.body?.visibility !== undefined
+      ? req.body.visibility
+      : current?.visibility;
+
     if (!drinks.length) {
       res.status(400).json({ ok: false, error: 'invalid_menu' });
       return;
     }
 
-    const saved = await saveFullMenuToDb({ drinks, extras, services });
+    const saved = await saveFullMenuToDb({ drinks, extras, services, visibility });
     if (!saved) {
       res.status(503).json({ ok: false, error: 'db_unavailable' });
       return;

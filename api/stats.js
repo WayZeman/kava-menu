@@ -10,22 +10,30 @@ function normalizeIncome(body) {
   const label = String(body?.label || '').trim();
   const amount = Number(body?.amount);
   const id = String(body?.id || '').trim() || null;
+  const category = String(body?.category || 'drinks').trim();
 
   if (!label || label.length > 120) return null;
   if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) return null;
 
-  return { id, label, amount, source: 'cash', provider: 'cash' };
+  const source = category === 'extras'
+    ? 'cash-extras'
+    : category === 'services'
+      ? 'cash-services'
+      : 'cash-drinks';
+
+  return { id, label, amount, source, provider: 'cash' };
 }
 
 function normalizeExpense(body) {
   const label = String(body?.label || '').trim();
   const amount = Number(body?.amount);
   const id = String(body?.id || '').trim() || null;
+  const category = String(body?.category || 'drinks').trim();
 
   if (!label || label.length > 120) return null;
   if (!Number.isFinite(amount) || amount <= 0 || amount > 10000000) return null;
 
-  return { id, label, amount };
+  return { id, label, amount, category };
 }
 
 function normalizeOrder(body) {

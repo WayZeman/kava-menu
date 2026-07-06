@@ -113,9 +113,12 @@ export async function insertIncome({
   return { record: mapRow(rows[0]), isNew: true };
 }
 
-export async function insertExpense({ id, label, amount }) {
+export async function insertExpense({ id, label, amount, category = 'drinks' }) {
   const sql = getSql();
   if (!sql) return null;
+
+  const safeCategory = ['drinks', 'extras', 'services'].includes(category) ? category : 'drinks';
+  const source = `expense-${safeCategory}`;
 
   if (id) {
     const existing = await sql`
@@ -142,7 +145,7 @@ export async function insertExpense({ id, label, amount }) {
   const txnId = id || makeId('expense');
   const rows = await sql`
     INSERT INTO transactions (id, kind, label, amount, source, provider, items)
-    VALUES (${txnId}, 'expense', ${label}, ${amount}, 'manual', NULL, NULL)
+    VALUES (${txnId}, 'expense', ${label}, ${amount}, ${source}, NULL, NULL)
     RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
   `;
 
@@ -385,6 +388,15 @@ function normalizeMenuServices(value) {
     .filter(Boolean);
 }
 
+function normalizeMenuVisibility(value) {
+  const raw = value && typeof value === 'object' ? value : {};
+  return {
+    drinks: raw.drinks !== false,
+    extras: raw.extras !== false,
+    services: raw.services !== false,
+  };
+}
+
 export async function getFullMenuFromDb() {
   const sql = getSql();
   if (!sql) return null;
@@ -406,6 +418,7 @@ export async function getFullMenuFromDb() {
       drinks: normalizeMenuDrinks(value.drinks),
       extras: normalizeMenuExtras(value.extras),
       services: normalizeMenuServices(value.services),
+      visibility: normalizeMenuVisibility(value.visibility),
       updatedAt: fullRow.updated_at,
     };
   }
@@ -417,11 +430,12 @@ export async function getFullMenuFromDb() {
     drinks: normalizeMenuDrinks(drinksRow.value),
     extras: [],
     services: [],
+    visibility: normalizeMenuVisibility(),
     updatedAt: drinksRow.updated_at,
   };
 }
 
-export async function saveFullMenuToDb({ drinks, extras, services }) {
+export async function saveFullMenuToDb({ drinks, extras, services, visibility }) {
   const sql = getSql();
   if (!sql) return null;
 
@@ -429,6 +443,7 @@ export async function saveFullMenuToDb({ drinks, extras, services }) {
     drinks: normalizeMenuDrinks(drinks),
     extras: normalizeMenuExtras(extras),
     services: normalizeMenuServices(services),
+    visibility: normalizeMenuVisibility(visibility),
   };
 
   if (!payload.drinks.length) return null;
@@ -450,6 +465,7 @@ export async function saveFullMenuToDb({ drinks, extras, services }) {
     drinks: normalizeMenuDrinks(value.drinks),
     extras: normalizeMenuExtras(value.extras),
     services: normalizeMenuServices(value.services),
+    visibility: normalizeMenuVisibility(value.visibility),
     updatedAt: rows[0].updated_at,
   };
 }
