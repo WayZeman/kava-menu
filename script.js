@@ -23,8 +23,12 @@ const thanksFeedback = document.getElementById('thanks-feedback');
 const thanksSend = document.getElementById('thanks-send');
 const thanksSkip = document.getElementById('thanks-skip');
 const thanksStatus = document.getElementById('thanks-status');
-const rows = document.querySelectorAll('.menu--services .row');
+const rows = document.querySelectorAll('[data-picker="car-wash"]');
 const drinksMenu = document.getElementById('drinks-menu');
+const extrasMenu = document.getElementById('extras-menu');
+const extrasMenuList = document.getElementById('extras-menu-list');
+const servicesMenu = document.getElementById('services-menu');
+const servicesMenuList = document.getElementById('services-menu-list');
 const menuEditor = document.getElementById('menu-editor');
 const menuEditorIconPicker = document.getElementById('menu-editor-icon-picker');
 const menuEditorIconHint = document.getElementById('menu-editor-icon-hint');
@@ -35,6 +39,10 @@ const menuSettingsBtn = document.getElementById('stats-menu-settings');
 const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
 const menuAddName = document.getElementById('menu-add-name');
+const menuAddStock = document.getElementById('menu-add-stock');
+const menuEditorAddTitle = document.getElementById('menu-editor-add-title');
+const menuEditorListTitle = document.getElementById('menu-editor-list-title');
+const menuEditorSectionTabs = document.querySelectorAll('[data-menu-section]');
 const menuAddAmount = document.getElementById('menu-add-amount');
 const payActions = document.querySelectorAll('#sheet [data-provider]');
 const confirmYes = document.getElementById('confirm-yes');
@@ -78,6 +86,8 @@ const statsCoffeeTotal = document.getElementById('stats-coffee-total');
 const statsCoffeeMeta = document.getElementById('stats-coffee-meta');
 const statsHaircutTotal = document.getElementById('stats-haircut-total');
 const statsHaircutMeta = document.getElementById('stats-haircut-meta');
+const statsExtrasTotal = document.getElementById('stats-extras-total');
+const statsExtrasMeta = document.getElementById('stats-extras-meta');
 const statsDailyChart = document.getElementById('stats-daily-chart');
 const statsChartHeading = document.getElementById('stats-chart-heading');
 const statsChartPeriodButtons = document.querySelectorAll('[data-chart-period]');
@@ -89,8 +99,10 @@ const STATS_AUTH_KEY = 'kava-stats-auth';
 const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
+const MENU_EXTRAS_KEY = 'kava-menu-extras';
+const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '52';
+const APP_VERSION = '53';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -144,6 +156,22 @@ const DEFAULT_DRINKS = [
   { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
 ];
 
+const DEFAULT_SERVICES = [
+  { id: 'haircut', name: 'Стрижка', amount: 250, icon: 'haircut' },
+];
+
+const SERVICE_ICON_OPTIONS = [
+  { id: 'haircut', label: 'Стрижка' },
+  { id: 'generic', label: 'Послуга' },
+];
+
+const SERVICE_ICONS = {
+  haircut: '<circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/><circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/><path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/><path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/><circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>',
+  generic: '<rect x="14" y="16" width="20" height="18" rx="4" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M18 24h12M18 28h8" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/>',
+};
+
+const EXTRA_ICON = '<path d="M14 14h20l-2 24a3 3 0 0 1-3 2.5H19a3 3 0 0 1-3-2.5L14 14z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M17 14V11a5 5 0 0 1 10 0v3" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/><circle cx="24" cy="26" r="3" fill="#d4a853"/>';
+
 const LEGACY_DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
   { id: 'americano', name: 'Американо', amount: 20, icon: 'americano' },
@@ -177,7 +205,12 @@ const DRINK_ICONS = {
 };
 
 let menuDrinks = [];
+let menuExtras = [];
+let menuServices = [];
 let menuEditorDraft = [];
+let menuEditorExtrasDraft = [];
+let menuEditorServicesDraft = [];
+let menuEditorSection = 'drinks';
 let menuEditorSelectedIcon = 'generic';
 let menuEditorEditingId = null;
 
@@ -209,16 +242,65 @@ function normalizeDrink(raw) {
   };
 }
 
-function loadMenuDrinksFromStorage() {
+function normalizeExtra(raw) {
+  const name = String(raw?.name || '').trim();
+  const amount = Number(raw?.amount);
+  const stock = Number(raw?.stock);
+  const id = String(raw?.id || '').trim();
+  if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+  return {
+    id,
+    name,
+    amount: Math.round(amount),
+    stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+  };
+}
+
+function normalizeService(raw) {
+  const name = String(raw?.name || '').trim();
+  const amount = Number(raw?.amount);
+  const id = String(raw?.id || '').trim();
+  if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+  return {
+    id,
+    name,
+    amount: Math.round(amount),
+    icon: String(raw?.icon || 'generic').trim() || 'generic',
+  };
+}
+
+function loadMenuSectionFromStorage(key, normalizer) {
   try {
-    const raw = localStorage.getItem(MENU_KEY);
+    const raw = localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!Array.isArray(parsed)) return null;
-    const drinks = parsed.map(normalizeDrink).filter(Boolean);
-    return drinks.length ? drinks : null;
+    const items = parsed.map(normalizer).filter(Boolean);
+    return items.length ? items : null;
   } catch {
     return null;
+  }
+}
+
+function loadMenuDrinksFromStorage() {
+  return loadMenuSectionFromStorage(MENU_KEY, normalizeDrink);
+}
+
+function loadMenuExtrasFromStorage() {
+  return loadMenuSectionFromStorage(MENU_EXTRAS_KEY, normalizeExtra);
+}
+
+function loadMenuServicesFromStorage() {
+  return loadMenuSectionFromStorage(MENU_SERVICES_KEY, normalizeService);
+}
+
+function saveFullMenuLocal() {
+  try {
+    localStorage.setItem(MENU_KEY, JSON.stringify(menuDrinks));
+    localStorage.setItem(MENU_EXTRAS_KEY, JSON.stringify(menuExtras));
+    localStorage.setItem(MENU_SERVICES_KEY, JSON.stringify(menuServices));
+  } catch {
+    // ignore quota errors
   }
 }
 
@@ -231,12 +313,12 @@ function isDefaultMenu(drinks) {
   return menusEqual(drinks, DEFAULT_DRINKS) || menusEqual(drinks, LEGACY_DEFAULT_DRINKS);
 }
 
-async function uploadMenuDrinks(drinks) {
+async function uploadFullMenu(menu) {
   try {
     const response = await fetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ drinks }),
+      body: JSON.stringify(menu),
       cache: 'no-store',
     });
     if (!response.ok) return null;
@@ -250,8 +332,10 @@ async function uploadMenuDrinks(drinks) {
   }
 }
 
-async function loadMenuDrinks() {
-  const local = loadMenuDrinksFromStorage();
+async function loadFullMenu() {
+  const localDrinks = loadMenuDrinksFromStorage();
+  const localExtras = loadMenuExtrasFromStorage();
+  const localServices = loadMenuServicesFromStorage();
   const localUpdatedAt = localStorage.getItem(MENU_UPDATED_KEY);
   let remote = null;
   let remoteUpdatedAt = null;
@@ -260,60 +344,94 @@ async function loadMenuDrinks() {
     const response = await fetch('/api/menu', { cache: 'no-store' });
     if (response.ok) {
       const data = await response.json();
-      remote = Array.isArray(data.drinks)
-        ? data.drinks.map(normalizeDrink).filter(Boolean)
-        : null;
+      remote = {
+        drinks: Array.isArray(data.drinks) ? data.drinks.map(normalizeDrink).filter(Boolean) : null,
+        extras: Array.isArray(data.extras) ? data.extras.map(normalizeExtra).filter(Boolean) : [],
+        services: Array.isArray(data.services) ? data.services.map(normalizeService).filter(Boolean) : null,
+      };
       remoteUpdatedAt = data.updatedAt || null;
     }
   } catch {
     // fall back to local copy
   }
 
-  if (local?.length && remote?.length && !menusEqual(local, remote)) {
+  const localMenu = {
+    drinks: localDrinks,
+    extras: localExtras || [],
+    services: localServices,
+  };
+
+  if (localDrinks?.length && remote?.drinks?.length && !menusEqual(localDrinks, remote.drinks)) {
     const remoteTime = remoteUpdatedAt ? Date.parse(remoteUpdatedAt) : 0;
     const localTime = localUpdatedAt ? Date.parse(localUpdatedAt) : 0;
 
-    if (localTime > remoteTime || isDefaultMenu(remote)) {
-      localStorage.setItem(MENU_KEY, JSON.stringify(local));
-      await uploadMenuDrinks(local);
-      return local;
+    if (localTime > remoteTime || isDefaultMenu(remote.drinks)) {
+      await uploadFullMenu({
+        drinks: localDrinks,
+        extras: localExtras || [],
+        services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+      });
+      return {
+        drinks: localDrinks,
+        extras: localExtras || [],
+        services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+      };
     }
+  }
 
-    localStorage.setItem(MENU_KEY, JSON.stringify(remote));
+  if (localDrinks?.length && (!remote?.drinks?.length || isDefaultMenu(remote.drinks))) {
+    await uploadFullMenu({
+      drinks: localDrinks,
+      extras: localExtras || [],
+      services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+    });
+    return {
+      drinks: localDrinks,
+      extras: localExtras || [],
+      services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+    };
+  }
+
+  if (remote?.drinks?.length) {
+    const menu = {
+      drinks: remote.drinks,
+      extras: remote.extras || [],
+      services: remote.services?.length
+        ? remote.services
+        : DEFAULT_SERVICES.map((item) => ({ ...item })),
+    };
+    saveFullMenuLocalFrom(menu);
     if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
-    return remote;
+    return menu;
   }
 
-  if (local?.length && (!remote?.length || isDefaultMenu(remote))) {
-    localStorage.setItem(MENU_KEY, JSON.stringify(local));
-    await uploadMenuDrinks(local);
-    return local;
+  if (localDrinks?.length) {
+    return {
+      drinks: localDrinks,
+      extras: localExtras || [],
+      services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
+    };
   }
 
-  if (remote?.length && !isDefaultMenu(remote)) {
-    localStorage.setItem(MENU_KEY, JSON.stringify(remote));
-    if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
-    return remote;
-  }
-
-  if (local?.length) return local;
-
-  const drinks = DEFAULT_DRINKS.map((item) => ({ ...item }));
-  localStorage.setItem(MENU_KEY, JSON.stringify(drinks));
-  await uploadMenuDrinks(drinks);
-  return drinks;
+  const menu = {
+    drinks: DEFAULT_DRINKS.map((item) => ({ ...item })),
+    extras: [],
+    services: DEFAULT_SERVICES.map((item) => ({ ...item })),
+  };
+  saveFullMenuLocalFrom(menu);
+  await uploadFullMenu(menu);
+  return menu;
 }
 
-function saveMenuDrinksLocal() {
-  try {
-    localStorage.setItem(MENU_KEY, JSON.stringify(menuDrinks));
-  } catch {
-    // ignore quota errors
-  }
+function saveFullMenuLocalFrom(menu) {
+  menuDrinks = menu.drinks;
+  menuExtras = menu.extras;
+  menuServices = menu.services;
+  saveFullMenuLocal();
 }
 
-async function saveMenuDrinks() {
-  saveMenuDrinksLocal();
+async function saveFullMenu() {
+  saveFullMenuLocal();
   const updatedAt = new Date().toISOString();
   localStorage.setItem(MENU_UPDATED_KEY, updatedAt);
 
@@ -321,7 +439,11 @@ async function saveMenuDrinks() {
     const response = await fetch('/api/menu', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ drinks: menuDrinks }),
+      body: JSON.stringify({
+        drinks: menuDrinks,
+        extras: menuExtras,
+        services: menuServices,
+      }),
       keepalive: true,
       cache: 'no-store',
     });
@@ -330,11 +452,11 @@ async function saveMenuDrinks() {
       if (data.updatedAt) localStorage.setItem(MENU_UPDATED_KEY, data.updatedAt);
     }
   } catch {
-    // menu still saved locally; server sync retries on next edit
+    // menu still saved locally
   }
 }
 
-function makeDrinkId(name, existingIds) {
+function makeDrinkId(name, existingIds, prefix = 'drink') {
   const transliterated = String(name || '')
     .toLowerCase()
     .normalize('NFKD')
@@ -342,7 +464,7 @@ function makeDrinkId(name, existingIds) {
     .trim()
     .replace(/\s+/g, '-')
     .slice(0, 40);
-  let base = transliterated || `drink-${Date.now()}`;
+  let base = transliterated || `${prefix}-${Date.now()}`;
   if (!existingIds.has(base)) return base;
   let index = 2;
   while (existingIds.has(`${base}-${index}`)) index += 1;
@@ -352,6 +474,35 @@ function makeDrinkId(name, existingIds) {
 function drinkIconMarkup(iconKey) {
   const inner = DRINK_ICONS[iconKey] || DRINK_ICONS.generic;
   return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+function serviceIconMarkup(iconKey) {
+  const inner = SERVICE_ICONS[iconKey] || SERVICE_ICONS.generic;
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`;
+}
+
+function extraIconMarkup() {
+  return `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${EXTRA_ICON}</svg>`;
+}
+
+function getAllMenuIds() {
+  return new Set([
+    ...menuDrinks.map((item) => item.id),
+    ...menuExtras.map((item) => item.id),
+    ...menuServices.map((item) => item.id),
+  ]);
+}
+
+function getExtraStock(id) {
+  const extra = menuExtras.find((item) => item.id === id);
+  return extra?.stock ?? 0;
+}
+
+function pruneCartItems() {
+  const validIds = getAllMenuIds();
+  Array.from(cartItems.keys()).forEach((id) => {
+    if (!validIds.has(id)) cartItems.delete(id);
+  });
 }
 
 function bindMenuRow(row) {
@@ -377,6 +528,7 @@ function createDrinkRow(drink) {
   row.dataset.id = drink.id;
   row.dataset.name = drink.name;
   row.dataset.amount = String(drink.amount);
+  row.dataset.category = 'drink';
 
   row.innerHTML = `
     <span class="drink-icon" aria-hidden="true">${drinkIconMarkup(drink.icon)}</span>
@@ -396,59 +548,208 @@ function createDrinkRow(drink) {
   return row;
 }
 
-function renderDrinksMenu() {
-  if (!drinksMenu) return;
+function createExtraRow(extra) {
+  const row = document.createElement('article');
+  row.className = 'row';
+  row.dataset.id = extra.id;
+  row.dataset.name = extra.name;
+  row.dataset.amount = String(extra.amount);
+  row.dataset.category = 'extra';
 
+  if (extra.stock <= 0) {
+    row.classList.add('row--out-of-stock');
+    row.innerHTML = `
+      <span class="drink-icon" aria-hidden="true">${extraIconMarkup()}</span>
+      <div class="row-main">
+        <span class="name"></span>
+      </div>
+      <span class="row-status">нема в наявності</span>
+    `;
+    row.querySelector('.name').textContent = extra.name;
+    return row;
+  }
+
+  row.innerHTML = `
+    <span class="drink-icon" aria-hidden="true">${extraIconMarkup()}</span>
+    <div class="row-main">
+      <span class="name"></span>
+    </div>
+    <span class="price"></span>
+    <div class="qty">
+      <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
+      <span class="qty-value">0</span>
+      <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
+    </div>
+  `;
+
+  row.querySelector('.name').textContent = extra.name;
+  row.querySelector('.price').textContent = `${extra.amount} грн`;
+  return row;
+}
+
+function createServiceRow(service) {
+  const row = document.createElement('article');
+  row.className = 'row';
+  row.dataset.id = service.id;
+  row.dataset.name = service.name;
+  row.dataset.amount = String(service.amount);
+  row.dataset.category = 'service';
+
+  row.innerHTML = `
+    <span class="drink-icon" aria-hidden="true">${serviceIconMarkup(service.icon)}</span>
+    <div class="row-main">
+      <span class="name"></span>
+    </div>
+    <span class="price"></span>
+    <div class="qty">
+      <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
+      <span class="qty-value">0</span>
+      <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
+    </div>
+  `;
+
+  row.querySelector('.name').textContent = service.name;
+  row.querySelector('.price').textContent = `${service.amount} грн`;
+  return row;
+}
+
+function restoreRowQuantities(container, prevQty) {
+  if (!container) return;
+  container.querySelectorAll('.row').forEach((row) => {
+    if (prevQty.has(row.dataset.id)) {
+      setRowQty(row, prevQty.get(row.dataset.id));
+    }
+  });
+}
+
+function captureRowQuantities(container) {
   const prevQty = new Map();
-  drinksMenu.querySelectorAll('.row').forEach((row) => {
+  if (!container) return prevQty;
+  container.querySelectorAll('.row').forEach((row) => {
     const qty = cartItems.get(row.dataset.id)?.qty;
     if (qty) prevQty.set(row.dataset.id, qty);
   });
+  return prevQty;
+}
 
+function renderDrinksMenu() {
+  if (!drinksMenu) return;
+
+  const prevQty = captureRowQuantities(drinksMenu);
   drinksMenu.innerHTML = '';
   menuDrinks.forEach((drink) => {
     const row = createDrinkRow(drink);
     drinksMenu.appendChild(row);
     bindMenuRow(row);
-    if (prevQty.has(drink.id)) {
-      setRowQty(row, prevQty.get(drink.id));
-    }
   });
+  restoreRowQuantities(drinksMenu, prevQty);
+}
 
-  Array.from(cartItems.keys()).forEach((id) => {
-    if (!menuDrinks.some((drink) => drink.id === id)) {
-      cartItems.delete(id);
-    }
+function renderExtrasMenu() {
+  if (!extrasMenu || !extrasMenuList) return;
+
+  const prevQty = captureRowQuantities(extrasMenuList);
+  extrasMenuList.innerHTML = '';
+
+  if (!menuExtras.length) {
+    extrasMenu.hidden = true;
+    return;
+  }
+
+  extrasMenu.hidden = false;
+  menuExtras.forEach((extra) => {
+    const row = createExtraRow(extra);
+    extrasMenuList.appendChild(row);
+    if (extra.stock > 0) bindMenuRow(row);
   });
+  restoreRowQuantities(extrasMenuList, prevQty);
+}
 
+function renderServicesMenu() {
+  if (!servicesMenuList) return;
+
+  const prevQty = captureRowQuantities(servicesMenuList);
+  servicesMenuList.innerHTML = '';
+
+  menuServices.forEach((service) => {
+    const row = createServiceRow(service);
+    servicesMenuList.appendChild(row);
+    bindMenuRow(row);
+  });
+  restoreRowQuantities(servicesMenuList, prevQty);
+}
+
+function renderAllMenus() {
+  renderDrinksMenu();
+  renderExtrasMenu();
+  renderServicesMenu();
+  pruneCartItems();
   updateCart();
   updateMenuEntryMeta();
 }
 
-function addMenuDrink(name, amount, icon = menuEditorSelectedIcon) {
-  const existingIds = new Set(menuEditorDraft.map((drink) => drink.id));
-  const drink = {
-    id: makeDrinkId(name, existingIds),
+function getActiveEditorDraft() {
+  if (menuEditorSection === 'extras') return menuEditorExtrasDraft;
+  if (menuEditorSection === 'services') return menuEditorServicesDraft;
+  return menuEditorDraft;
+}
+
+function setActiveEditorDraft(items) {
+  if (menuEditorSection === 'extras') menuEditorExtrasDraft = items;
+  else if (menuEditorSection === 'services') menuEditorServicesDraft = items;
+  else menuEditorDraft = items;
+}
+
+function addMenuEditorItem(name, amount, stock = 0) {
+  const draft = getActiveEditorDraft();
+  const prefix = menuEditorSection === 'extras'
+    ? 'extra'
+    : menuEditorSection === 'services'
+      ? 'service'
+      : 'drink';
+  const existingIds = new Set(draft.map((item) => item.id));
+  const item = {
+    id: makeDrinkId(name, existingIds, prefix),
     name,
     amount: Math.round(amount),
-    icon: DRINK_ICONS[icon] ? icon : 'generic',
   };
-  menuEditorDraft.push(drink);
+
+  if (menuEditorSection === 'drinks') {
+    item.icon = DRINK_ICONS[menuEditorSelectedIcon] ? menuEditorSelectedIcon : 'generic';
+  } else if (menuEditorSection === 'services') {
+    item.icon = SERVICE_ICONS[menuEditorSelectedIcon] ? menuEditorSelectedIcon : 'generic';
+  } else {
+    item.stock = Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0;
+  }
+
+  draft.push(item);
   renderMenuEditorList();
 }
 
-function updateMenuDrink(id, name, amount, icon) {
-  const drink = menuEditorDraft.find((item) => item.id === id);
-  if (!drink) return;
+function updateMenuEditorItem(id, name, amount, extra = {}) {
+  const draft = getActiveEditorDraft();
+  const item = draft.find((entry) => entry.id === id);
+  if (!item) return;
 
-  drink.name = name;
-  drink.amount = Math.round(amount);
-  if (icon && DRINK_ICONS[icon]) drink.icon = icon;
+  item.name = name;
+  item.amount = Math.round(amount);
+
+  if (menuEditorSection === 'drinks' && extra.icon && DRINK_ICONS[extra.icon]) {
+    item.icon = extra.icon;
+  }
+  if (menuEditorSection === 'services' && extra.icon && SERVICE_ICONS[extra.icon]) {
+    item.icon = extra.icon;
+  }
+  if (menuEditorSection === 'extras' && extra.stock !== undefined) {
+    const stock = Number(extra.stock);
+    item.stock = Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0;
+  }
+
   renderMenuEditorList();
 }
 
-function removeMenuDrink(id) {
-  menuEditorDraft = menuEditorDraft.filter((drink) => drink.id !== id);
+function removeMenuEditorItem(id) {
+  setActiveEditorDraft(getActiveEditorDraft().filter((item) => item.id !== id));
   if (menuEditorEditingId === id) {
     menuEditorEditingId = null;
     menuEditorSelectedIcon = 'generic';
@@ -457,40 +758,42 @@ function removeMenuDrink(id) {
   renderMenuEditorList();
 }
 
-function moveMenuDrink(id, direction) {
-  const index = menuEditorDraft.findIndex((drink) => drink.id === id);
+function moveMenuEditorItem(id, direction) {
+  const draft = getActiveEditorDraft();
+  const index = draft.findIndex((item) => item.id === id);
   if (index < 0) return;
 
   const nextIndex = index + direction;
-  if (nextIndex < 0 || nextIndex >= menuEditorDraft.length) return;
+  if (nextIndex < 0 || nextIndex >= draft.length) return;
 
-  const [drink] = menuEditorDraft.splice(index, 1);
-  menuEditorDraft.splice(nextIndex, 0, drink);
+  const [item] = draft.splice(index, 1);
+  draft.splice(nextIndex, 0, item);
   renderMenuEditorList();
-}
-
-async function persistMenuDrinks() {
-  saveMenuDrinksLocal();
-  await saveMenuDrinks();
 }
 
 function updateMenuEntryMeta() {
   if (!statsMenuEntryMeta) return;
-  const count = menuDrinks.length;
-  const label = count === 1 ? 'напій' : count >= 2 && count <= 4 ? 'напої' : 'напоїв';
-  statsMenuEntryMeta.textContent = count
-    ? `${count} ${label} · додати або прибрати`
-    : 'Додати або прибрати напої';
+  const parts = [];
+  if (menuDrinks.length) parts.push(`${menuDrinks.length} нап.`);
+  if (menuExtras.length) parts.push(`${menuExtras.length} до кави`);
+  if (menuServices.length) parts.push(`${menuServices.length} посл.`);
+  statsMenuEntryMeta.textContent = parts.length
+    ? `${parts.join(' · ')} · редагувати`
+    : 'Додати або прибрати позиції';
 }
 
 function setMenuEditorIcon(iconId, { editingId = null } = {}) {
-  menuEditorSelectedIcon = DRINK_ICONS[iconId] ? iconId : 'generic';
+  if (menuEditorSection === 'services') {
+    menuEditorSelectedIcon = SERVICE_ICONS[iconId] ? iconId : 'generic';
+  } else {
+    menuEditorSelectedIcon = DRINK_ICONS[iconId] ? iconId : 'generic';
+  }
   menuEditorEditingId = editingId;
 
   if (editingId) {
-    const drink = menuEditorDraft.find((item) => item.id === editingId);
-    if (drink) {
-      drink.icon = menuEditorSelectedIcon;
+    const item = getActiveEditorDraft().find((entry) => entry.id === editingId);
+    if (item) {
+      item.icon = menuEditorSelectedIcon;
       renderMenuEditorList();
     }
   }
@@ -498,23 +801,76 @@ function setMenuEditorIcon(iconId, { editingId = null } = {}) {
   renderMenuEditorIconPicker();
 }
 
+function updateMenuEditorSectionUi() {
+  const isDrinks = menuEditorSection === 'drinks';
+  const isExtras = menuEditorSection === 'extras';
+  const isServices = menuEditorSection === 'services';
+
+  menuEditorSectionTabs.forEach((tab) => {
+    const active = tab.dataset.menuSection === menuEditorSection;
+    tab.classList.toggle('is-active', active);
+    tab.setAttribute('aria-selected', active ? 'true' : 'false');
+  });
+
+  if (menuEditorAddTitle) {
+    menuEditorAddTitle.textContent = isDrinks
+      ? 'Новий напій'
+      : isExtras
+        ? 'Нова позиція'
+        : 'Нова послуга';
+  }
+
+  if (menuEditorListTitle) {
+    menuEditorListTitle.textContent = isDrinks
+      ? 'Напої'
+      : isExtras
+        ? 'До кави'
+        : 'Послуги';
+  }
+
+  if (menuEditorIconPicker) menuEditorIconPicker.hidden = isExtras;
+  if (menuEditorIconHint) menuEditorIconHint.hidden = isExtras;
+  if (menuAddStock) menuAddStock.hidden = !isExtras;
+  menuAddForm?.classList.toggle('menu-editor-form--extras', isExtras);
+
+  if (menuAddName) {
+    menuAddName.placeholder = isExtras ? 'Назва товару' : isServices ? 'Назва послуги' : 'Назва напою';
+  }
+}
+
+function setMenuEditorSection(section) {
+  collectMenuEditorDraftFromDom();
+  menuEditorSection = section;
+  menuEditorEditingId = null;
+  menuEditorSelectedIcon = 'generic';
+  updateMenuEditorSectionUi();
+  renderMenuEditor();
+  menuAddForm?.reset();
+  menuAddName?.focus();
+}
+
 function renderMenuEditorIconPicker() {
-  if (!menuEditorIconPicker) return;
+  if (!menuEditorIconPicker || menuEditorSection === 'extras') return;
 
   menuEditorIconPicker.innerHTML = '';
+  const options = menuEditorSection === 'services' ? SERVICE_ICON_OPTIONS : DRINK_ICON_OPTIONS;
+  const markup = menuEditorSection === 'services' ? serviceIconMarkup : drinkIconMarkup;
+  const icons = menuEditorSection === 'services' ? SERVICE_ICONS : DRINK_ICONS;
 
   if (menuEditorIconHint) {
     if (menuEditorEditingId) {
-      const drink = menuEditorDraft.find((item) => item.id === menuEditorEditingId);
-      menuEditorIconHint.textContent = drink
-        ? `Значок для «${drink.name}»`
+      const item = getActiveEditorDraft().find((entry) => entry.id === menuEditorEditingId);
+      menuEditorIconHint.textContent = item
+        ? `Значок для «${item.name}»`
         : 'Оберіть значок';
     } else {
-      menuEditorIconHint.textContent = 'Оберіть значок для нового напою';
+      menuEditorIconHint.textContent = menuEditorSection === 'services'
+        ? 'Оберіть значок для нової послуги'
+        : 'Оберіть значок для нового напою';
     }
   }
 
-  DRINK_ICON_OPTIONS.forEach((option) => {
+  options.forEach((option) => {
     const button = document.createElement('button');
     button.type = 'button';
     button.className = 'menu-editor-icon-option';
@@ -528,11 +884,12 @@ function renderMenuEditorIconPicker() {
     }
 
     button.innerHTML = `
-      <span class="menu-editor-icon-preview">${drinkIconMarkup(option.id)}</span>
+      <span class="menu-editor-icon-preview">${markup(option.id)}</span>
       <span class="menu-editor-icon-label">${option.label}</span>
     `;
 
     button.addEventListener('click', () => {
+      if (!icons[option.id]) return;
       setMenuEditorIcon(option.id, { editingId: menuEditorEditingId });
     });
 
@@ -543,20 +900,22 @@ function renderMenuEditorIconPicker() {
 function renderMenuEditorList() {
   if (!menuEditorList) return;
 
+  const draft = getActiveEditorDraft();
   menuEditorList.innerHTML = '';
 
-  if (!menuEditorDraft.length) {
+  if (!draft.length) {
     if (menuEditorEmpty) menuEditorEmpty.hidden = false;
     return;
   }
 
   if (menuEditorEmpty) menuEditorEmpty.hidden = true;
 
-  menuEditorDraft.forEach((drink, index) => {
+  draft.forEach((item, index) => {
     const li = document.createElement('li');
     li.className = 'menu-editor-item';
-    li.dataset.drinkId = drink.id;
-    if (menuEditorEditingId === drink.id) {
+    if (menuEditorSection === 'extras') li.classList.add('menu-editor-item--extras');
+    li.dataset.drinkId = item.id;
+    if (menuEditorEditingId === item.id) {
       li.classList.add('is-editing-icon');
     }
 
@@ -569,26 +928,17 @@ function renderMenuEditorList() {
     upBtn.textContent = '↑';
     upBtn.disabled = index === 0;
     upBtn.setAttribute('aria-label', 'Підняти вище');
-    upBtn.addEventListener('click', () => moveMenuDrink(drink.id, -1));
+    upBtn.addEventListener('click', () => moveMenuEditorItem(item.id, -1));
 
     const downBtn = document.createElement('button');
     downBtn.type = 'button';
     downBtn.className = 'menu-editor-move-btn';
     downBtn.textContent = '↓';
-    downBtn.disabled = index === menuEditorDraft.length - 1;
+    downBtn.disabled = index === draft.length - 1;
     downBtn.setAttribute('aria-label', 'Опустити нижче');
-    downBtn.addEventListener('click', () => moveMenuDrink(drink.id, 1));
+    downBtn.addEventListener('click', () => moveMenuEditorItem(item.id, 1));
 
     orderWrap.append(upBtn, downBtn);
-
-    const iconBtn = document.createElement('button');
-    iconBtn.type = 'button';
-    iconBtn.className = 'menu-editor-item-icon';
-    iconBtn.innerHTML = drinkIconMarkup(drink.icon);
-    iconBtn.setAttribute('aria-label', `Змінити значок для ${drink.name}`);
-    iconBtn.addEventListener('click', () => {
-      setMenuEditorIcon(drink.icon, { editingId: drink.id });
-    });
 
     const fields = document.createElement('div');
     fields.className = 'menu-editor-item-fields';
@@ -597,22 +947,26 @@ function renderMenuEditorList() {
     nameInput.className = 'menu-editor-item-name';
     nameInput.type = 'text';
     nameInput.maxLength = 80;
-    nameInput.value = drink.name;
-    nameInput.setAttribute('aria-label', 'Назва напою');
+    nameInput.value = item.name;
+    nameInput.setAttribute('aria-label', 'Назва');
 
     const amountInput = document.createElement('input');
     amountInput.className = 'menu-editor-item-amount';
     amountInput.type = 'number';
     amountInput.min = '1';
     amountInput.step = '1';
-    amountInput.value = String(drink.amount);
+    amountInput.value = String(item.amount);
     amountInput.setAttribute('aria-label', 'Ціна');
 
     const commit = () => {
       const name = nameInput.value.trim();
       const amount = Number(amountInput.value);
       if (!name || !Number.isFinite(amount) || amount <= 0) return;
-      updateMenuDrink(drink.id, name, amount, drink.icon);
+      const payload = { icon: item.icon };
+      if (menuEditorSection === 'extras') {
+        payload.stock = Number(stockInput?.value ?? item.stock);
+      }
+      updateMenuEditorItem(item.id, name, amount, payload);
     };
 
     nameInput.addEventListener('change', commit);
@@ -620,19 +974,52 @@ function renderMenuEditorList() {
 
     fields.append(nameInput, amountInput);
 
+    let stockInput = null;
+    if (menuEditorSection === 'extras') {
+      stockInput = document.createElement('input');
+      stockInput.className = 'menu-editor-item-stock';
+      stockInput.type = 'number';
+      stockInput.min = '0';
+      stockInput.step = '1';
+      stockInput.value = String(item.stock ?? 0);
+      stockInput.setAttribute('aria-label', 'Кількість');
+      stockInput.addEventListener('change', () => {
+        const name = nameInput.value.trim();
+        const amount = Number(amountInput.value);
+        const stock = Number(stockInput.value);
+        if (!name || !Number.isFinite(amount) || amount <= 0) return;
+        updateMenuEditorItem(item.id, name, amount, { stock });
+      });
+      fields.append(stockInput);
+      li.append(orderWrap, fields);
+    } else {
+      const iconBtn = document.createElement('button');
+      iconBtn.type = 'button';
+      iconBtn.className = 'menu-editor-item-icon';
+      iconBtn.innerHTML = menuEditorSection === 'services'
+        ? serviceIconMarkup(item.icon)
+        : drinkIconMarkup(item.icon);
+      iconBtn.setAttribute('aria-label', `Змінити значок для ${item.name}`);
+      iconBtn.addEventListener('click', () => {
+        setMenuEditorIcon(item.icon, { editingId: item.id });
+      });
+      li.append(orderWrap, iconBtn, fields);
+    }
+
     const deleteBtn = document.createElement('button');
     deleteBtn.type = 'button';
     deleteBtn.className = 'menu-editor-delete-btn';
     deleteBtn.textContent = '−';
-    deleteBtn.setAttribute('aria-label', 'Видалити напій');
-    deleteBtn.addEventListener('click', () => removeMenuDrink(drink.id));
+    deleteBtn.setAttribute('aria-label', 'Видалити');
+    deleteBtn.addEventListener('click', () => removeMenuEditorItem(item.id));
 
-    li.append(orderWrap, iconBtn, fields, deleteBtn);
+    li.append(deleteBtn);
     menuEditorList.appendChild(li);
   });
 }
 
 function renderMenuEditor() {
+  updateMenuEditorSectionUi();
   renderMenuEditorIconPicker();
   renderMenuEditorList();
 }
@@ -640,16 +1027,22 @@ function renderMenuEditor() {
 function collectMenuEditorDraftFromDom() {
   if (!menuEditorList) return;
 
-  menuEditorList.querySelectorAll('.menu-editor-item').forEach((item) => {
-    const drink = menuEditorDraft.find((entry) => entry.id === item.dataset.drinkId);
-    if (!drink) return;
+  const draft = getActiveEditorDraft();
+  menuEditorList.querySelectorAll('.menu-editor-item').forEach((row) => {
+    const item = draft.find((entry) => entry.id === row.dataset.drinkId);
+    if (!item) return;
 
-    const name = item.querySelector('.menu-editor-item-name')?.value.trim();
-    const amount = Number(item.querySelector('.menu-editor-item-amount')?.value);
+    const name = row.querySelector('.menu-editor-item-name')?.value.trim();
+    const amount = Number(row.querySelector('.menu-editor-item-amount')?.value);
     if (!name || !Number.isFinite(amount) || amount <= 0) return;
 
-    drink.name = name;
-    drink.amount = Math.round(amount);
+    item.name = name;
+    item.amount = Math.round(amount);
+
+    if (menuEditorSection === 'extras') {
+      const stock = Number(row.querySelector('.menu-editor-item-stock')?.value);
+      item.stock = Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0;
+    }
   });
 }
 
@@ -661,16 +1054,13 @@ async function saveMenuEditor() {
   menuEditorSaveBtn.textContent = 'Зберігається…';
 
   menuDrinks = menuEditorDraft.map((item) => ({ ...item }));
-  Array.from(cartItems.keys()).forEach((id) => {
-    if (!menuDrinks.some((drink) => drink.id === id)) {
-      cartItems.delete(id);
-    }
-  });
+  menuExtras = menuEditorExtrasDraft.map((item) => ({ ...item }));
+  menuServices = menuEditorServicesDraft.map((item) => ({ ...item }));
+  pruneCartItems();
 
   try {
-    await persistMenuDrinks();
-    renderDrinksMenu();
-    updateMenuEntryMeta();
+    await saveFullMenu();
+    renderAllMenus();
     menuEditorSaveBtn.textContent = 'Збережено ✓';
     window.setTimeout(() => {
       closeMenuEditor();
@@ -685,6 +1075,9 @@ function openMenuEditor() {
   if (!menuEditor) return;
 
   menuEditorDraft = menuDrinks.map((item) => ({ ...item }));
+  menuEditorExtrasDraft = menuExtras.map((item) => ({ ...item }));
+  menuEditorServicesDraft = menuServices.map((item) => ({ ...item }));
+  menuEditorSection = 'drinks';
   menuEditorEditingId = null;
   menuEditorSelectedIcon = 'generic';
   if (menuEditorSaveBtn) {
@@ -703,14 +1096,36 @@ function closeMenuEditor() {
   menuEditor.hidden = true;
   menuEditorEditingId = null;
   menuEditorSelectedIcon = 'generic';
+  menuEditorSection = 'drinks';
   menuAddForm?.reset();
   document.body.classList.remove('menu-editor-open');
 }
 
 async function initMenu() {
-  menuDrinks = await loadMenuDrinks();
-  renderDrinksMenu();
-  updateMenuEntryMeta();
+  const menu = await loadFullMenu();
+  menuDrinks = menu.drinks;
+  menuExtras = menu.extras;
+  menuServices = menu.services;
+  renderAllMenus();
+}
+
+function applyOrderStockChanges(order) {
+  if (!order?.items?.length) return false;
+
+  let changed = false;
+  order.items.forEach((item) => {
+    const extra = menuExtras.find((entry) => entry.id === item.id);
+    if (!extra) return;
+    extra.stock = Math.max(0, (extra.stock ?? 0) - item.qty);
+    changed = true;
+  });
+
+  if (changed) {
+    saveFullMenu();
+    renderExtrasMenu();
+  }
+
+  return changed;
 }
 
 function isMobile() {
@@ -1004,7 +1419,13 @@ function changeQty(row, delta, button) {
   }
 
   const current = cartItems.get(row.dataset.id)?.qty || 0;
-  const next = Math.max(0, current + delta);
+  let next = Math.max(0, current + delta);
+
+  if (row.dataset.category === 'extra' && delta > 0) {
+    const stock = getExtraStock(row.dataset.id);
+    if (stock <= 0) return;
+    next = Math.min(next, stock);
+  }
 
   if (next === current) return;
 
@@ -1386,6 +1807,7 @@ async function revokePendingOrderIncome() {
 }
 
 function finishOtherPayment() {
+  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
   pendingOrderId = null;
   otherPaymentRecorded = false;
   clearPendingPayment();
@@ -1395,16 +1817,19 @@ function finishOtherPayment() {
   payActions.forEach((action) => {
     action.disabled = false;
   });
+  if (order) applyOrderStockChanges(order);
   clearCart();
   showThanks();
 }
 function confirmPaymentSuccess() {
+  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
   pendingOrderId = null;
   otherPaymentRecorded = false;
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
+  if (order) applyOrderStockChanges(order);
   clearCart();
   showThanks();
 }
@@ -1428,12 +1853,26 @@ menuAddForm?.addEventListener('submit', (event) => {
   event.preventDefault();
   const name = menuAddName?.value.trim();
   const amount = Number(menuAddAmount?.value);
+  const stock = Number(menuAddStock?.value);
   if (!name || !Number.isFinite(amount) || amount <= 0) return;
-  addMenuDrink(name, amount, menuEditorSelectedIcon);
+  if (menuEditorSection === 'extras') {
+    if (!Number.isFinite(stock) || stock < 0) return;
+    addMenuEditorItem(name, amount, stock);
+  } else {
+    addMenuEditorItem(name, amount);
+  }
   menuAddForm.reset();
   menuEditorEditingId = null;
   renderMenuEditorIconPicker();
   menuAddName?.focus();
+});
+
+menuEditorSectionTabs.forEach((tab) => {
+  tab.addEventListener('click', () => {
+    const section = tab.dataset.menuSection;
+    if (!section || section === menuEditorSection) return;
+    setMenuEditorSection(section);
+  });
 });
 
 menuSettingsBtn?.addEventListener('click', openMenuEditor);
@@ -1584,8 +2023,22 @@ function isHaircutName(value) {
 }
 
 function isHaircutLine(line) {
-  const id = String(line?.id || '').toLowerCase();
-  return id === HAIRCUT_ID || isHaircutName(line?.name);
+  return isServiceLine(line);
+}
+
+function isServiceLine(line) {
+  const id = String(line?.id || '');
+  if (menuServices.some((service) => service.id === id)) return true;
+  return isHaircutName(line?.name);
+}
+
+function isExtraLine(line) {
+  const id = String(line?.id || '');
+  return menuExtras.some((extra) => extra.id === id);
+}
+
+function isCoffeeLine(line) {
+  return !isServiceLine(line) && !isExtraLine(line);
 }
 
 function getLineAmount(line) {
@@ -1640,6 +2093,12 @@ function estimateLineAmount(line) {
   const amount = Number(line?.amount);
   if (Number.isFinite(amount) && amount > 0) return amount * qty;
 
+  const extra = menuExtras.find((item) => item.id === line.id || item.name === line.name);
+  if (extra) return extra.amount * qty;
+
+  const service = menuServices.find((item) => item.id === line.id || item.name === line.name);
+  if (service) return service.amount * qty;
+
   if (isHaircutLine(line)) return 250 * qty;
 
   const drink = menuDrinks.find((item) => item.id === line.id || item.name === line.name);
@@ -1652,8 +2111,10 @@ function splitIncomeRecord(record) {
   const amount = Number(record.amount || 0);
   let coffee = 0;
   let haircut = 0;
+  let extras = 0;
   let coffeeDrinks = 0;
   let haircutCount = 0;
+  let extrasCount = 0;
   let manualCoffeeCount = 0;
 
   if (record.source === 'order') {
@@ -1679,9 +2140,12 @@ function splitIncomeRecord(record) {
 
       lineAmounts.forEach(({ line, value }) => {
         const qty = getLineQty(line);
-        if (isHaircutLine(line)) {
+        if (isServiceLine(line)) {
           haircut += value;
           haircutCount += qty;
+        } else if (isExtraLine(line)) {
+          extras += value;
+          extrasCount += qty;
         } else {
           coffee += value;
           coffeeDrinks += qty;
@@ -1694,7 +2158,15 @@ function splitIncomeRecord(record) {
       coffee += amount;
       coffeeDrinks += 1;
     }
-    return { coffee, haircut, coffeeDrinks, haircutCount, manualCoffeeCount };
+    return {
+      coffee,
+      haircut,
+      extras,
+      coffeeDrinks,
+      haircutCount,
+      extrasCount,
+      manualCoffeeCount,
+    };
   }
 
   if (isHaircutName(record.label)) {
@@ -1705,7 +2177,15 @@ function splitIncomeRecord(record) {
     manualCoffeeCount += 1;
   }
 
-  return { coffee, haircut, coffeeDrinks, haircutCount, manualCoffeeCount };
+  return {
+    coffee,
+    haircut,
+    extras,
+    coffeeDrinks,
+    haircutCount,
+    extrasCount,
+    manualCoffeeCount,
+  };
 }
 
 function getCoffeeOnlyIncomes(incomes) {
@@ -1715,7 +2195,7 @@ function getCoffeeOnlyIncomes(incomes) {
 
     const items = getIncomeItems(record);
     if (record.source === 'order' && items?.length) {
-      const coffeeItems = items.filter((line) => !isHaircutLine(line));
+      const coffeeItems = items.filter((line) => isCoffeeLine(line));
       if (!coffeeItems.length) return [];
 
       return [{
@@ -1739,15 +2219,19 @@ function summarizeIncomes(incomes) {
     const part = splitIncomeRecord(record);
     summary.coffee += part.coffee;
     summary.haircut += part.haircut;
+    summary.extras += part.extras;
     summary.coffeeDrinks += part.coffeeDrinks;
     summary.haircutCount += part.haircutCount;
+    summary.extrasCount += part.extrasCount;
     summary.manualCoffeeCount += part.manualCoffeeCount;
     return summary;
   }, {
     coffee: 0,
     haircut: 0,
+    extras: 0,
     coffeeDrinks: 0,
     haircutCount: 0,
+    extrasCount: 0,
     manualCoffeeCount: 0,
   });
 }
@@ -1930,8 +2414,9 @@ function formatBalanceMoney(value) {
 
 function incomeCategory(record) {
   const part = splitIncomeRecord(record);
-  if (part.haircut > 0 && part.coffee <= 0) return 'haircut';
-  if (part.haircut > 0 && part.coffee > 0) return 'mixed';
+  if (part.haircut > 0 && part.coffee <= 0 && part.extras <= 0) return 'haircut';
+  if (part.extras > 0 && part.coffee <= 0 && part.haircut <= 0) return 'extras';
+  if ((part.haircut > 0 || part.extras > 0) && part.coffee > 0) return 'mixed';
   return 'coffee';
 }
 
@@ -2079,6 +2564,7 @@ function renderIncomeItem(item) {
   const category = incomeCategory(item);
   li.className = 'stats-list-item';
   if (category === 'haircut') li.classList.add('stats-list-item--haircut');
+  if (category === 'extras') li.classList.add('stats-list-item--extras');
   if (category === 'mixed') li.classList.add('stats-list-item--mixed');
 
   const main = document.createElement('div');
@@ -2176,6 +2662,10 @@ function renderStatsView(data) {
   statsCoffeeMeta.textContent = formatCountLabel(coffeeDrinks, 'напій', 'напої', 'напоїв');
   statsHaircutTotal.textContent = formatStatsMoney(summary.haircut);
   statsHaircutMeta.textContent = formatCountLabel(summary.haircutCount, 'раз', 'рази', 'разів');
+  if (statsExtrasTotal) statsExtrasTotal.textContent = formatStatsMoney(summary.extras);
+  if (statsExtrasMeta) {
+    statsExtrasMeta.textContent = formatCountLabel(summary.extrasCount, 'позиція', 'позиції', 'позицій');
+  }
 
   statsTotalIncome.textContent = formatStatsMoney(coffeeIncome);
   statsTotalExpenses.textContent = formatStatsMoney(expenses);

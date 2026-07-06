@@ -1,4 +1,4 @@
-import { getMenuDrinksFromDb, saveMenuDrinksToDb } from './db.js';
+import { getFullMenuFromDb, saveFullMenuToDb } from './db.js';
 
 const DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
@@ -9,7 +9,40 @@ const DEFAULT_DRINKS = [
   { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
 ];
 
+const DEFAULT_SERVICES = [
+  { id: 'haircut', name: 'Стрижка', amount: 250, icon: 'haircut' },
+];
+
 function normalizeDrink(raw) {
+  const name = String(raw?.name || '').trim();
+  const amount = Number(raw?.amount);
+  const id = String(raw?.id || '').trim();
+  if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+
+  return {
+    id,
+    name,
+    amount: Math.round(amount),
+    icon: String(raw?.icon || 'generic').trim() || 'generic',
+  };
+}
+
+function normalizeExtra(raw) {
+  const name = String(raw?.name || '').trim();
+  const amount = Number(raw?.amount);
+  const stock = Number(raw?.stock);
+  const id = String(raw?.id || '').trim();
+  if (!name || !id || !Number.isFinite(amount) || amount <= 0 || amount > 100000) return null;
+
+  return {
+    id,
+    name,
+    amount: Math.round(amount),
+    stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+  };
+}
+
+function normalizeService(raw) {
   const name = String(raw?.name || '').trim();
   const amount = Number(raw?.amount);
   const id = String(raw?.id || '').trim();
@@ -28,6 +61,34 @@ function normalizeDrinks(list) {
   return list.map(normalizeDrink).filter(Boolean);
 }
 
+function normalizeExtras(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeExtra).filter(Boolean);
+}
+
+function normalizeServices(list) {
+  if (!Array.isArray(list)) return [];
+  return list.map(normalizeService).filter(Boolean);
+}
+
+function buildMenuResponse(stored) {
+  const drinks = stored?.drinks?.length
+    ? normalizeDrinks(stored.drinks)
+    : DEFAULT_DRINKS;
+  const extras = normalizeExtras(stored?.extras);
+  const services = stored?.services?.length
+    ? normalizeServices(stored.services)
+    : DEFAULT_SERVICES;
+
+  return {
+    ok: true,
+    drinks,
+    extras,
+    services,
+    updatedAt: stored?.updatedAt || null,
+  };
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -40,33 +101,35 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'GET') {
-    const stored = await getMenuDrinksFromDb();
-    const drinks = stored?.drinks?.length
-      ? normalizeDrinks(stored.drinks)
-      : DEFAULT_DRINKS;
-
-    res.status(200).json({
-      ok: true,
-      drinks,
-      updatedAt: stored?.updatedAt || null,
-    });
+    const stored = await getFullMenuFromDb();
+    res.status(200).json(buildMenuResponse(stored));
     return;
   }
 
   if (req.method === 'POST') {
-    const drinks = normalizeDrinks(req.body?.drinks);
+    const current = await getFullMenuFromDb();
+    const drinks = req.body?.drinks !== undefined
+      ? normalizeDrinks(req.body.drinks)
+      : normalizeDrinks(current?.drinks);
+    const extras = req.body?.extras !== undefined
+      ? normalizeExtras(req.body.extras)
+      : normalizeExtras(current?.extras);
+    const services = req.body?.services !== undefined
+      ? normalizeServices(req.body.services)
+      : normalizeServices(current?.services?.length ? current.services : DEFAULT_SERVICES);
+
     if (!drinks.length) {
       res.status(400).json({ ok: false, error: 'invalid_menu' });
       return;
     }
 
-    const saved = await saveMenuDrinksToDb(drinks);
+    const saved = await saveFullMenuToDb({ drinks, extras, services });
     if (!saved) {
       res.status(503).json({ ok: false, error: 'db_unavailable' });
       return;
     }
 
-    res.status(200).json({ ok: true, drinks: saved.drinks, updatedAt: saved.updatedAt });
+    res.status(200).json(buildMenuResponse(saved));
     return;
   }
 

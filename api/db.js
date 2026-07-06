@@ -346,3 +346,109 @@ export async function saveMenuDrinksToDb(drinks) {
     updatedAt: rows[0].updated_at,
   };
 }
+
+function normalizeMenuExtras(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const name = String(item?.name || '').trim();
+      const amount = Number(item?.amount);
+      const stock = Number(item?.stock);
+      const id = String(item?.id || '').trim();
+      if (!name || !id || !Number.isFinite(amount) || amount <= 0) return null;
+      return {
+        id,
+        name,
+        amount: Math.round(amount),
+        stock: Number.isFinite(stock) && stock >= 0 ? Math.round(stock) : 0,
+      };
+    })
+    .filter(Boolean);
+}
+
+function normalizeMenuServices(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => {
+      const name = String(item?.name || '').trim();
+      const amount = Number(item?.amount);
+      const id = String(item?.id || '').trim();
+      if (!name || !id || !Number.isFinite(amount) || amount <= 0) return null;
+      return {
+        id,
+        name,
+        amount: Math.round(amount),
+        icon: String(item?.icon || 'generic').trim() || 'generic',
+      };
+    })
+    .filter(Boolean);
+}
+
+export async function getFullMenuFromDb() {
+  const sql = getSql();
+  if (!sql) return null;
+
+  await ensureMenuTable(sql);
+
+  const rows = await sql`
+    SELECT key, value, updated_at
+    FROM app_config
+    WHERE key IN ('menu_full', 'menu_drinks')
+    ORDER BY CASE key WHEN 'menu_full' THEN 0 ELSE 1 END
+    LIMIT 2
+  `;
+
+  const fullRow = rows.find((row) => row.key === 'menu_full');
+  if (fullRow) {
+    const value = fullRow.value || {};
+    return {
+      drinks: normalizeMenuDrinks(value.drinks),
+      extras: normalizeMenuExtras(value.extras),
+      services: normalizeMenuServices(value.services),
+      updatedAt: fullRow.updated_at,
+    };
+  }
+
+  const drinksRow = rows.find((row) => row.key === 'menu_drinks');
+  if (!drinksRow) return null;
+
+  return {
+    drinks: normalizeMenuDrinks(drinksRow.value),
+    extras: [],
+    services: [],
+    updatedAt: drinksRow.updated_at,
+  };
+}
+
+export async function saveFullMenuToDb({ drinks, extras, services }) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const payload = {
+    drinks: normalizeMenuDrinks(drinks),
+    extras: normalizeMenuExtras(extras),
+    services: normalizeMenuServices(services),
+  };
+
+  if (!payload.drinks.length) return null;
+
+  await ensureMenuTable(sql);
+
+  const rows = await sql`
+    INSERT INTO app_config (key, value, updated_at)
+    VALUES ('menu_full', ${JSON.stringify(payload)}::jsonb, NOW())
+    ON CONFLICT (key) DO UPDATE SET
+      value = EXCLUDED.value,
+      updated_at = NOW()
+    RETURNING value, updated_at
+  `;
+
+  const value = rows[0].value || {};
+
+  return {
+    drinks: normalizeMenuDrinks(value.drinks),
+    extras: normalizeMenuExtras(value.extras),
+    services: normalizeMenuServices(value.services),
+    updatedAt: rows[0].updated_at,
+  };
+}

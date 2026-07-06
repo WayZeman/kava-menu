@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '52';
+      var version = '53';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=52">
+  <link rel="stylesheet" href="styles.css?v=53">
 </head>
 <body>
   <div class="bg-animation" aria-hidden="true">
@@ -69,43 +69,14 @@
 
     <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв"></section>
 
-    <section class="menu menu--services" aria-label="Послуги">
+    <section id="extras-menu" class="menu menu--extras" aria-label="До кави" hidden>
+      <h2 class="menu-heading">До кави</h2>
+      <div id="extras-menu-list"></div>
+    </section>
+
+    <section id="services-menu" class="menu menu--services" aria-label="Послуги">
       <h2 class="menu-heading">Послуги</h2>
-        <article class="row" data-id="haircut" data-name="Стрижка" data-amount="250">
-          <span class="drink-icon" aria-hidden="true">
-            <svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <circle cx="16" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-              <circle cx="32" cy="13" r="6.5" stroke="#2f1a0f" stroke-width="2.5" fill="#f5f0e8"/>
-              <path d="M20 17.5 24 27.5 28 17.5" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
-              <path d="M24 27.5 17.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-              <path d="M24 27.5 30.5 40" stroke="#2f1a0f" stroke-width="2.5" stroke-linecap="round"/>
-              <circle cx="24" cy="27.5" r="2.5" fill="#d4a853"/>
-            </svg>
-          </span>
-          <div class="row-main">
-            <span class="name">Стрижка</span>
-          </div>
-          <span class="price">250 грн</span>
-          <div class="qty">
-            <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-            <span class="qty-value">0</span>
-            <button class="qty-btn" type="button" data-action="plus" aria-label="Більше">+</button>
-          </div>
-        </article>
-        <article class="row row--picker row--hidden" data-picker="car-wash" aria-label="Помивка машини" hidden>
-          <span class="drink-icon drink-icon--car" aria-hidden="true">
-            <img src="logos/car.png" width="34" height="34" alt="">
-          </span>
-          <div class="row-main">
-            <span class="name">Помивка машини</span>
-          </div>
-          <span class="price">300 грн</span>
-          <div class="qty">
-            <button class="qty-btn" type="button" data-action="minus" aria-label="Менше">−</button>
-            <span class="qty-value">0</span>
-            <button class="qty-btn" type="button" data-action="plus" aria-label="Обрати забруднення">+</button>
-          </div>
-        </article>
+      <div id="services-menu-list"></div>
     </section>
   </main>
 
@@ -311,8 +282,13 @@
           <strong id="stats-coffee-total" class="stats-breakdown-value">0 грн</strong>
           <span id="stats-coffee-meta" class="stats-breakdown-meta">0 напоїв</span>
         </article>
+        <article class="stats-breakdown-card stats-breakdown-card--extras">
+          <span class="stats-breakdown-label">До кави</span>
+          <strong id="stats-extras-total" class="stats-breakdown-value">0 грн</strong>
+          <span id="stats-extras-meta" class="stats-breakdown-meta">0 позицій</span>
+        </article>
         <article class="stats-breakdown-card stats-breakdown-card--haircut">
-          <span class="stats-breakdown-label">Стрижка</span>
+          <span class="stats-breakdown-label">Послуги</span>
           <strong id="stats-haircut-total" class="stats-breakdown-value">0 грн</strong>
           <span id="stats-haircut-meta" class="stats-breakdown-meta">0 разів</span>
         </article>
@@ -423,24 +399,31 @@
       <header class="menu-editor-header">
         <button class="stats-back" type="button" data-menu-editor-back aria-label="Назад до статистики">← Статистика</button>
         <h2 class="stats-title">Редагування меню</h2>
-        <p class="stats-subtitle">Змініть напої та натисніть «Зберегти меню»</p>
+        <p class="stats-subtitle">Змініть розділ і натисніть «Зберегти меню»</p>
       </header>
 
-      <section class="menu-editor-section" aria-label="Новий напій">
-        <h3 class="menu-editor-section-title">Новий напій</h3>
+      <div class="menu-editor-section-tabs" role="tablist" aria-label="Розділ меню">
+        <button type="button" class="menu-editor-section-tab is-active" data-menu-section="drinks" role="tab" aria-selected="true">Напої</button>
+        <button type="button" class="menu-editor-section-tab" data-menu-section="extras" role="tab" aria-selected="false">До кави</button>
+        <button type="button" class="menu-editor-section-tab" data-menu-section="services" role="tab" aria-selected="false">Послуги</button>
+      </div>
+
+      <section class="menu-editor-section" aria-label="Новий пункт">
+        <h3 id="menu-editor-add-title" class="menu-editor-section-title">Новий напій</h3>
         <p id="menu-editor-icon-hint" class="menu-editor-icon-hint">Оберіть значок</p>
-        <div id="menu-editor-icon-picker" class="menu-editor-icon-picker" role="listbox" aria-label="Значок напою"></div>
+        <div id="menu-editor-icon-picker" class="menu-editor-icon-picker" role="listbox" aria-label="Значок"></div>
         <form id="menu-add-form" class="menu-editor-form">
-          <input id="menu-add-name" class="stats-input menu-editor-input" type="text" maxlength="80" placeholder="Назва напою" required>
+          <input id="menu-add-name" class="stats-input menu-editor-input" type="text" maxlength="80" placeholder="Назва" required>
           <input id="menu-add-amount" class="stats-input menu-editor-input menu-editor-input--amount" type="number" min="1" step="1" placeholder="Ціна" required>
+          <input id="menu-add-stock" class="stats-input menu-editor-input menu-editor-input--stock" type="number" min="0" step="1" placeholder="Кількість" hidden>
           <button class="menu-editor-add-btn" type="submit">Додати</button>
         </form>
       </section>
 
-      <section class="menu-editor-section" aria-label="Поточне меню">
-        <h3 class="menu-editor-section-title">Поточне меню</h3>
+      <section class="menu-editor-section" aria-label="Поточний список">
+        <h3 id="menu-editor-list-title" class="menu-editor-section-title">Поточне меню</h3>
         <ul id="menu-editor-list" class="menu-editor-list"></ul>
-        <p id="menu-editor-empty" class="menu-editor-empty" hidden>Напоїв поки немає</p>
+        <p id="menu-editor-empty" class="menu-editor-empty" hidden>Список порожній</p>
       </section>
 
       <footer class="menu-editor-footer">
@@ -451,6 +434,6 @@
 
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
 
-  <script src="script.js?v=52"></script>
+  <script src="script.js?v=53"></script>
 </body>
 </html>
