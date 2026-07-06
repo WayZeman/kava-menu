@@ -17,6 +17,7 @@ const cartCount = document.getElementById('cart-count');
 const cartTotal = document.getElementById('cart-total');
 const cartPay = document.getElementById('cart-pay');
 const fxLayer = document.getElementById('fx-layer');
+const stockToast = document.getElementById('stock-toast');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -102,7 +103,7 @@ const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
-const APP_VERSION = '58';
+const APP_VERSION = '59';
 const HAIRCUT_ID = 'haircut';
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -1326,6 +1327,25 @@ function pulseClass(element, className, duration = 220) {
   pulseTimers.set(element, timer);
 }
 
+let stockToastTimer = null;
+
+function showStockLimitNotice() {
+  if (!stockToast) return;
+
+  stockToast.textContent = 'На жаль, це все що наразі є';
+  stockToast.hidden = false;
+  requestAnimationFrame(() => stockToast.classList.add('is-visible'));
+
+  if (stockToastTimer) clearTimeout(stockToastTimer);
+  stockToastTimer = setTimeout(() => {
+    stockToast.classList.remove('is-visible');
+    stockToastTimer = setTimeout(() => {
+      stockToast.hidden = true;
+      stockToastTimer = null;
+    }, 220);
+  }, 2600);
+}
+
 function spawnBurst(x, y, emoji = '✨', count = 3) {
   if (!fxLayer || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
@@ -1463,6 +1483,10 @@ function changeQty(row, delta, button) {
   if (row.dataset.category === 'extra' && delta > 0) {
     const stock = getExtraStock(row.dataset.id);
     if (stock <= 0) return;
+    if (current >= stock) {
+      showStockLimitNotice();
+      return;
+    }
     next = Math.min(next, stock);
   }
 
