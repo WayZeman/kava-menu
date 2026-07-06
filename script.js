@@ -1150,7 +1150,7 @@ async function initMenu() {
   renderAllMenus();
 }
 
-function applyOrderStockChanges(order) {
+async function applyOrderStockChanges(order) {
   if (!order?.items?.length) return false;
 
   let changed = false;
@@ -1162,7 +1162,7 @@ function applyOrderStockChanges(order) {
   });
 
   if (changed) {
-    saveFullMenu();
+    await saveFullMenu();
     renderExtrasMenu();
   }
 
@@ -1870,7 +1870,7 @@ async function revokePendingOrderIncome() {
   }
 }
 
-function finishOtherPayment() {
+async function finishOtherPayment() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
   pendingOrderId = null;
   otherPaymentRecorded = false;
@@ -1881,11 +1881,11 @@ function finishOtherPayment() {
   payActions.forEach((action) => {
     action.disabled = false;
   });
-  if (order) applyOrderStockChanges(order);
+  if (order) await applyOrderStockChanges(order);
   clearCart();
   showThanks();
 }
-function confirmPaymentSuccess() {
+async function confirmPaymentSuccess() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
   pendingOrderId = null;
   otherPaymentRecorded = false;
@@ -1893,7 +1893,7 @@ function confirmPaymentSuccess() {
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
-  if (order) applyOrderStockChanges(order);
+  if (order) await applyOrderStockChanges(order);
   clearCart();
   showThanks();
 }

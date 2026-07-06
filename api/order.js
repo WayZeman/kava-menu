@@ -1,4 +1,9 @@
-import { buildOrderLabel, insertIncome } from './db.js';
+import {
+  buildOrderLabel,
+  getFullMenuFromDb,
+  insertIncome,
+  saveFullMenuToDb,
+} from './db.js';
 
 function formatOrderDate() {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -70,6 +75,38 @@ async function sendTelegramMessage(token, chatId, text) {
   return Boolean(data.ok);
 }
 
+async function applyOrderedExtraStock(items) {
+  if (!Array.isArray(items) || !items.length) return;
+
+  const menu = await getFullMenuFromDb();
+  if (!menu?.drinks?.length) return;
+
+  const extras = Array.isArray(menu.extras)
+    ? menu.extras.map((item) => ({ ...item }))
+    : [];
+
+  let changed = false;
+  for (const item of items) {
+    const id = String(item?.id || '').trim();
+    const qty = Number(item?.qty);
+    if (!id || !Number.isFinite(qty) || qty <= 0) continue;
+
+    const extra = extras.find((entry) => entry.id === id);
+    if (!extra) continue;
+
+    extra.stock = Math.max(0, Number(extra.stock || 0) - qty);
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  await saveFullMenuToDb({
+    drinks: menu.drinks,
+    extras,
+    services: menu.services,
+  });
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     res.status(405).send('Method not allowed');
@@ -130,6 +167,14 @@ export default async function handler(req, res) {
   if (!saved) {
     res.status(503).json({ ok: false, error: 'db_unavailable' });
     return;
+  }
+
+  if (isNewOrder) {
+    try {
+      await applyOrderedExtraStock(orderRecord?.items || []);
+    } catch {
+      // do not fail the order if stock sync fails
+    }
   }
 
   const token = process.env.TELEGRAM_BOT_TOKEN;
