@@ -204,6 +204,13 @@ body.has-cart .page {
   gap: 12px;
 }
 
+#extras-menu-list,
+#services-menu-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 .menu--extras .row.is-entering:nth-child(2) { animation-delay: 0.3s; }
 .menu--extras .row.is-entering:nth-child(3) { animation-delay: 0.35s; }
 .menu--extras .row.is-entering:nth-child(4) { animation-delay: 0.4s; }
