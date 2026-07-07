@@ -38,7 +38,9 @@ const menuEditorList = document.getElementById('menu-editor-list');
 const menuEditorEmpty = document.getElementById('menu-editor-empty');
 const menuEditorSaveBtn = document.getElementById('menu-editor-save');
 const menuSettingsBtn = document.getElementById('stats-menu-settings');
+const statsThemeSettingsBtn = document.getElementById('stats-theme-settings');
 const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
+const statsThemeEntryMeta = document.getElementById('stats-theme-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
 const menuAddName = document.getElementById('menu-add-name');
 const menuAddStock = document.getElementById('menu-add-stock');
@@ -52,6 +54,7 @@ const confirmNo = document.getElementById('confirm-no');
 const thanks = document.getElementById('thanks');
 const carWashSheet = document.getElementById('car-wash-sheet');
 const cardPaySheet = document.getElementById('card-pay-sheet');
+const themeSheet = document.getElementById('theme-sheet');
 const cardPayAmount = document.getElementById('card-pay-amount');
 const cardPayCopy = document.getElementById('card-pay-copy');
 const carWashRow = document.querySelector('[data-picker="car-wash"]');
@@ -119,8 +122,16 @@ const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
-const APP_VERSION = '68';
+const THEME_KEY = 'kava-ui-theme';
+const APP_VERSION = '69';
 const HAIRCUT_ID = 'haircut';
+const THEMES = {
+  'soft-premium': {
+    id: 'soft-premium',
+    label: 'Soft Premium',
+    description: 'Поточний світлий стиль сайту',
+  },
+};
 const STATS_CATEGORIES = {
   drinks: {
     id: 'drinks',
@@ -397,6 +408,43 @@ function loadVisibilityFromStorage() {
     return normalizeVisibility(JSON.parse(raw));
   } catch {
     return normalizeVisibility();
+  }
+}
+
+function normalizeTheme(themeId) {
+  return THEMES[themeId] ? themeId : 'soft-premium';
+}
+
+function loadThemeFromStorage() {
+  try {
+    return normalizeTheme(localStorage.getItem(THEME_KEY));
+  } catch {
+    return 'soft-premium';
+  }
+}
+
+let currentTheme = loadThemeFromStorage();
+
+function applyTheme(themeId) {
+  currentTheme = normalizeTheme(themeId);
+  document.body.dataset.theme = currentTheme;
+  document.documentElement.dataset.theme = currentTheme;
+  if (statsThemeEntryMeta) {
+    statsThemeEntryMeta.textContent = THEMES[currentTheme].label;
+  }
+  document.querySelectorAll('[data-theme-option]').forEach((button) => {
+    const active = button.dataset.themeOption === currentTheme;
+    button.classList.toggle('is-active', active);
+    button.setAttribute('aria-pressed', active ? 'true' : 'false');
+  });
+}
+
+function saveTheme(themeId) {
+  applyTheme(themeId);
+  try {
+    localStorage.setItem(THEME_KEY, currentTheme);
+  } catch {
+    // ignore quota errors
   }
 }
 
@@ -938,6 +986,19 @@ function updateMenuEntryMeta() {
   statsMenuEntryMeta.textContent = count
     ? `${count} поз. · редагувати`
     : config.menuMeta;
+}
+
+function openThemeSheet() {
+  if (!themeSheet) return;
+  applyTheme(currentTheme);
+  themeSheet.hidden = false;
+  document.body.classList.add('sheet-open');
+}
+
+function closeThemeSheet() {
+  if (!themeSheet) return;
+  themeSheet.hidden = true;
+  document.body.classList.remove('sheet-open');
 }
 
 function setMenuEditorIcon(iconId, { editingId = null } = {}) {
@@ -2083,10 +2144,19 @@ menuEditorSectionTabs.forEach((tab) => {
 menuSettingsBtn?.addEventListener('click', () => {
   openMenuEditor(statsCategory, { singleSection: true });
 });
+statsThemeSettingsBtn?.addEventListener('click', openThemeSheet);
 menuEditorSaveBtn?.addEventListener('click', () => {
   saveMenuEditor();
 });
 menuEditor?.querySelector('[data-menu-editor-back]')?.addEventListener('click', closeMenuEditor);
+themeSheet?.querySelectorAll('[data-theme-close]').forEach((button) => {
+  button.addEventListener('click', closeThemeSheet);
+});
+themeSheet?.querySelectorAll('[data-theme-option]').forEach((button) => {
+  button.addEventListener('click', () => {
+    saveTheme(button.dataset.themeOption);
+  });
+});
 
 carWashSheet?.querySelectorAll('[data-car-wash-level]').forEach((button) => {
   button.addEventListener('click', () => {
@@ -2230,6 +2300,7 @@ async function bootApp() {
   }, wait);
 }
 
+applyTheme(currentTheme);
 initStandaloneMode();
 bootApp();
 initPaymentReturn();

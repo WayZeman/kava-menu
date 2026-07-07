@@ -1551,6 +1551,14 @@ body.menu-editor-open {
   margin-bottom: 14px;
 }
 
+.stats-settings-list {
+  margin-bottom: 14px;
+}
+
+.stats-settings-list .stats-menu-entry:last-child {
+  margin-bottom: 0;
+}
+
 .stats-menu-entry-btn {
   display: flex;
   align-items: center;
@@ -3303,6 +3311,95 @@ body {
   border-radius: 18px;
   border: 1px solid rgba(210, 206, 198, 0.88);
   background: rgba(255, 255, 255, 0.92);
+}
+
+.theme-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 100%;
+}
+
+.theme-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 76px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.82);
+  color: #26231f;
+  text-align: left;
+  box-shadow: 0 12px 26px rgba(114, 86, 52, 0.08);
+  cursor: pointer;
+}
+
+.theme-option.is-active {
+  border-color: rgba(255, 214, 92, 0.82);
+  box-shadow:
+    0 14px 28px rgba(114, 86, 52, 0.1),
+    0 0 0 4px rgba(255, 214, 92, 0.14);
+}
+
+.theme-option-preview {
+  display: block;
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.86);
+  box-shadow: 0 10px 20px rgba(114, 86, 52, 0.08);
+}
+
+.theme-option-preview--soft-premium {
+  background:
+    radial-gradient(circle at top right, rgba(255, 216, 106, 0.5), transparent 34%),
+    radial-gradient(circle at 18% 20%, rgba(146, 204, 255, 0.32), transparent 28%),
+    rgba(255, 255, 255, 0.82);
+}
+
+.theme-option-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.theme-option-copy strong {
+  font-size: 0.94rem;
+  font-weight: 800;
+}
+
+.theme-option-copy span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: rgba(44, 40, 36, 0.62);
+}
+
+.theme-option-check {
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(36, 33, 29, 0.08);
+  color: #26231f;
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.theme-sheet-note {
+  margin: 12px 0 0;
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(44, 40, 36, 0.62);
+  text-align: center;
 }
 
 /* ── Mobile layout (menu + analytics) ── */
