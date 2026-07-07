@@ -123,13 +123,18 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '69';
+const APP_VERSION = '70';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
     id: 'soft-premium',
     label: 'Soft Premium',
     description: 'Поточний світлий стиль сайту',
+  },
+  'forest-banking': {
+    id: 'forest-banking',
+    label: 'Forest Banking',
+    description: 'Темно-зелений стиль з яскравими акцентами',
   },
 };
 const STATS_CATEGORIES = {
