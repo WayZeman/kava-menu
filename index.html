@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '71';
+      var version = '72';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=71">
+  <link rel="stylesheet" href="styles.css?v=72">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -321,31 +321,26 @@
         <footer class="stats-hub-summary" aria-label="Загальні підсумки">
           <div class="stats-hub-summary-row">
             <span>Загальний дохід</span>
-            <strong id="stats-hub-total-income">0 грн</strong>
+            <div class="stats-hub-summary-value">
+              <strong id="stats-hub-total-income">0 грн</strong>
+              <span id="stats-hub-income-share" class="stats-hub-summary-meta">0%</span>
+            </div>
           </div>
           <div class="stats-hub-summary-row">
             <span>Загальні витрати</span>
-            <strong id="stats-hub-total-expenses">0 грн</strong>
+            <div class="stats-hub-summary-value">
+              <strong id="stats-hub-total-expenses">0 грн</strong>
+              <span id="stats-hub-expenses-share" class="stats-hub-summary-meta">0%</span>
+            </div>
+          </div>
+          <div class="stats-hub-summary-row stats-hub-summary-row--balance">
+            <span>Чистий баланс</span>
+            <div class="stats-hub-summary-value">
+              <strong id="stats-hub-balance-total">0 грн</strong>
+              <span id="stats-hub-balance-share" class="stats-hub-summary-meta">0%</span>
+            </div>
           </div>
         </footer>
-
-        <section class="stats-theme-panel" aria-label="Тема">
-          <div class="stats-theme-panel-head">
-            <span class="stats-card-label">Тема</span>
-            <span id="stats-theme-entry-meta" class="stats-theme-panel-meta">Soft Premium</span>
-          </div>
-          <div class="theme-options theme-options--inline" role="list" aria-label="Вибір теми">
-            <button id="theme-option-soft-premium" class="theme-option is-active" type="button" data-theme-option="soft-premium" aria-pressed="true">
-              <span class="theme-option-preview theme-option-preview--soft-premium" aria-hidden="true"></span>
-              <span class="theme-option-copy">
-                <strong>Soft Premium</strong>
-                <span>Поточний світлий стиль сайту</span>
-              </span>
-              <span class="theme-option-check" aria-hidden="true">✓</span>
-            </button>
-          </div>
-          <p class="theme-sheet-note">Тема перемикається одразу і зберігається на цьому пристрої.</p>
-        </section>
       </div>
 
       <div id="stats-category" class="stats-view stats-view--category" hidden>
@@ -525,6 +520,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=71"></script>
+  <script src="script.js?v=72"></script>
 </body>
 </html>

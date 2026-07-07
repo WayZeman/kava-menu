@@ -73,6 +73,10 @@ const statsHubServicesMeta = document.getElementById('stats-hub-services-meta');
 const statsHubServicesRoi = document.getElementById('stats-hub-services-roi');
 const statsHubTotalIncome = document.getElementById('stats-hub-total-income');
 const statsHubTotalExpenses = document.getElementById('stats-hub-total-expenses');
+const statsHubIncomeShare = document.getElementById('stats-hub-income-share');
+const statsHubExpensesShare = document.getElementById('stats-hub-expenses-share');
+const statsHubBalanceTotal = document.getElementById('stats-hub-balance-total');
+const statsHubBalanceShare = document.getElementById('stats-hub-balance-share');
 const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
 const statsRoiWrap = document.getElementById('stats-roi-wrap');
 const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
@@ -121,7 +125,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '71';
+const APP_VERSION = '72';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -2828,6 +2832,14 @@ function formatRoiPercent(value) {
   })}%`;
 }
 
+function formatSignedPercent(value) {
+  const sign = value > 0 ? '+' : value < 0 ? '-' : '';
+  return `${sign}${Math.abs(value).toLocaleString('uk-UA', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  })}%`;
+}
+
 function getRoiPercent(income, expenses) {
   if (expenses <= 0) return null;
   return (income / expenses) * 100;
@@ -3089,6 +3101,11 @@ function renderStatsHub(data) {
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const totalIncome = summary.coffee + summary.extras + summary.haircut;
   const totalExpenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalFlow = totalIncome + totalExpenses;
+  const balance = totalIncome - totalExpenses;
+  const incomeShare = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 0;
+  const expenseShare = totalFlow > 0 ? (totalExpenses / totalFlow) * 100 : 0;
+  const balanceShare = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
 
   if (statsHubCoffeeTotal) {
     statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
@@ -3134,6 +3151,22 @@ function renderStatsHub(data) {
   }
   if (statsHubTotalExpenses) {
     statsHubTotalExpenses.textContent = formatStatsMoney(totalExpenses);
+  }
+  if (statsHubIncomeShare) {
+    statsHubIncomeShare.textContent = `${formatRoiPercent(incomeShare)} потоку`;
+  }
+  if (statsHubExpensesShare) {
+    statsHubExpensesShare.textContent = `${formatRoiPercent(expenseShare)} потоку`;
+  }
+  if (statsHubBalanceTotal) {
+    statsHubBalanceTotal.textContent = formatBalanceMoney(balance);
+    statsHubBalanceTotal.classList.toggle('is-positive', balance > 0);
+    statsHubBalanceTotal.classList.toggle('is-negative', balance < 0);
+  }
+  if (statsHubBalanceShare) {
+    statsHubBalanceShare.textContent = totalIncome > 0
+      ? `${formatSignedPercent(balanceShare)} маржа`
+      : '0.00% маржа';
   }
 
   renderStatsHubVisibility();

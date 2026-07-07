@@ -335,6 +335,7 @@ body.has-cart .page {
 .menu--services {
   margin-top: 36px;
   padding-top: 28px;
+  padding-bottom: 16px;
   border-top: 2px solid rgba(92, 58, 40, 0.14);
   gap: 12px;
 }
@@ -342,6 +343,7 @@ body.has-cart .page {
 .menu--extras {
   margin-top: 36px;
   padding-top: 28px;
+  padding-bottom: 16px;
   border-top: 2px solid rgba(92, 58, 40, 0.14);
   gap: 12px;
 }
@@ -466,6 +468,7 @@ body.has-cart .page {
 
 .menu--services .row {
   align-items: center;
+  grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
 .menu--services .row-main {
@@ -476,7 +479,8 @@ body.has-cart .page {
 }
 
 .menu--services .name {
-  line-height: 1;
+  line-height: 1.2;
+  overflow-wrap: anywhere;
 }
 
 .row--hidden {
@@ -2607,6 +2611,35 @@ body.menu-editor-open {
   font-variant-numeric: tabular-nums;
 }
 
+.stats-hub-summary-value {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+  text-align: right;
+}
+
+.stats-hub-summary-meta {
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: rgba(38, 35, 31, 0.58);
+  font-variant-numeric: tabular-nums;
+}
+
+.stats-hub-summary-row--balance {
+  margin-top: 8px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(61, 35, 20, 0.08);
+}
+
+.stats-hub-summary-row--balance strong.is-positive {
+  color: #2f7d32;
+}
+
+.stats-hub-summary-row--balance strong.is-negative {
+  color: #b33;
+}
+
 .menu-editor--single-section .menu-editor-section-tabs {
   display: none;
 }
@@ -3055,7 +3088,7 @@ body {
 .menu--extras,
 .menu--services {
   margin-top: 28px;
-  padding: 18px 16px 0;
+  padding: 18px 16px 16px;
   border-top: 0;
   border-radius: 32px;
   background: rgba(255, 255, 255, 0.52);
