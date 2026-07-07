@@ -3439,9 +3439,9 @@ body {
 
 body[data-theme="forest-banking"] {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.2), transparent 28%),
-    radial-gradient(circle at 12% 14%, rgba(52, 115, 255, 0.16), transparent 24%),
-    linear-gradient(180deg, #062713 0%, #0b341a 55%, #0f4020 100%);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.24), transparent 26%),
+    radial-gradient(circle at 12% 14%, rgba(52, 115, 255, 0.18), transparent 22%),
+    linear-gradient(180deg, #041d0e 0%, #082b16 48%, #0f4020 100%);
   color: #eef7ea;
 }
 
@@ -3451,9 +3451,9 @@ body[data-theme="forest-banking"] .stats,
 body[data-theme="forest-banking"] .menu-editor,
 body[data-theme="forest-banking"] .stats-gate {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.18), transparent 30%),
-    radial-gradient(circle at 14% 18%, rgba(52, 115, 255, 0.15), transparent 24%),
-    linear-gradient(180deg, #062713 0%, #0b341a 55%, #0f4020 100%);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.2), transparent 30%),
+    radial-gradient(circle at 14% 18%, rgba(52, 115, 255, 0.16), transparent 24%),
+    linear-gradient(180deg, #041d0e 0%, #082b16 48%, #0f4020 100%);
 }
 
 body[data-theme="forest-banking"] .hero,
@@ -3476,33 +3476,33 @@ body[data-theme="forest-banking"] .service-sheet-card,
 body[data-theme="forest-banking"] .thanks-card,
 body[data-theme="forest-banking"] .stats-gate-card {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.14), transparent 30%),
-    rgba(16, 63, 34, 0.78);
-  border-color: rgba(186, 234, 196, 0.16);
-  box-shadow: 0 24px 54px rgba(1, 14, 7, 0.34);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(17, 74, 39, 0.94) 0%, rgba(12, 54, 28, 0.94) 100%);
+  border-color: rgba(205, 242, 183, 0.14);
+  box-shadow: 0 24px 54px rgba(1, 14, 7, 0.42);
   color: #eef7ea;
 }
 
 body[data-theme="forest-banking"] .stats-hub-card {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.14), transparent 28%),
-    rgba(15, 71, 36, 0.88);
-  border-color: rgba(186, 234, 196, 0.14);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.12), transparent 30%),
+    linear-gradient(180deg, rgba(14, 69, 35, 0.98) 0%, rgba(9, 49, 24, 0.98) 100%);
+  border-color: rgba(205, 242, 183, 0.12);
   color: #eef7ea;
 }
 
 body[data-theme="forest-banking"] .stats-hub-card--coffee {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.32), transparent 32%),
-    radial-gradient(circle at bottom left, rgba(44, 134, 255, 0.18), transparent 28%),
-    rgba(15, 84, 38, 0.94);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.34), transparent 32%),
+    radial-gradient(circle at bottom left, rgba(44, 134, 255, 0.22), transparent 28%),
+    linear-gradient(180deg, rgba(18, 92, 43, 0.98) 0%, rgba(9, 63, 31, 0.98) 100%);
 }
 
 body[data-theme="forest-banking"] .stats-hub-card--extras,
 body[data-theme="forest-banking"] .stats-hub-card--services {
   background:
     radial-gradient(circle at top right, rgba(194, 255, 76, 0.14), transparent 28%),
-    rgba(15, 71, 36, 0.88);
+    linear-gradient(180deg, rgba(13, 63, 32, 0.96) 0%, rgba(8, 45, 23, 0.96) 100%);
 }
 
 body[data-theme="forest-banking"] .hero h1,
@@ -3533,7 +3533,7 @@ body[data-theme="forest-banking"] .stats-roi-caption,
 body[data-theme="forest-banking"] .theme-sheet-note,
 body[data-theme="forest-banking"] .app-splash-tagline,
 body[data-theme="forest-banking"] .theme-option-copy span {
-  color: rgba(232, 244, 228, 0.72);
+  color: rgba(232, 244, 228, 0.82);
 }
 
 body[data-theme="forest-banking"] .drink-icon,
@@ -3550,9 +3550,17 @@ body[data-theme="forest-banking"] .menu-editor-item-icon,
 body[data-theme="forest-banking"] .stats-edit-btn,
 body[data-theme="forest-banking"] .stats-delete-btn,
 body[data-theme="forest-banking"] .stats-cancel-btn {
-  background: rgba(233, 245, 230, 0.08);
-  border-color: rgba(186, 234, 196, 0.16);
+  background: rgba(233, 245, 230, 0.1);
+  border-color: rgba(205, 242, 183, 0.18);
   color: #f0f9e9;
+}
+
+body[data-theme="forest-banking"] .row.has-qty,
+body[data-theme="forest-banking"] .theme-option.is-active {
+  border-color: rgba(214, 255, 89, 0.78);
+  box-shadow:
+    0 18px 34px rgba(1, 14, 7, 0.32),
+    0 0 0 3px rgba(214, 255, 89, 0.14);
 }
 
 body[data-theme="forest-banking"] .price,
@@ -3574,17 +3582,17 @@ body[data-theme="forest-banking"] .stats-gate-submit {
 }
 
 body[data-theme="forest-banking"] .service-option {
-  background: rgba(233, 245, 230, 0.08);
-  border-color: rgba(186, 234, 196, 0.16);
+  background: rgba(233, 245, 230, 0.1);
+  border-color: rgba(205, 242, 183, 0.16);
   color: #f1f8ec;
 }
 
 body[data-theme="forest-banking"] .stats-form,
 body[data-theme="forest-banking"] .stats-balance {
   background:
-    radial-gradient(circle at top right, rgba(194, 255, 76, 0.22), transparent 32%),
-    linear-gradient(145deg, rgba(7, 61, 31, 0.94), rgba(11, 88, 42, 0.88));
-  box-shadow: 0 24px 50px rgba(1, 14, 7, 0.34);
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.24), transparent 32%),
+    linear-gradient(145deg, rgba(8, 72, 35, 0.98), rgba(10, 99, 45, 0.94));
+  box-shadow: 0 24px 50px rgba(1, 14, 7, 0.42);
 }
 
 body[data-theme="forest-banking"] .stats-tab,
@@ -3616,15 +3624,39 @@ body[data-theme="forest-banking"] .menu-editor-item-name,
 body[data-theme="forest-banking"] .menu-editor-item-amount,
 body[data-theme="forest-banking"] .menu-editor-item-stock,
 body[data-theme="forest-banking"] .card-pay-number {
-  background: rgba(233, 245, 230, 0.08);
-  border-color: rgba(186, 234, 196, 0.16);
+  background: rgba(4, 29, 14, 0.44);
+  border-color: rgba(205, 242, 183, 0.16);
   color: #eef7ea;
+}
+
+body[data-theme="forest-banking"] .stats-input::placeholder,
+body[data-theme="forest-banking"] .thanks-feedback::placeholder,
+body[data-theme="forest-banking"] .menu-editor-item-name::placeholder,
+body[data-theme="forest-banking"] .menu-editor-item-amount::placeholder,
+body[data-theme="forest-banking"] .menu-editor-item-stock::placeholder {
+  color: rgba(232, 244, 228, 0.5);
 }
 
 body[data-theme="forest-banking"] .stats-add-btn {
   background: linear-gradient(135deg, #2f95ff 0%, #45b0ff 100%);
   color: #f4fbef;
   box-shadow: 0 12px 22px rgba(47, 149, 255, 0.24);
+}
+
+body[data-theme="forest-banking"] .stats-hub-summary,
+body[data-theme="forest-banking"] .stats-theme-panel {
+  background:
+    radial-gradient(circle at top right, rgba(194, 255, 76, 0.1), transparent 32%),
+    linear-gradient(180deg, rgba(13, 58, 30, 0.94) 0%, rgba(8, 44, 22, 0.94) 100%);
+}
+
+body[data-theme="forest-banking"] .theme-option-preview,
+body[data-theme="forest-banking"] .drink-icon,
+body[data-theme="forest-banking"] .stats-menu-entry-icon,
+body[data-theme="forest-banking"] .app-splash-icon {
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 10px 20px rgba(1, 14, 7, 0.24);
 }
 
 body[data-theme="forest-banking"] .stats-roi-track,
