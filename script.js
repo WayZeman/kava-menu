@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '80';
+const APP_VERSION = '81';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -214,9 +214,9 @@ const CHART_PERIOD_CONFIG = {
   },
 };
 const HUB_CHART_PERIOD_CONFIG = {
-  week: { className: 'stats-line-chart--week', pointGap: 44 },
-  month: { className: 'stats-line-chart--month', pointGap: 28 },
-  year: { className: 'stats-line-chart--year', pointGap: 52 },
+  week: { className: 'stats-line-chart--week', scrollable: false },
+  month: { className: 'stats-line-chart--month', scrollable: true, pointGap: 34 },
+  year: { className: 'stats-line-chart--year', scrollable: false },
 };
 let statsChartPeriod = 'week';
 let statsHubChartPeriod = 'week';
@@ -2899,9 +2899,85 @@ function setHubChartPeriod(period) {
     button.setAttribute('aria-selected', isActive ? 'true' : 'false');
   });
 
+  const config = HUB_CHART_PERIOD_CONFIG[period];
+  const scrollEl = statsHubFlowChart?.closest('.stats-hub-overview-chart-scroll');
+
   if (statsHubFlowChart) {
-    statsHubFlowChart.className = `stats-line-chart ${HUB_CHART_PERIOD_CONFIG[period].className}`;
+    statsHubFlowChart.className = `stats-line-chart ${config.className}`;
+    statsHubFlowChart.classList.toggle('stats-line-chart--fit', !config.scrollable);
   }
+
+  scrollEl?.classList.toggle('stats-hub-overview-chart-scroll--fit', !config.scrollable);
+}
+
+function niceChartMax(value) {
+  if (!Number.isFinite(value) || value <= 0) return 1;
+  const magnitude = 10 ** Math.floor(Math.log10(value));
+  const normalized = value / magnitude;
+  let nice = 10;
+  if (normalized <= 1) nice = 1;
+  else if (normalized <= 2) nice = 2;
+  else if (normalized <= 5) nice = 5;
+  return nice * magnitude;
+}
+
+function hubChartSlotCenterX(index, bucketCount, padLeft, plotW) {
+  const slotWidth = plotW / bucketCount;
+  return padLeft + slotWidth * index + slotWidth / 2;
+}
+
+function appendHubChartXLabel(group, bucket, period, x, y, index, total) {
+  if (period === 'month' && total > 14 && index % 5 !== 0 && index !== total - 1) {
+    return;
+  }
+
+  const text = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+  text.setAttribute('class', 'stats-line-chart-x-label');
+  text.setAttribute('x', String(x));
+  text.setAttribute('text-anchor', 'middle');
+
+  if (period === 'week') {
+    const [weekday = bucket.label, dayNum = ''] = bucket.label.split(' ');
+    text.setAttribute('y', String(y));
+
+    const primary = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+    primary.setAttribute('x', String(x));
+    primary.setAttribute('dy', '0');
+    primary.setAttribute('class', 'stats-line-chart-x-label-primary');
+    primary.textContent = weekday;
+    text.appendChild(primary);
+
+    if (dayNum) {
+      const secondary = document.createElementNS('http://www.w3.org/2000/svg', 'tspan');
+      secondary.setAttribute('x', String(x));
+      secondary.setAttribute('dy', '11');
+      secondary.setAttribute('class', 'stats-line-chart-x-label-secondary');
+      secondary.textContent = dayNum;
+      text.appendChild(secondary);
+    }
+  } else {
+    text.setAttribute('y', String(y));
+    text.textContent = bucket.label;
+  }
+
+  group.appendChild(text);
+}
+
+let hubChartResizeObserver = null;
+
+function ensureHubChartResizeObserver() {
+  if (hubChartResizeObserver || !statsHubFlowChart) return;
+
+  const scrollEl = statsHubFlowChart.closest('.stats-hub-overview-chart-scroll');
+  if (!scrollEl) return;
+
+  hubChartResizeObserver = new ResizeObserver(() => {
+    if (statsPanel?.hidden || statsHub?.hidden) return;
+    if (!HUB_CHART_PERIOD_CONFIG[statsHubChartPeriod]?.scrollable) {
+      renderHubFlowChart(currentStatsData);
+    }
+  });
+  hubChartResizeObserver.observe(scrollEl);
 }
 
 function buildLineChartPath(points, closeBottom = false) {
@@ -2938,27 +3014,28 @@ function renderHubFlowChart(data) {
     data.expenses,
     statsHubChartPeriod,
   );
-  const maxValue = Math.max(
+  const rawMax = Math.max(
     ...buckets.flatMap((bucket) => [bucket.income, bucket.expense]),
-    1,
+    0,
   );
+  const maxValue = niceChartMax(rawMax);
 
   const config = HUB_CHART_PERIOD_CONFIG[statsHubChartPeriod];
-  const pointGap = config.pointGap;
-  const chartWidth = Math.max(buckets.length * pointGap, 300);
-  const chartHeight = 196;
-  const padLeft = 42;
-  const padRight = 12;
-  const padTop = 14;
-  const padBottom = 34;
-  const plotW = chartWidth - padLeft - padRight;
+  const scrollEl = statsHubFlowChart.closest('.stats-hub-overview-chart-scroll');
+  const chartHeight = 220;
+  const padLeft = 50;
+  const padRight = 14;
+  const padTop = 16;
+  const padBottom = 38;
+  const viewWidth = config.scrollable
+    ? buckets.length * config.pointGap
+    : 400;
+  const plotW = viewWidth - padLeft - padRight;
   const plotH = chartHeight - padTop - padBottom;
   const baseline = padTop + plotH;
 
   const toPoint = (value, index) => {
-    const x = buckets.length <= 1
-      ? padLeft + plotW / 2
-      : padLeft + (index / (buckets.length - 1)) * plotW;
+    const x = hubChartSlotCenterX(index, buckets.length, padLeft, plotW);
     const y = baseline - (value / maxValue) * plotH;
     return { x, y, bottom: baseline };
   };
@@ -2967,7 +3044,15 @@ function renderHubFlowChart(data) {
   const expensePoints = buckets.map((bucket, index) => toPoint(bucket.expense, index));
 
   statsHubFlowChart.innerHTML = '';
-  statsHubFlowChart.style.width = `${chartWidth}px`;
+  statsHubFlowChart.classList.toggle('stats-line-chart--fit', !config.scrollable);
+  scrollEl?.classList.toggle('stats-hub-overview-chart-scroll--fit', !config.scrollable);
+
+  if (config.scrollable) {
+    statsHubFlowChart.style.width = `${viewWidth}px`;
+  } else {
+    statsHubFlowChart.style.removeProperty('width');
+  }
+
   statsHubFlowChart.setAttribute(
     'aria-label',
     buckets.map((bucket) => (
@@ -2976,12 +3061,17 @@ function renderHubFlowChart(data) {
   );
 
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-  svg.setAttribute('class', 'stats-line-chart-svg');
-  svg.setAttribute('viewBox', `0 0 ${chartWidth} ${chartHeight}`);
-  svg.setAttribute('width', String(chartWidth));
+  svg.setAttribute('class', `stats-line-chart-svg${config.scrollable ? '' : ' stats-line-chart-svg--fit'}`);
+  svg.setAttribute('viewBox', `0 0 ${viewWidth} ${chartHeight}`);
   svg.setAttribute('height', String(chartHeight));
-  svg.setAttribute('preserveAspectRatio', 'xMinYMin meet');
+  svg.setAttribute('preserveAspectRatio', config.scrollable ? 'xMinYMin meet' : 'xMidYMid meet');
   svg.setAttribute('aria-hidden', 'true');
+
+  if (config.scrollable) {
+    svg.setAttribute('width', String(viewWidth));
+  } else {
+    svg.setAttribute('width', '100%');
+  }
 
   const plotBg = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
   plotBg.setAttribute('class', 'stats-line-chart-plot');
@@ -2989,8 +3079,24 @@ function renderHubFlowChart(data) {
   plotBg.setAttribute('y', String(padTop));
   plotBg.setAttribute('width', String(plotW));
   plotBg.setAttribute('height', String(plotH));
-  plotBg.setAttribute('rx', '12');
+  plotBg.setAttribute('rx', '10');
   svg.appendChild(plotBg);
+
+  if (!config.scrollable) {
+    const vGrid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+    vGrid.setAttribute('class', 'stats-line-chart-v-grid');
+    const slotWidth = plotW / buckets.length;
+    for (let index = 1; index < buckets.length; index += 1) {
+      const x = padLeft + slotWidth * index;
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', String(x));
+      line.setAttribute('x2', String(x));
+      line.setAttribute('y1', String(padTop));
+      line.setAttribute('y2', String(baseline));
+      vGrid.appendChild(line);
+    }
+    svg.appendChild(vGrid);
+  }
 
   const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
   grid.setAttribute('class', 'stats-line-chart-grid');
@@ -2998,31 +3104,37 @@ function renderHubFlowChart(data) {
     const y = padTop + plotH * (1 - ratio);
     const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
     line.setAttribute('x1', String(padLeft));
-    line.setAttribute('x2', String(chartWidth - padRight));
+    line.setAttribute('x2', String(viewWidth - padRight));
     line.setAttribute('y1', String(y));
     line.setAttribute('y2', String(y));
     grid.appendChild(line);
 
-    if (ratio > 0) {
-      const tick = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-      tick.setAttribute('class', 'stats-line-chart-y-label');
-      tick.setAttribute('x', String(padLeft - 8));
-      tick.setAttribute('y', String(y + 3));
-      tick.setAttribute('text-anchor', 'end');
-      tick.textContent = formatChartAxisMoney(maxValue * ratio);
-      grid.appendChild(tick);
-    }
+    const tick = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+    tick.setAttribute('class', 'stats-line-chart-y-label');
+    tick.setAttribute('x', String(padLeft - 10));
+    tick.setAttribute('y', String(y + (ratio === 0 ? -2 : 3)));
+    tick.setAttribute('text-anchor', 'end');
+    tick.textContent = formatChartAxisMoney(maxValue * ratio);
+    grid.appendChild(tick);
   });
   svg.appendChild(grid);
+
+  const axisLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+  axisLine.setAttribute('class', 'stats-line-chart-axis');
+  axisLine.setAttribute('x1', String(padLeft));
+  axisLine.setAttribute('x2', String(viewWidth - padRight));
+  axisLine.setAttribute('y1', String(baseline));
+  axisLine.setAttribute('y2', String(baseline));
+  svg.appendChild(axisLine);
 
   const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
   defs.innerHTML = `
     <linearGradient id="hub-income-area" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#c9973f" stop-opacity="0.22"/>
+      <stop offset="0%" stop-color="#c9973f" stop-opacity="0.2"/>
       <stop offset="100%" stop-color="#c9973f" stop-opacity="0"/>
     </linearGradient>
     <linearGradient id="hub-expense-area" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0%" stop-color="#c45c4f" stop-opacity="0.18"/>
+      <stop offset="0%" stop-color="#c45c4f" stop-opacity="0.16"/>
       <stop offset="100%" stop-color="#c45c4f" stop-opacity="0"/>
     </linearGradient>
   `;
@@ -3051,7 +3163,7 @@ function renderHubFlowChart(data) {
       dot.setAttribute('class', `stats-line-chart-dot ${dotClass}`);
       dot.setAttribute('cx', String(point.x));
       dot.setAttribute('cy', String(point.y));
-      dot.setAttribute('r', statsHubChartPeriod === 'month' ? '2.75' : '3.25');
+      dot.setAttribute('r', statsHubChartPeriod === 'month' ? '2.75' : '3.5');
       svg.appendChild(dot);
     });
   });
@@ -3060,13 +3172,15 @@ function renderHubFlowChart(data) {
   axisLabels.setAttribute('class', 'stats-line-chart-x-labels');
   buckets.forEach((bucket, index) => {
     const point = incomePoints[index];
-    const label = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-    label.setAttribute('class', 'stats-line-chart-x-label');
-    label.setAttribute('x', String(point.x));
-    label.setAttribute('y', String(chartHeight - 10));
-    label.setAttribute('text-anchor', 'middle');
-    label.textContent = bucket.label;
-    axisLabels.appendChild(label);
+    appendHubChartXLabel(
+      axisLabels,
+      bucket,
+      statsHubChartPeriod,
+      point.x,
+      chartHeight - (statsHubChartPeriod === 'week' ? 24 : 10),
+      index,
+      buckets.length,
+    );
   });
   svg.appendChild(axisLabels);
 
@@ -3618,6 +3732,9 @@ function renderStatsHub(data) {
 
   renderStatsHubVisibility();
   renderHubFlowChart(data);
+  if (!HUB_CHART_PERIOD_CONFIG[statsHubChartPeriod].scrollable) {
+    requestAnimationFrame(() => renderHubFlowChart(data));
+  }
 }
 
 function renderStatsCategoryView(data) {
@@ -3961,6 +4078,8 @@ statsHubChartPeriodButtons.forEach((button) => {
     renderHubFlowChart(currentStatsData);
   });
 });
+
+ensureHubChartResizeObserver();
 
 statsIncomesMore?.addEventListener('click', () => {
   incomesListExpanded = !incomesListExpanded;
