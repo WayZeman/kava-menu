@@ -2595,6 +2595,45 @@ body.is-scroll-locked {
   margin-bottom: 12px;
 }
 
+.stats-youtube-channels {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.stats-youtube-channel-card {
+  padding: 14px 12px;
+  border-radius: 22px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.72), rgba(248, 244, 238, 0.58));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+}
+
+.stats-youtube-channel-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 0.86rem;
+  font-weight: 600;
+}
+
+.stats-youtube-channel-name a {
+  color: #b42318;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.stats-youtube-channel-name a:hover {
+  text-decoration: underline;
+}
+
+.stats-youtube-channel-handle {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(38, 35, 31, 0.48);
+}
+
 .stats-youtube-period {
   margin: 4px 0 0;
   font-size: 0.72rem;

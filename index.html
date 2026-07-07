@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=90">
+  <link rel="stylesheet" href="styles.css?v=91">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -336,7 +336,7 @@
               <strong id="stats-hub-youtube-total" class="stats-hub-card-value">0 грн</strong>
               <span id="stats-hub-youtube-meta" class="stats-hub-card-meta">0 доходів</span>
               <span id="stats-hub-youtube-roi" class="stats-hub-card-roi">Окупність: —</span>
-              <span id="stats-hub-youtube-hint" class="stats-hub-card-hint">@КіноМить</span>
+              <span id="stats-hub-youtube-hint" class="stats-hub-card-hint">@КіноМить · @LostChroniclesua</span>
             </button>
           </article>
         </div>
@@ -435,26 +435,12 @@
         </div>
       </section>
 
-        <section id="stats-youtube-channel" class="stats-chart-section stats-youtube-channel" hidden aria-label="Статистика YouTube каналу">
+        <section id="stats-youtube-channel" class="stats-chart-section stats-youtube-channel" hidden aria-label="Статистика YouTube каналів">
           <div class="stats-chart-head">
-            <h3 class="stats-section-heading">Статистика каналу</h3>
+            <h3 class="stats-section-heading">Статистика каналів</h3>
             <p class="stats-youtube-period">За весь час · дані з YouTube</p>
-            <p id="stats-youtube-title" class="stats-youtube-title" hidden></p>
           </div>
-          <div class="stats-youtube-grid">
-            <article class="stats-youtube-stat">
-              <span class="stats-youtube-stat-label">Підписники</span>
-              <strong id="stats-youtube-subscribers" class="stats-youtube-stat-value">—</strong>
-            </article>
-            <article class="stats-youtube-stat">
-              <span class="stats-youtube-stat-label">Перегляди</span>
-              <strong id="stats-youtube-views" class="stats-youtube-stat-value">—</strong>
-            </article>
-            <article class="stats-youtube-stat">
-              <span class="stats-youtube-stat-label">Відео</span>
-              <strong id="stats-youtube-videos" class="stats-youtube-stat-value">—</strong>
-            </article>
-          </div>
+          <div id="stats-youtube-channels" class="stats-youtube-channels"></div>
           <p class="stats-youtube-note">Суми в грн — ваші записи доходів і витрат у додатку, не виплати з YouTube.</p>
           <p id="stats-youtube-status" class="stats-youtube-status" hidden></p>
         </section>
@@ -587,6 +573,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=90" defer></script>
+  <script src="script.js?v=91" defer></script>
 </body>
 </html>

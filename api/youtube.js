@@ -1,12 +1,15 @@
-const DEFAULT_CHANNEL_URL = 'https://www.youtube.com/@КіноМить';
+const DEFAULT_CHANNELS = [
+  'https://www.youtube.com/@КіноМить',
+  'https://www.youtube.com/@LostChroniclesua',
+];
 const CACHE_MS = 5 * 60 * 1000;
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
-let cached = null;
+const cache = new Map();
 
 function normalizeChannelUrl(input) {
-  const raw = String(input || DEFAULT_CHANNEL_URL).trim();
-  if (!raw) return DEFAULT_CHANNEL_URL;
+  const raw = String(input || DEFAULT_CHANNELS[0]).trim();
+  if (!raw) return DEFAULT_CHANNELS[0];
 
   if (raw.startsWith('@')) {
     return `https://www.youtube.com/${encodeURIComponent(raw)}`;
@@ -16,9 +19,42 @@ function normalizeChannelUrl(input) {
     return `https://www.youtube.com/channel/${raw}`;
   }
 
-  if (/^https?:\/\//i.test(raw)) return raw;
+  if (/^https?:\/\//i.test(raw)) {
+    const url = new URL(raw);
+    url.pathname = url.pathname
+      .replace(/\/(shorts|videos|streams|playlists|featured|community|about)(\/.*)?$/, '')
+      .replace(/\/$/, '');
+    return url.toString();
+  }
 
   return `https://www.youtube.com/${raw.replace(/^\//, '')}`;
+}
+
+function getChannelList() {
+  if (process.env.YOUTUBE_CHANNEL_URLS) {
+    return process.env.YOUTUBE_CHANNEL_URLS
+      .split(',')
+      .map((item) => item.trim())
+      .filter(Boolean)
+      .map(normalizeChannelUrl);
+  }
+
+  if (process.env.YOUTUBE_CHANNEL_URL) {
+    return [normalizeChannelUrl(process.env.YOUTUBE_CHANNEL_URL)];
+  }
+
+  return DEFAULT_CHANNELS.map(normalizeChannelUrl);
+}
+
+function getCached(channelUrl) {
+  const key = normalizeChannelUrl(channelUrl);
+  const entry = cache.get(key);
+  if (entry && Date.now() - entry.at < CACHE_MS) return entry.channel;
+  return null;
+}
+
+function setCached(channelUrl, channel) {
+  cache.set(normalizeChannelUrl(channelUrl), { channel, at: Date.now() });
 }
 
 function channelAboutUrl(channelUrl) {
@@ -153,6 +189,19 @@ async function scrapeChannelStats(channelUrl) {
   return channel;
 }
 
+async function fetchChannelStats(channelUrl) {
+  const normalized = normalizeChannelUrl(channelUrl);
+  const cachedChannel = getCached(normalized);
+  if (cachedChannel) return cachedChannel;
+
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  let channel = apiKey ? await fetchViaApi(apiKey, normalized) : null;
+  if (!channel) channel = await scrapeChannelStats(normalized);
+
+  setCached(normalized, channel);
+  return channel;
+}
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -168,21 +217,50 @@ export default async function handler(req, res) {
     return;
   }
 
-  const channelUrl = process.env.YOUTUBE_CHANNEL_URL || DEFAULT_CHANNEL_URL;
-  const cacheKey = normalizeChannelUrl(channelUrl);
+  const requestedUrl = req.query?.url;
 
-  if (cached && cached.key === cacheKey && Date.now() - cached.at < CACHE_MS) {
-    res.status(200).json({ ok: true, channel: cached.channel, cached: true });
+  if (requestedUrl) {
+    const normalized = normalizeChannelUrl(requestedUrl);
+    const cachedChannel = getCached(normalized);
+    if (cachedChannel) {
+      res.status(200).json({ ok: true, channel: cachedChannel, cached: true });
+      return;
+    }
+
+    try {
+      const channel = await fetchChannelStats(normalized);
+      res.status(200).json({ ok: true, channel });
+    } catch (error) {
+      res.status(502).json({
+        ok: false,
+        error: 'youtube_fetch_failed',
+        message: error?.message || 'unknown',
+      });
+    }
     return;
   }
 
   try {
-    const apiKey = process.env.YOUTUBE_API_KEY;
-    let channel = apiKey ? await fetchViaApi(apiKey, channelUrl) : null;
-    if (!channel) channel = await scrapeChannelStats(channelUrl);
+    const urls = getChannelList();
+    const results = await Promise.allSettled(urls.map((url) => fetchChannelStats(url)));
+    const channels = results
+      .filter((result) => result.status === 'fulfilled' && result.value)
+      .map((result) => result.value);
 
-    cached = { key: cacheKey, channel, at: Date.now() };
-    res.status(200).json({ ok: true, channel });
+    if (!channels.length) {
+      res.status(502).json({
+        ok: false,
+        error: 'youtube_fetch_failed',
+        message: 'no_channels_loaded',
+      });
+      return;
+    }
+
+    res.status(200).json({
+      ok: true,
+      channels,
+      channel: channels[0],
+    });
   } catch (error) {
     res.status(502).json({
       ok: false,

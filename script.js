@@ -76,10 +76,7 @@ const statsHubYoutubeTotal = document.getElementById('stats-hub-youtube-total');
 const statsHubYoutubeMeta = document.getElementById('stats-hub-youtube-meta');
 const statsHubYoutubeRoi = document.getElementById('stats-hub-youtube-roi');
 const statsYoutubeChannel = document.getElementById('stats-youtube-channel');
-const statsYoutubeSubscribers = document.getElementById('stats-youtube-subscribers');
-const statsYoutubeViews = document.getElementById('stats-youtube-views');
-const statsYoutubeVideos = document.getElementById('stats-youtube-videos');
-const statsYoutubeTitle = document.getElementById('stats-youtube-title');
+const statsYoutubeChannels = document.getElementById('stats-youtube-channels');
 const statsYoutubeStatus = document.getElementById('stats-youtube-status');
 const statsMenuEntry = document.querySelector('.stats-menu-entry');
 const statsChartSection = document.getElementById('stats-daily-chart-section');
@@ -139,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '90';
+const APP_VERSION = '91';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -188,8 +185,7 @@ const STATS_CATEGORIES = {
   youtube: {
     id: 'youtube',
     label: 'YouTube',
-    channelUrl: 'https://www.youtube.com/@КіноМить',
-    subtitle: 'Дохід, витрати та канал @КіноМить',
+    subtitle: 'Дохід, витрати та канали @КіноМить · @LostChroniclesua',
     menuTitle: '',
     menuMeta: '',
     chartHeading: 'Доходи YouTube по днях',
@@ -200,6 +196,18 @@ const STATS_CATEGORIES = {
     analyticsOnly: true,
   },
 };
+const YOUTUBE_CHANNELS = [
+  {
+    key: 'kinomity',
+    label: '@КіноМить',
+    channelUrl: 'https://www.youtube.com/@КіноМить',
+  },
+  {
+    key: 'lostchronicles',
+    label: '@LostChroniclesua',
+    channelUrl: 'https://www.youtube.com/@LostChroniclesua',
+  },
+];
 const CHART_PERIOD_CONFIG = {
   week: { className: 'stats-daily-chart--week' },
   month: { className: 'stats-daily-chart--month' },
@@ -223,7 +231,7 @@ let statsHubChartPeriod = 'week';
 let statsCategory = 'drinks';
 let menuEditorSingleSection = false;
 let categoryVisibility = { drinks: true, extras: true, services: true };
-let youtubeChannelStats = null;
+let youtubeChannelsStats = {};
 let scrollLockY = 0;
 let refreshStatsTimer = null;
 let incomesListExpanded = false;
@@ -3289,11 +3297,15 @@ function formatYoutubeCount(value, { compact = false } = {}) {
 }
 
 function getYoutubeHubMeta(summary) {
-  if (youtubeChannelStats) {
+  const loaded = YOUTUBE_CHANNELS.map((config) => youtubeChannelsStats[config.key]).filter(Boolean);
+  if (loaded.length) {
+    const subscribers = loaded.reduce((sum, channel) => sum + (channel.subscribers || 0), 0);
+    const views = loaded.reduce((sum, channel) => sum + (channel.views || 0), 0);
+    const videos = loaded.reduce((sum, channel) => sum + (channel.videos || 0), 0);
     const parts = [
-      `${formatYoutubeCount(youtubeChannelStats.subscribers)} підп.`,
-      `${formatYoutubeCount(youtubeChannelStats.views, { compact: true })} перегл.`,
-      `${formatYoutubeCount(youtubeChannelStats.videos)} відео`,
+      `${formatYoutubeCount(subscribers)} підп.`,
+      `${formatYoutubeCount(views, { compact: true })} перегл.`,
+      `${formatYoutubeCount(videos)} відео`,
     ];
     return parts.join(' · ');
   }
@@ -3316,47 +3328,108 @@ function setYoutubeStatus(message, { isError = false } = {}) {
   statsYoutubeStatus.classList.toggle('is-error', isError);
 }
 
-function renderYoutubeChannelStats(channel) {
-  if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = formatYoutubeCount(channel?.subscribers);
-  if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views, { compact: true });
-  if (statsYoutubeVideos) statsYoutubeVideos.textContent = formatYoutubeCount(channel?.videos);
-  if (statsYoutubeTitle) {
-    const config = STATS_CATEGORIES.youtube;
-    const link = channel?.url || config.channelUrl;
-    const name = channel?.title || 'КіноМить';
-    statsYoutubeTitle.innerHTML = link
-      ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`
-      : name;
-    statsYoutubeTitle.hidden = false;
-  }
-  setYoutubeStatus('');
+function normalizeYoutubeChannelUrl(url) {
+  return String(url || '')
+    .replace(/\/(shorts|videos|streams|playlists|featured|community|about)(\/.*)?$/, '')
+    .replace(/\/$/, '');
+}
+
+function storeYoutubeChannels(channels) {
+  youtubeChannelsStats = {};
+  channels.forEach((channel) => {
+    const normalized = normalizeYoutubeChannelUrl(channel?.url);
+    const config = YOUTUBE_CHANNELS.find(
+      (item) => normalizeYoutubeChannelUrl(item.channelUrl) === normalized,
+    );
+    const key = config?.key || normalized;
+    youtubeChannelsStats[key] = channel;
+  });
+}
+
+function createYoutubeStat(label, value) {
+  const article = document.createElement('article');
+  article.className = 'stats-youtube-stat';
+
+  const labelEl = document.createElement('span');
+  labelEl.className = 'stats-youtube-stat-label';
+  labelEl.textContent = label;
+
+  const valueEl = document.createElement('strong');
+  valueEl.className = 'stats-youtube-stat-value';
+  valueEl.textContent = value;
+
+  article.append(labelEl, valueEl);
+  return article;
+}
+
+function renderYoutubeChannelCard(config, channel, { loading = false } = {}) {
+  const card = document.createElement('article');
+  card.className = 'stats-youtube-channel-card';
+
+  const heading = document.createElement('h4');
+  heading.className = 'stats-youtube-channel-name';
+
+  const link = document.createElement('a');
+  link.href = channel?.url || config.channelUrl;
+  link.target = '_blank';
+  link.rel = 'noopener noreferrer';
+  link.textContent = channel?.title || config.label.replace('@', '');
+
+  const handle = document.createElement('span');
+  handle.className = 'stats-youtube-channel-handle';
+  handle.textContent = config.label;
+
+  heading.append(link, handle);
+
+  const grid = document.createElement('div');
+  grid.className = 'stats-youtube-grid';
+  const placeholder = loading ? '…' : '—';
+  grid.append(
+    createYoutubeStat('Підписники', channel ? formatYoutubeCount(channel.subscribers) : placeholder),
+    createYoutubeStat('Перегляди', channel ? formatYoutubeCount(channel.views, { compact: true }) : placeholder),
+    createYoutubeStat('Відео', channel ? formatYoutubeCount(channel.videos) : placeholder),
+  );
+
+  card.append(heading, grid);
+  return card;
+}
+
+function renderYoutubeChannelsStats({ loading = false } = {}) {
+  if (!statsYoutubeChannels) return;
+  statsYoutubeChannels.replaceChildren();
+
+  YOUTUBE_CHANNELS.forEach((config) => {
+    const channel = loading ? null : youtubeChannelsStats[config.key];
+    statsYoutubeChannels.append(renderYoutubeChannelCard(config, channel, { loading }));
+  });
 }
 
 async function refreshYoutubeStats() {
   try {
     const response = await fetch('/api/youtube', { cache: 'no-store' });
     const data = await response.json();
-    if (data.ok && data.channel) {
-      youtubeChannelStats = data.channel;
-      return;
+    if (data.ok) {
+      const channels = data.channels || (data.channel ? [data.channel] : []);
+      if (channels.length) {
+        storeYoutubeChannels(channels);
+        return;
+      }
     }
-    youtubeChannelStats = null;
+    youtubeChannelsStats = {};
   } catch {
-    youtubeChannelStats = null;
+    youtubeChannelsStats = {};
   }
 }
 
 async function loadYoutubeChannelStats() {
-  if (!statsYoutubeSubscribers) return;
+  if (!statsYoutubeChannels) return;
 
-  if (youtubeChannelStats) {
-    renderYoutubeChannelStats(youtubeChannelStats);
+  if (YOUTUBE_CHANNELS.every((config) => youtubeChannelsStats[config.key])) {
+    renderYoutubeChannelsStats();
     return;
   }
 
-  statsYoutubeSubscribers.textContent = '…';
-  if (statsYoutubeViews) statsYoutubeViews.textContent = '…';
-  if (statsYoutubeVideos) statsYoutubeVideos.textContent = '…';
+  renderYoutubeChannelsStats({ loading: true });
   setYoutubeStatus('');
 
   try {
@@ -3364,21 +3437,26 @@ async function loadYoutubeChannelStats() {
     const data = await response.json();
 
     if (!data.ok) {
-      youtubeChannelStats = null;
-      if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = '—';
-      if (statsYoutubeViews) statsYoutubeViews.textContent = '—';
-      if (statsYoutubeVideos) statsYoutubeVideos.textContent = '—';
-      setYoutubeStatus('Не вдалося завантажити статистику каналу @КіноМить', { isError: true });
+      youtubeChannelsStats = {};
+      renderYoutubeChannelsStats();
+      setYoutubeStatus('Не вдалося завантажити статистику каналів YouTube', { isError: true });
       return;
     }
 
-    youtubeChannelStats = data.channel;
-    renderYoutubeChannelStats(data.channel);
+    const channels = data.channels || (data.channel ? [data.channel] : []);
+    if (!channels.length) {
+      youtubeChannelsStats = {};
+      renderYoutubeChannelsStats();
+      setYoutubeStatus('Не вдалося завантажити статистику каналів YouTube', { isError: true });
+      return;
+    }
+
+    storeYoutubeChannels(channels);
+    renderYoutubeChannelsStats();
+    setYoutubeStatus('');
   } catch {
-    youtubeChannelStats = null;
-    if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = '—';
-    if (statsYoutubeViews) statsYoutubeViews.textContent = '—';
-    if (statsYoutubeVideos) statsYoutubeVideos.textContent = '—';
+    youtubeChannelsStats = {};
+    renderYoutubeChannelsStats();
     setYoutubeStatus('Помилка мережі при завантаженні YouTube', { isError: true });
   }
 }
