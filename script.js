@@ -81,7 +81,7 @@ const statsYoutubeVideos = document.getElementById('stats-youtube-videos');
 const statsYoutubeTitle = document.getElementById('stats-youtube-title');
 const statsYoutubeStatus = document.getElementById('stats-youtube-status');
 const statsMenuEntry = document.querySelector('.stats-menu-entry');
-const statsChartSection = document.querySelector('.stats-chart-section');
+const statsChartSection = document.getElementById('stats-daily-chart-section');
 const statsHubTotalIncome = document.getElementById('stats-hub-total-income');
 const statsHubTotalExpenses = document.getElementById('stats-hub-total-expenses');
 const statsHubIncomeShare = document.getElementById('stats-hub-income-share');
@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '81';
+const APP_VERSION = '82';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -200,19 +200,18 @@ const STATS_CATEGORIES = {
   },
 };
 const CHART_PERIOD_CONFIG = {
-  week: {
-    className: 'stats-daily-chart--week',
-    heading: 'Замовлення кави по днях',
-  },
-  month: {
-    className: 'stats-daily-chart--month',
-    heading: 'Замовлення кави по днях',
-  },
-  year: {
-    className: 'stats-daily-chart--year',
-    heading: 'Замовлення кави по місяцях',
-  },
+  week: { className: 'stats-daily-chart--week' },
+  month: { className: 'stats-daily-chart--month' },
+  year: { className: 'stats-daily-chart--year' },
 };
+
+function getCategoryChartHeading(category = statsCategory, period = statsChartPeriod) {
+  const config = STATS_CATEGORIES[category] || STATS_CATEGORIES.drinks;
+  if (period === 'year') {
+    return config.chartHeading.replace('по днях', 'по місяцях');
+  }
+  return config.chartHeading;
+}
 const HUB_CHART_PERIOD_CONFIG = {
   week: { className: 'stats-line-chart--week', scrollable: false },
   month: { className: 'stats-line-chart--month', scrollable: true, pointGap: 34 },
@@ -3198,7 +3197,7 @@ function setChartPeriod(period) {
   });
 
   if (statsChartHeading) {
-    statsChartHeading.textContent = CHART_PERIOD_CONFIG[period].heading;
+    statsChartHeading.textContent = getCategoryChartHeading(statsCategory, period);
   }
   if (statsDailyChart) {
     statsDailyChart.className = `stats-daily-chart ${CHART_PERIOD_CONFIG[period].className}`;
@@ -3748,8 +3747,10 @@ function renderStatsCategoryView(data) {
 
   if (statsCategoryTitle) statsCategoryTitle.textContent = config.label;
   if (statsCategorySubtitle) statsCategorySubtitle.textContent = config.subtitle;
-  if (statsChartHeading) statsChartHeading.textContent = config.chartHeading;
-  if (statsChartSection) statsChartSection.hidden = false;
+  if (statsChartHeading) {
+    statsChartHeading.textContent = getCategoryChartHeading(category, statsChartPeriod);
+  }
+  if (statsChartSection) statsChartSection.hidden = Boolean(config.analyticsOnly);
   if (statsYoutubeChannel) statsYoutubeChannel.hidden = !config.analyticsOnly;
   if (config.analyticsOnly) loadYoutubeChannelStats();
 
@@ -3780,7 +3781,9 @@ function renderStatsCategoryView(data) {
 
   renderRoi(categoryIncome, expensesTotal);
 
-  renderOrderChart(data.incomes, category);
+  if (!config.analyticsOnly) {
+    renderOrderChart(data.incomes, category);
+  }
   updateMenuEntryMeta();
 
   renderTransactionSection({
@@ -4068,7 +4071,10 @@ statsTabExpense?.addEventListener('click', () => setStatsTab('expense'));
 statsChartPeriodButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setChartPeriod(button.dataset.chartPeriod);
-    renderOrderChart(currentStatsData.incomes, statsCategory);
+    const config = STATS_CATEGORIES[statsCategory];
+    if (!config?.analyticsOnly) {
+      renderOrderChart(currentStatsData.incomes, statsCategory);
+    }
   });
 });
 
