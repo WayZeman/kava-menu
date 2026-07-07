@@ -71,6 +71,17 @@ const statsHubExtrasRoi = document.getElementById('stats-hub-extras-roi');
 const statsHubServicesTotal = document.getElementById('stats-hub-services-total');
 const statsHubServicesMeta = document.getElementById('stats-hub-services-meta');
 const statsHubServicesRoi = document.getElementById('stats-hub-services-roi');
+const statsHubYoutubeTotal = document.getElementById('stats-hub-youtube-total');
+const statsHubYoutubeMeta = document.getElementById('stats-hub-youtube-meta');
+const statsHubYoutubeRoi = document.getElementById('stats-hub-youtube-roi');
+const statsYoutubeChannel = document.getElementById('stats-youtube-channel');
+const statsYoutubeSubscribers = document.getElementById('stats-youtube-subscribers');
+const statsYoutubeViews = document.getElementById('stats-youtube-views');
+const statsYoutubeVideos = document.getElementById('stats-youtube-videos');
+const statsYoutubeTitle = document.getElementById('stats-youtube-title');
+const statsYoutubeStatus = document.getElementById('stats-youtube-status');
+const statsMenuEntry = document.querySelector('.stats-menu-entry');
+const statsChartSection = document.querySelector('.stats-chart-section');
 const statsHubTotalIncome = document.getElementById('stats-hub-total-income');
 const statsHubTotalExpenses = document.getElementById('stats-hub-total-expenses');
 const statsHubIncomeShare = document.getElementById('stats-hub-income-share');
@@ -125,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '72';
+const APP_VERSION = '73';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -171,6 +182,19 @@ const STATS_CATEGORIES = {
     countLabels: ['раз', 'рази', 'разів'],
     roiLabel: 'Окупність послуг',
   },
+  youtube: {
+    id: 'youtube',
+    label: 'YouTube',
+    subtitle: 'Дохід, витрати та статистика каналу',
+    menuTitle: '',
+    menuMeta: '',
+    chartHeading: 'Доходи YouTube по днях',
+    incomePlaceholder: 'Напр. AdSense, спонсорство',
+    expensePlaceholder: 'Напр. обладнання, монтаж',
+    countLabels: ['дохід', 'доходи', 'доходів'],
+    roiLabel: 'Окупність YouTube',
+    analyticsOnly: true,
+  },
 };
 const CHART_PERIOD_CONFIG = {
   week: {
@@ -190,6 +214,7 @@ let statsChartPeriod = 'week';
 let statsCategory = 'drinks';
 let menuEditorSingleSection = false;
 let categoryVisibility = { drinks: true, extras: true, services: true };
+let youtubeChannelStats = null;
 let incomesListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
@@ -978,6 +1003,9 @@ function moveMenuEditorItem(id, direction) {
 function updateMenuEntryMeta() {
   if (!statsMenuEntryMeta) return;
   const config = STATS_CATEGORIES[statsCategory] || STATS_CATEGORIES.drinks;
+  if (statsMenuEntry) statsMenuEntry.hidden = Boolean(config.analyticsOnly);
+  if (config.analyticsOnly) return;
+
   if (statsMenuEntryTitle) statsMenuEntryTitle.textContent = config.menuTitle;
 
   let count = 0;
@@ -2414,9 +2442,11 @@ function splitIncomeRecord(record) {
   let coffee = 0;
   let haircut = 0;
   let extras = 0;
+  let youtube = 0;
   let coffeeDrinks = 0;
   let haircutCount = 0;
   let extrasCount = 0;
+  let youtubeCount = 0;
   let manualCoffeeCount = 0;
 
   if (record.source === 'order') {
@@ -2464,14 +2494,19 @@ function splitIncomeRecord(record) {
       coffee,
       haircut,
       extras,
+      youtube,
       coffeeDrinks,
       haircutCount,
       extrasCount,
+      youtubeCount,
       manualCoffeeCount,
     };
   }
 
-  if (isHaircutName(record.label)) {
+  if (record.source === 'cash-youtube') {
+    youtube += amount;
+    youtubeCount += 1;
+  } else if (isHaircutName(record.label)) {
     haircut += amount;
     haircutCount += 1;
   } else if (record.source === 'cash-extras') {
@@ -2489,11 +2524,21 @@ function splitIncomeRecord(record) {
     coffee,
     haircut,
     extras,
+    youtube,
     coffeeDrinks,
     haircutCount,
     extrasCount,
+    youtubeCount,
     manualCoffeeCount,
   };
+}
+
+function getYoutubeOnlyIncomes(incomes) {
+  return incomes.flatMap((record) => {
+    const part = splitIncomeRecord(record);
+    if (part.youtube <= 0) return [];
+    return [{ ...record, amount: part.youtube }];
+  });
 }
 
 function getCoffeeOnlyIncomes(incomes) {
@@ -2576,6 +2621,7 @@ function getExpenseCategory(expense) {
   const source = String(expense?.source || '');
   if (source === 'expense-extras') return 'extras';
   if (source === 'expense-services') return 'services';
+  if (source === 'expense-youtube') return 'youtube';
   if (source === 'expense-drinks') return 'drinks';
   return 'drinks';
 }
@@ -2587,6 +2633,7 @@ function getExpensesByCategory(expenses, category) {
 function getCategoryIncomes(incomes, category) {
   if (category === 'drinks') return getCoffeeOnlyIncomes(incomes);
   if (category === 'extras') return getExtrasOnlyIncomes(incomes);
+  if (category === 'youtube') return getYoutubeOnlyIncomes(incomes);
   return getServiceOnlyIncomes(incomes);
 }
 
@@ -2594,12 +2641,14 @@ function getCategoryIncomeTotal(incomes, category) {
   const summary = summarizeIncomes(incomes);
   if (category === 'drinks') return summary.coffee;
   if (category === 'extras') return summary.extras;
+  if (category === 'youtube') return summary.youtube;
   return summary.haircut;
 }
 
 function getCategoryCount(summary, category) {
   if (category === 'drinks') return summary.coffeeDrinks + summary.manualCoffeeCount;
   if (category === 'extras') return summary.extrasCount;
+  if (category === 'youtube') return summary.youtubeCount;
   return summary.haircutCount;
 }
 
@@ -2610,6 +2659,7 @@ function categoryChartCount(income, category) {
     if (income.source === 'order') return part.extrasCount;
     return income.source === 'cash-extras' ? 1 : 0;
   }
+  if (category === 'youtube') return income.source === 'cash-youtube' ? 1 : 0;
   if (income.source === 'order') return part.haircutCount;
   return income.source === 'cash-services' || isHaircutName(income.label) ? 1 : 0;
 }
@@ -2620,18 +2670,22 @@ function summarizeIncomes(incomes) {
     summary.coffee += part.coffee;
     summary.haircut += part.haircut;
     summary.extras += part.extras;
+    summary.youtube += part.youtube;
     summary.coffeeDrinks += part.coffeeDrinks;
     summary.haircutCount += part.haircutCount;
     summary.extrasCount += part.extrasCount;
+    summary.youtubeCount += part.youtubeCount;
     summary.manualCoffeeCount += part.manualCoffeeCount;
     return summary;
   }, {
     coffee: 0,
     haircut: 0,
     extras: 0,
+    youtube: 0,
     coffeeDrinks: 0,
     haircutCount: 0,
     extrasCount: 0,
+    youtubeCount: 0,
     manualCoffeeCount: 0,
   });
 }
@@ -2799,6 +2853,94 @@ function renderOrderChart(incomes, category = statsCategory) {
     bar.append(track, count, label);
     statsDailyChart.appendChild(bar);
   });
+}
+
+function formatYoutubeCount(value) {
+  return Number(value || 0).toLocaleString('uk-UA');
+}
+
+function getYoutubeHubMeta(summary) {
+  if (youtubeChannelStats) {
+    return `${formatYoutubeCount(youtubeChannelStats.subscribers)} підписників`;
+  }
+  return formatCountLabel(
+    getCategoryCount(summary, 'youtube'),
+    ...STATS_CATEGORIES.youtube.countLabels,
+  );
+}
+
+function setYoutubeStatus(message, { isError = false } = {}) {
+  if (!statsYoutubeStatus) return;
+  if (!message) {
+    statsYoutubeStatus.hidden = true;
+    statsYoutubeStatus.textContent = '';
+    statsYoutubeStatus.classList.remove('is-error');
+    return;
+  }
+  statsYoutubeStatus.hidden = false;
+  statsYoutubeStatus.textContent = message;
+  statsYoutubeStatus.classList.toggle('is-error', isError);
+}
+
+function renderYoutubeChannelStats(channel) {
+  if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = formatYoutubeCount(channel?.subscribers);
+  if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views);
+  if (statsYoutubeVideos) statsYoutubeVideos.textContent = formatYoutubeCount(channel?.videos);
+  if (statsYoutubeTitle) {
+    statsYoutubeTitle.textContent = channel?.title ? `Канал: ${channel.title}` : '';
+    statsYoutubeTitle.hidden = !channel?.title;
+  }
+  setYoutubeStatus('');
+}
+
+async function refreshYoutubeStats() {
+  try {
+    const response = await fetch('/api/youtube', { cache: 'no-store' });
+    const data = await response.json();
+    if (data.ok && data.channel) {
+      youtubeChannelStats = data.channel;
+      return;
+    }
+    youtubeChannelStats = null;
+  } catch {
+    youtubeChannelStats = null;
+  }
+}
+
+async function loadYoutubeChannelStats() {
+  if (!statsYoutubeSubscribers) return;
+
+  statsYoutubeSubscribers.textContent = '…';
+  if (statsYoutubeViews) statsYoutubeViews.textContent = '…';
+  if (statsYoutubeVideos) statsYoutubeVideos.textContent = '…';
+  setYoutubeStatus('');
+
+  try {
+    const response = await fetch('/api/youtube', { cache: 'no-store' });
+    const data = await response.json();
+
+    if (!data.ok) {
+      youtubeChannelStats = null;
+      if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = '—';
+      if (statsYoutubeViews) statsYoutubeViews.textContent = '—';
+      if (statsYoutubeVideos) statsYoutubeVideos.textContent = '—';
+      if (data.error === 'not_configured') {
+        setYoutubeStatus('Підключіть YOUTUBE_API_KEY та YOUTUBE_CHANNEL_ID у Vercel', { isError: true });
+      } else {
+        setYoutubeStatus('Не вдалося завантажити статистику каналу', { isError: true });
+      }
+      return;
+    }
+
+    youtubeChannelStats = data.channel;
+    renderYoutubeChannelStats(data.channel);
+  } catch {
+    youtubeChannelStats = null;
+    if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = '—';
+    if (statsYoutubeViews) statsYoutubeViews.textContent = '—';
+    if (statsYoutubeVideos) statsYoutubeVideos.textContent = '—';
+    setYoutubeStatus('Помилка мережі при завантаженні YouTube', { isError: true });
+  }
 }
 
 function formatCountLabel(count, one, few, many) {
@@ -3099,7 +3241,9 @@ function renderStatsHub(data) {
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const servicesExpenses = getExpensesByCategory(data.expenses, 'services')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const totalIncome = summary.coffee + summary.extras + summary.haircut;
+  const youtubeExpenses = getExpensesByCategory(data.expenses, 'youtube')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalIncome = summary.coffee + summary.extras + summary.haircut + summary.youtube;
   const totalExpenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const totalFlow = totalIncome + totalExpenses;
   const balance = totalIncome - totalExpenses;
@@ -3146,6 +3290,16 @@ function renderStatsHub(data) {
     const roi = getRoiPercent(summary.haircut, servicesExpenses);
     statsHubServicesRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
   }
+  if (statsHubYoutubeTotal) {
+    statsHubYoutubeTotal.textContent = formatStatsMoney(summary.youtube);
+  }
+  if (statsHubYoutubeMeta) {
+    statsHubYoutubeMeta.textContent = getYoutubeHubMeta(summary);
+  }
+  if (statsHubYoutubeRoi) {
+    const roi = getRoiPercent(summary.youtube, youtubeExpenses);
+    statsHubYoutubeRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
+  }
   if (statsHubTotalIncome) {
     statsHubTotalIncome.textContent = formatStatsMoney(totalIncome);
   }
@@ -3184,6 +3338,9 @@ function renderStatsCategoryView(data) {
   if (statsCategoryTitle) statsCategoryTitle.textContent = config.label;
   if (statsCategorySubtitle) statsCategorySubtitle.textContent = config.subtitle;
   if (statsChartHeading) statsChartHeading.textContent = config.chartHeading;
+  if (statsChartSection) statsChartSection.hidden = Boolean(config.analyticsOnly);
+  if (statsYoutubeChannel) statsYoutubeChannel.hidden = !config.analyticsOnly;
+  if (config.analyticsOnly) loadYoutubeChannelStats();
 
   const incomeFormTitle = document.querySelector('#stats-income-form .stats-section-title');
   if (incomeFormTitle) incomeFormTitle.textContent = 'Додати готівковий дохід';
@@ -3212,7 +3369,7 @@ function renderStatsCategoryView(data) {
 
   renderRoi(categoryIncome, expensesTotal);
 
-  renderOrderChart(data.incomes, category);
+  if (!config.analyticsOnly) renderOrderChart(data.incomes, category);
   updateMenuEntryMeta();
 
   renderTransactionSection({
@@ -3268,7 +3425,10 @@ function openStatsCategory(category) {
 }
 
 async function refreshStats() {
-  const data = await fetchStats();
+  const [data] = await Promise.all([
+    fetchStats(),
+    refreshYoutubeStats(),
+  ]);
   currentStatsData = data;
   renderStatsView(data);
 }

@@ -117,7 +117,7 @@ export async function insertExpense({ id, label, amount, category = 'drinks' }) 
   const sql = getSql();
   if (!sql) return null;
 
-  const safeCategory = ['drinks', 'extras', 'services'].includes(category) ? category : 'drinks';
+  const safeCategory = ['drinks', 'extras', 'services', 'youtube'].includes(category) ? category : 'drinks';
   const source = `expense-${safeCategory}`;
 
   if (id) {

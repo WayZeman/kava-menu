@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=72">
+  <link rel="stylesheet" href="styles.css?v=73">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -316,6 +316,17 @@
               <span class="stats-hub-card-hint" data-visibility-hint="services" hidden>Приховано в меню</span>
             </button>
           </article>
+
+          <article class="stats-hub-card stats-hub-card--youtube" data-category="youtube" role="listitem">
+            <div class="stats-hub-card-top">
+              <span class="stats-hub-card-label">YouTube</span>
+            </div>
+            <button type="button" class="stats-hub-card-open" data-open-category="youtube">
+              <strong id="stats-hub-youtube-total" class="stats-hub-card-value">0 грн</strong>
+              <span id="stats-hub-youtube-meta" class="stats-hub-card-meta">0 доходів</span>
+              <span id="stats-hub-youtube-roi" class="stats-hub-card-roi">Окупність: —</span>
+            </button>
+          </article>
         </div>
 
         <footer class="stats-hub-summary" aria-label="Загальні підсумки">
@@ -377,6 +388,28 @@
             <p id="stats-roi-sub" class="stats-roi-caption" hidden></p>
           </article>
         </div>
+
+        <section id="stats-youtube-channel" class="stats-youtube-channel" hidden aria-label="Статистика YouTube каналу">
+          <div class="stats-youtube-head">
+            <h3 class="stats-section-heading">Статистика каналу</h3>
+            <p id="stats-youtube-title" class="stats-youtube-title" hidden></p>
+          </div>
+          <div class="stats-youtube-grid">
+            <article class="stats-youtube-stat">
+              <span class="stats-youtube-stat-label">Підписники</span>
+              <strong id="stats-youtube-subscribers" class="stats-youtube-stat-value">—</strong>
+            </article>
+            <article class="stats-youtube-stat">
+              <span class="stats-youtube-stat-label">Перегляди</span>
+              <strong id="stats-youtube-views" class="stats-youtube-stat-value">—</strong>
+            </article>
+            <article class="stats-youtube-stat">
+              <span class="stats-youtube-stat-label">Відео</span>
+              <strong id="stats-youtube-videos" class="stats-youtube-stat-value">—</strong>
+            </article>
+          </div>
+          <p id="stats-youtube-status" class="stats-youtube-status" hidden></p>
+        </section>
 
       <section class="stats-chart-section">
         <div class="stats-chart-head">
@@ -520,6 +553,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=72"></script>
+  <script src="script.js?v=73"></script>
 </body>
 </html>

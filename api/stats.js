@@ -19,7 +19,9 @@ function normalizeIncome(body) {
     ? 'cash-extras'
     : category === 'services'
       ? 'cash-services'
-      : 'cash-drinks';
+      : category === 'youtube'
+        ? 'cash-youtube'
+        : 'cash-drinks';
 
   return { id, label, amount, source, provider: 'cash' };
 }
