@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '80';
+      var version = '83';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=82">
+  <link rel="stylesheet" href="styles.css?v=83">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -260,10 +260,14 @@
   <div id="stats" class="stats" hidden>
     <div class="stats-panel">
       <div id="stats-hub" class="stats-view stats-view--hub">
-        <header class="stats-header">
-          <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
-          <h2 class="stats-title">Аналітика</h2>
-          <p class="stats-subtitle">Оберіть розділ</p>
+        <header class="stats-header stats-header--hub">
+          <div class="stats-header-top">
+            <button class="stats-back" type="button" data-stats-close aria-label="Назад до меню">← Меню</button>
+          </div>
+          <div class="stats-header-center">
+            <h2 class="stats-title">Аналітика</h2>
+            <p class="stats-subtitle">Оберіть розділ</p>
+          </div>
         </header>
 
         <div class="stats-hub-grid" role="list" aria-label="Розділи аналітики">
@@ -578,6 +582,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=82" defer></script>
+  <script src="script.js?v=83" defer></script>
 </body>
 </html>

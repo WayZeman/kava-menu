@@ -1551,6 +1551,28 @@ body.is-scroll-locked {
   margin-bottom: 22px;
 }
 
+.stats-header--hub {
+  margin-bottom: 18px;
+}
+
+.stats-header--hub .stats-header-top {
+  margin-bottom: 18px;
+}
+
+.stats-header--hub .stats-header-center {
+  text-align: center;
+  padding: 0 12px;
+}
+
+.stats-header--hub .stats-title,
+.stats-header--hub .stats-subtitle {
+  text-align: center;
+}
+
+.stats-header--hub .stats-subtitle {
+  margin-top: 6px;
+}
+
 .stats-header-row {
   display: flex;
   align-items: flex-start;
