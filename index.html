@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '77';
+      var version = '78';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=77">
+  <link rel="stylesheet" href="styles.css?v=78">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -318,11 +318,18 @@
           <article class="stats-hub-card stats-hub-card--youtube" data-category="youtube" role="listitem">
             <div class="stats-hub-card-top">
               <span class="stats-hub-card-label">YouTube</span>
+              <span class="stats-hub-badge" aria-hidden="true">
+                <svg class="stats-hub-badge-icon" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <rect x="2" y="5" width="20" height="14" rx="4" stroke="currentColor" stroke-width="2"/>
+                  <path d="M10 9.5v5l4.5-2.5L10 9.5z" fill="currentColor"/>
+                </svg>
+              </span>
             </div>
             <button type="button" class="stats-hub-card-open" data-open-category="youtube">
               <strong id="stats-hub-youtube-total" class="stats-hub-card-value">0 грн</strong>
               <span id="stats-hub-youtube-meta" class="stats-hub-card-meta">0 доходів</span>
               <span id="stats-hub-youtube-roi" class="stats-hub-card-roi">Окупність: —</span>
+              <span id="stats-hub-youtube-hint" class="stats-hub-card-hint">@КіноМить</span>
             </button>
           </article>
         </div>
@@ -405,8 +412,22 @@
           </article>
         </div>
 
-        <section id="stats-youtube-channel" class="stats-youtube-channel" hidden aria-label="Статистика YouTube каналу">
-          <div class="stats-youtube-head">
+      <section class="stats-chart-section">
+        <div class="stats-chart-head">
+          <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
+          <div class="stats-chart-period" role="tablist" aria-label="Період статистики">
+            <button type="button" class="stats-chart-period-btn is-active" data-chart-period="week" aria-selected="true">Тиждень</button>
+            <button type="button" class="stats-chart-period-btn" data-chart-period="month" aria-selected="false">Місяць</button>
+            <button type="button" class="stats-chart-period-btn" data-chart-period="year" aria-selected="false">Рік</button>
+          </div>
+        </div>
+        <div class="stats-chart-scroll">
+          <div id="stats-daily-chart" class="stats-daily-chart stats-daily-chart--week" role="img" aria-label="Діаграма замовлень"></div>
+        </div>
+      </section>
+
+        <section id="stats-youtube-channel" class="stats-chart-section stats-youtube-channel" hidden aria-label="Статистика YouTube каналу">
+          <div class="stats-chart-head">
             <h3 class="stats-section-heading">Статистика каналу</h3>
             <p id="stats-youtube-title" class="stats-youtube-title" hidden></p>
           </div>
@@ -426,20 +447,6 @@
           </div>
           <p id="stats-youtube-status" class="stats-youtube-status" hidden></p>
         </section>
-
-      <section class="stats-chart-section">
-        <div class="stats-chart-head">
-          <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
-          <div class="stats-chart-period" role="tablist" aria-label="Період статистики">
-            <button type="button" class="stats-chart-period-btn is-active" data-chart-period="week" aria-selected="true">Тиждень</button>
-            <button type="button" class="stats-chart-period-btn" data-chart-period="month" aria-selected="false">Місяць</button>
-            <button type="button" class="stats-chart-period-btn" data-chart-period="year" aria-selected="false">Рік</button>
-          </div>
-        </div>
-        <div class="stats-chart-scroll">
-          <div id="stats-daily-chart" class="stats-daily-chart stats-daily-chart--week" role="img" aria-label="Діаграма замовлень"></div>
-        </div>
-      </section>
 
       <div class="stats-tabs" role="tablist" aria-label="Доходи та витрати">
         <button
@@ -569,6 +576,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=77" defer></script>
+  <script src="script.js?v=78" defer></script>
 </body>
 </html>

@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '77';
+const APP_VERSION = '78';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -188,7 +188,7 @@ const STATS_CATEGORIES = {
     id: 'youtube',
     label: 'YouTube',
     channelUrl: 'https://www.youtube.com/@КіноМить',
-    subtitle: 'Дохід, витрати та статистика @КіноМить',
+    subtitle: 'Дохід, витрати та канал @КіноМить',
     menuTitle: '',
     menuMeta: '',
     chartHeading: 'Доходи YouTube по днях',
@@ -3107,7 +3107,11 @@ function formatYoutubeCount(value) {
 
 function getYoutubeHubMeta(summary) {
   if (youtubeChannelStats) {
-    return `${formatYoutubeCount(youtubeChannelStats.subscribers)} підписників`;
+    const parts = [
+      `${formatYoutubeCount(youtubeChannelStats.subscribers)} підписників`,
+      `${formatYoutubeCount(youtubeChannelStats.videos)} відео`,
+    ];
+    return parts.join(' · ');
   }
   return formatCountLabel(
     getCategoryCount(summary, 'youtube'),
@@ -3591,7 +3595,7 @@ function renderStatsCategoryView(data) {
   if (statsCategoryTitle) statsCategoryTitle.textContent = config.label;
   if (statsCategorySubtitle) statsCategorySubtitle.textContent = config.subtitle;
   if (statsChartHeading) statsChartHeading.textContent = config.chartHeading;
-  if (statsChartSection) statsChartSection.hidden = Boolean(config.analyticsOnly);
+  if (statsChartSection) statsChartSection.hidden = false;
   if (statsYoutubeChannel) statsYoutubeChannel.hidden = !config.analyticsOnly;
   if (config.analyticsOnly) loadYoutubeChannelStats();
 
@@ -3622,7 +3626,7 @@ function renderStatsCategoryView(data) {
 
   renderRoi(categoryIncome, expensesTotal);
 
-  if (!config.analyticsOnly) renderOrderChart(data.incomes, category);
+  renderOrderChart(data.incomes, category);
   updateMenuEntryMeta();
 
   renderTransactionSection({
