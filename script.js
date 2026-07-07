@@ -38,7 +38,6 @@ const menuEditorList = document.getElementById('menu-editor-list');
 const menuEditorEmpty = document.getElementById('menu-editor-empty');
 const menuEditorSaveBtn = document.getElementById('menu-editor-save');
 const menuSettingsBtn = document.getElementById('stats-menu-settings');
-const statsThemeSettingsBtn = document.getElementById('stats-theme-settings');
 const statsMenuEntryMeta = document.getElementById('stats-menu-entry-meta');
 const statsThemeEntryMeta = document.getElementById('stats-theme-entry-meta');
 const menuAddForm = document.getElementById('menu-add-form');
@@ -54,7 +53,6 @@ const confirmNo = document.getElementById('confirm-no');
 const thanks = document.getElementById('thanks');
 const carWashSheet = document.getElementById('car-wash-sheet');
 const cardPaySheet = document.getElementById('card-pay-sheet');
-const themeSheet = document.getElementById('theme-sheet');
 const cardPayAmount = document.getElementById('card-pay-amount');
 const cardPayCopy = document.getElementById('card-pay-copy');
 const carWashRow = document.querySelector('[data-picker="car-wash"]');
@@ -123,7 +121,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '70';
+const APP_VERSION = '71';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -991,19 +989,6 @@ function updateMenuEntryMeta() {
   statsMenuEntryMeta.textContent = count
     ? `${count} поз. · редагувати`
     : config.menuMeta;
-}
-
-function openThemeSheet() {
-  if (!themeSheet) return;
-  applyTheme(currentTheme);
-  themeSheet.hidden = false;
-  document.body.classList.add('sheet-open');
-}
-
-function closeThemeSheet() {
-  if (!themeSheet) return;
-  themeSheet.hidden = true;
-  document.body.classList.remove('sheet-open');
 }
 
 function setMenuEditorIcon(iconId, { editingId = null } = {}) {
@@ -2149,15 +2134,11 @@ menuEditorSectionTabs.forEach((tab) => {
 menuSettingsBtn?.addEventListener('click', () => {
   openMenuEditor(statsCategory, { singleSection: true });
 });
-statsThemeSettingsBtn?.addEventListener('click', openThemeSheet);
 menuEditorSaveBtn?.addEventListener('click', () => {
   saveMenuEditor();
 });
 menuEditor?.querySelector('[data-menu-editor-back]')?.addEventListener('click', closeMenuEditor);
-themeSheet?.querySelectorAll('[data-theme-close]').forEach((button) => {
-  button.addEventListener('click', closeThemeSheet);
-});
-themeSheet?.querySelectorAll('[data-theme-option]').forEach((button) => {
+document.querySelectorAll('[data-theme-option]').forEach((button) => {
   button.addEventListener('click', () => {
     saveTheme(button.dataset.themeOption);
   });

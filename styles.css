@@ -1559,10 +1559,6 @@ body.menu-editor-open {
   margin-bottom: 0;
 }
 
-.stats-menu-entry--hub-theme {
-  margin-top: 14px;
-}
-
 .stats-menu-entry-btn {
   display: flex;
   align-items: center;
@@ -3324,6 +3320,34 @@ body {
   width: 100%;
 }
 
+.theme-options--inline {
+  margin-top: 12px;
+}
+
+.stats-theme-panel {
+  margin-top: 14px;
+  padding: 16px 18px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  color: #26231f;
+  backdrop-filter: blur(18px);
+  box-shadow: 0 22px 44px rgba(114, 86, 52, 0.08);
+}
+
+.stats-theme-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.stats-theme-panel-meta {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: rgba(38, 35, 31, 0.68);
+}
+
 .theme-option {
   display: flex;
   align-items: center;
@@ -3442,6 +3466,7 @@ body[data-theme="forest-banking"] .stats-card,
 body[data-theme="forest-banking"] .stats-list-item,
 body[data-theme="forest-banking"] .stats-chart-section,
 body[data-theme="forest-banking"] .stats-hub-summary,
+body[data-theme="forest-banking"] .stats-theme-panel,
 body[data-theme="forest-banking"] .menu-editor-section,
 body[data-theme="forest-banking"] .theme-option,
 body[data-theme="forest-banking"] .sheet-header,
@@ -3498,6 +3523,7 @@ body[data-theme="forest-banking"] .app-splash-title {
 body[data-theme="forest-banking"] .lead,
 body[data-theme="forest-banking"] .menu-heading,
 body[data-theme="forest-banking"] .stats-subtitle,
+body[data-theme="forest-banking"] .stats-theme-panel-meta,
 body[data-theme="forest-banking"] .stats-hub-card-meta,
 body[data-theme="forest-banking"] .stats-hub-card-label,
 body[data-theme="forest-banking"] .stats-card-label,

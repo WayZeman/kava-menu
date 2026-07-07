@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '70';
+      var version = '71';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=70">
+  <link rel="stylesheet" href="styles.css?v=71">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -184,34 +184,6 @@
       <p class="card-pay-number" id="card-pay-number">4874&nbsp;1000&nbsp;2512&nbsp;6965</p>
       <button id="card-pay-copy" class="card-pay-copy" type="button">Скопіювати номер</button>
       <button class="service-sheet-cancel" type="button" data-card-pay-close>Скасувати</button>
-    </div>
-  </div>
-
-  <div id="theme-sheet" class="service-sheet" hidden>
-    <div class="service-sheet-backdrop" data-theme-close></div>
-    <div class="service-sheet-card" role="dialog" aria-modal="true" aria-labelledby="theme-sheet-title">
-      <p class="service-sheet-label">Оформлення</p>
-      <p id="theme-sheet-title" class="service-sheet-title">Тема</p>
-      <div class="theme-options" role="list" aria-label="Вибір теми">
-        <button id="theme-option-soft-premium" class="theme-option is-active" type="button" data-theme-option="soft-premium" aria-pressed="true">
-          <span class="theme-option-preview theme-option-preview--soft-premium" aria-hidden="true"></span>
-          <span class="theme-option-copy">
-            <strong>Soft Premium</strong>
-            <span>Поточний світлий стиль сайту</span>
-          </span>
-          <span class="theme-option-check" aria-hidden="true">✓</span>
-        </button>
-        <button id="theme-option-forest-banking" class="theme-option" type="button" data-theme-option="forest-banking" aria-pressed="false">
-          <span class="theme-option-preview theme-option-preview--forest-banking" aria-hidden="true"></span>
-          <span class="theme-option-copy">
-            <strong>Forest Banking</strong>
-            <span>Темно-зелений стиль з яскравими акцентами</span>
-          </span>
-          <span class="theme-option-check" aria-hidden="true">✓</span>
-        </button>
-      </div>
-      <p class="theme-sheet-note">Обрана тема збережеться на цьому пристрої.</p>
-      <button class="service-sheet-cancel" type="button" data-theme-close>Закрити</button>
     </div>
   </div>
 
@@ -357,19 +329,30 @@
           </div>
         </footer>
 
-        <section class="stats-menu-entry stats-menu-entry--hub-theme" aria-label="Налаштування теми">
-          <button id="stats-theme-settings" class="stats-menu-entry-btn" type="button">
-            <span class="stats-menu-entry-icon" aria-hidden="true">
-              <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-                <path d="M12 3a1 1 0 0 1 1 1v1.2a1 1 0 1 1-2 0V4a1 1 0 0 1 1-1Zm0 14a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm8-5a1 1 0 0 1-1 1h-1.2a1 1 0 1 1 0-2H19a1 1 0 0 1 1 1ZM7.2 12a1 1 0 0 1-1 1H5a1 1 0 1 1 0-2h1.2a1 1 0 0 1 1 1Zm9.04 5.63a1 1 0 0 1 1.42 0l.85.85a1 1 0 1 1-1.41 1.41l-.86-.85a1 1 0 0 1 0-1.41ZM6.35 6.35a1 1 0 0 1 1.41 0l.85.86A1 1 0 0 1 7.2 8.62l-.85-.86a1 1 0 0 1 0-1.41Zm11.31 0a1 1 0 0 1 0 1.41l-.85.86a1 1 0 0 1-1.42-1.41l.86-.86a1 1 0 0 1 1.41 0ZM8.62 16.8a1 1 0 0 1 0 1.41l-.86.85a1 1 0 1 1-1.41-1.41l.85-.85a1 1 0 0 1 1.42 0Z" fill="currentColor"/>
-              </svg>
-            </span>
-            <span class="stats-menu-entry-text">
-              <strong>Тема</strong>
-              <span id="stats-theme-entry-meta">Soft Premium</span>
-            </span>
-            <span class="stats-menu-entry-chevron" aria-hidden="true">›</span>
-          </button>
+        <section class="stats-theme-panel" aria-label="Тема">
+          <div class="stats-theme-panel-head">
+            <span class="stats-card-label">Тема</span>
+            <span id="stats-theme-entry-meta" class="stats-theme-panel-meta">Soft Premium</span>
+          </div>
+          <div class="theme-options theme-options--inline" role="list" aria-label="Вибір теми">
+            <button id="theme-option-soft-premium" class="theme-option is-active" type="button" data-theme-option="soft-premium" aria-pressed="true">
+              <span class="theme-option-preview theme-option-preview--soft-premium" aria-hidden="true"></span>
+              <span class="theme-option-copy">
+                <strong>Soft Premium</strong>
+                <span>Поточний світлий стиль сайту</span>
+              </span>
+              <span class="theme-option-check" aria-hidden="true">✓</span>
+            </button>
+            <button id="theme-option-forest-banking" class="theme-option" type="button" data-theme-option="forest-banking" aria-pressed="false">
+              <span class="theme-option-preview theme-option-preview--forest-banking" aria-hidden="true"></span>
+              <span class="theme-option-copy">
+                <strong>Forest Banking</strong>
+                <span>Темно-зелений стиль з яскравими акцентами</span>
+              </span>
+              <span class="theme-option-check" aria-hidden="true">✓</span>
+            </button>
+          </div>
+          <p class="theme-sheet-note">Тема перемикається одразу і зберігається на цьому пристрої.</p>
         </section>
       </div>
 
@@ -550,6 +533,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=70"></script>
+  <script src="script.js?v=71"></script>
 </body>
 </html>
