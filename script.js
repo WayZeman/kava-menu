@@ -129,11 +129,6 @@ const THEMES = {
     label: 'Soft Premium',
     description: 'Поточний світлий стиль сайту',
   },
-  'forest-banking': {
-    id: 'forest-banking',
-    label: 'Forest Banking',
-    description: 'Темно-зелений стиль з яскравими акцентами',
-  },
 };
 const STATS_CATEGORIES = {
   drinks: {
