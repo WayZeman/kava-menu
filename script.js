@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '74';
+const APP_VERSION = '75';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -216,6 +216,8 @@ let statsCategory = 'drinks';
 let menuEditorSingleSection = false;
 let categoryVisibility = { drinks: true, extras: true, services: true };
 let youtubeChannelStats = null;
+let scrollLockY = 0;
+let refreshStatsTimer = null;
 let incomesListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
@@ -688,20 +690,48 @@ function pruneCartItems() {
   });
 }
 
+function syncScrollLock() {
+  const locked = document.body.classList.contains('sheet-open')
+    || document.body.classList.contains('stats-open')
+    || document.body.classList.contains('stats-gate-open')
+    || document.body.classList.contains('menu-editor-open');
+  const isLocked = document.body.classList.contains('is-scroll-locked');
+
+  if (locked && !isLocked) {
+    scrollLockY = window.scrollY;
+    document.body.classList.add('is-scroll-locked');
+    document.body.style.top = `-${scrollLockY}px`;
+  } else if (!locked && isLocked) {
+    document.body.classList.remove('is-scroll-locked');
+    document.body.style.top = '';
+    window.scrollTo(0, scrollLockY);
+  }
+}
+
 function bindMenuRow(row) {
   row.classList.add('is-entering');
   row.addEventListener('animationend', (event) => {
     if (event.animationName === 'row-in') {
       row.classList.remove('is-entering');
     }
-  });
+  }, { once: true });
+}
 
-  row.querySelectorAll('.qty-btn').forEach((button) => {
-    button.addEventListener('click', (event) => {
-      event.stopPropagation();
-      const delta = button.dataset.action === 'plus' ? 1 : -1;
-      changeQty(row, delta, button);
-    });
+function handleMenuClick(event) {
+  const button = event.target.closest('.qty-btn');
+  if (!button) return;
+
+  const row = button.closest('.row');
+  if (!row) return;
+
+  event.stopPropagation();
+  const delta = button.dataset.action === 'plus' ? 1 : -1;
+  changeQty(row, delta, button);
+}
+
+function initMenuDelegation() {
+  [drinksMenu, extrasMenuList, servicesMenuList].forEach((container) => {
+    container?.addEventListener('click', handleMenuClick);
   });
 }
 
@@ -1343,6 +1373,7 @@ function openMenuEditor(section = 'drinks', { singleSection = true } = {}) {
   renderMenuEditor();
   menuEditor.hidden = false;
   document.body.classList.add('menu-editor-open');
+  syncScrollLock();
   menuAddName?.focus();
 }
 
@@ -1357,6 +1388,7 @@ function closeMenuEditor() {
   menuEditor.classList.remove('menu-editor--single-section');
   menuAddForm?.reset();
   document.body.classList.remove('menu-editor-open');
+  syncScrollLock();
 }
 
 async function initMenu() {
@@ -1616,6 +1648,7 @@ function openCarWashSheet() {
   if (!carWashSheet) return;
   carWashSheet.hidden = false;
   document.body.classList.add('sheet-open');
+  syncScrollLock();
 }
 
 function closeCarWashSheet() {
@@ -1625,6 +1658,7 @@ function closeCarWashSheet() {
     && (!cardPaySheet || cardPaySheet.hidden)) {
     document.body.classList.remove('sheet-open');
   }
+  syncScrollLock();
 }
 
 function addCarWashLevel(levelId, button) {
@@ -1776,6 +1810,7 @@ function dismissOverlays() {
   document.body.classList.remove('sheet-open');
   loaderText.textContent = 'Відкриваємо застосунок…';
   paymentTotal = 0;
+  syncScrollLock();
 
   if (recoverTimer) {
     clearTimeout(recoverTimer);
@@ -1797,6 +1832,7 @@ function openSheet() {
   renderReceiptLines(items);
   sheet.hidden = false;
   document.body.classList.add('sheet-open');
+  syncScrollLock();
 }
 
 function closeSheet() {
@@ -1807,6 +1843,7 @@ function closeSheet() {
     document.body.classList.remove('sheet-open');
   }
   paymentTotal = 0;
+  syncScrollLock();
 }
 
 function openCardPaySheet(total) {
@@ -1815,6 +1852,7 @@ function openCardPaySheet(total) {
   if (cardPayAmount) cardPayAmount.textContent = `${total} грн`;
   cardPaySheet.hidden = false;
   document.body.classList.add('sheet-open');
+  syncScrollLock();
 }
 
 function closeCardPaySheet() {
@@ -1825,6 +1863,7 @@ function closeCardPaySheet() {
     && (!carWashSheet || carWashSheet.hidden)) {
     document.body.classList.remove('sheet-open');
   }
+  syncScrollLock();
 }
 
 async function copyCardNumber() {
@@ -1856,11 +1895,13 @@ function openConfirmSheet() {
   confirmItems.textContent = formatOrderList(pendingOrder.items);
   confirmSheet.hidden = false;
   document.body.classList.add('sheet-open');
+  syncScrollLock();
 }
 
 function closeConfirmSheet() {
   confirmSheet.hidden = true;
   document.body.classList.remove('sheet-open');
+  syncScrollLock();
 }
 
 function openPaymentUrl(url) {
@@ -2206,8 +2247,6 @@ function handleCartPayTap(event) {
 }
 
 cartPay.addEventListener('pointerup', handleCartPayTap);
-cartPay.addEventListener('touchend', handleCartPayTap, { passive: false });
-cartPay.addEventListener('click', handleCartPayTap);
 
 payActions.forEach((action) => {
   action.addEventListener('click', () => {
@@ -2297,9 +2336,12 @@ function dismissSplash() {
 
 async function bootApp() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-  const minSplashMs = reducedMotion ? 0 : 1500;
+  const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
+  const minSplashMs = reducedMotion ? 0 : coarsePointer ? 700 : 1100;
   const started = Date.now();
   const maxTimer = window.setTimeout(dismissSplash, 6000);
+
+  initMenuDelegation();
 
   try {
     await initMenu();
@@ -2916,6 +2958,11 @@ async function refreshYoutubeStats() {
 async function loadYoutubeChannelStats() {
   if (!statsYoutubeSubscribers) return;
 
+  if (youtubeChannelStats) {
+    renderYoutubeChannelStats(youtubeChannelStats);
+    return;
+  }
+
   statsYoutubeSubscribers.textContent = '…';
   if (statsYoutubeViews) statsYoutubeViews.textContent = '…';
   if (statsYoutubeVideos) statsYoutubeVideos.textContent = '…';
@@ -3426,13 +3473,28 @@ function openStatsCategory(category) {
   renderStatsCategoryView(currentStatsData);
 }
 
-async function refreshStats() {
+async function runRefreshStats() {
   const [data] = await Promise.all([
     fetchStats(),
     refreshYoutubeStats(),
   ]);
   currentStatsData = data;
   renderStatsView(data);
+}
+
+function refreshStats({ immediate = false } = {}) {
+  clearTimeout(refreshStatsTimer);
+  if (immediate) {
+    refreshStatsTimer = null;
+    return runRefreshStats();
+  }
+  return new Promise((resolve) => {
+    refreshStatsTimer = setTimeout(async () => {
+      refreshStatsTimer = null;
+      await runRefreshStats();
+      resolve();
+    }, 160);
+  });
 }
 
 function isStatsAuthenticated() {
@@ -3443,6 +3505,7 @@ function openStatsGate() {
   if (!statsGate) return;
   statsGate.hidden = false;
   document.body.classList.add('stats-gate-open');
+  syncScrollLock();
   statsGateError.hidden = true;
   statsGateForm?.reset();
   statsGatePassword?.focus();
@@ -3452,6 +3515,7 @@ function closeStatsGate() {
   if (!statsGate) return;
   statsGate.hidden = true;
   document.body.classList.remove('stats-gate-open');
+  syncScrollLock();
   statsGateError.hidden = true;
   statsGateForm?.reset();
 }
@@ -3468,14 +3532,16 @@ function openStats() {
   if (!statsPanel) return;
   statsPanel.hidden = false;
   document.body.classList.add('stats-open');
+  syncScrollLock();
   showStatsHub();
-  refreshStats();
+  runRefreshStats();
 }
 
 function closeStats() {
   if (!statsPanel) return;
   statsPanel.hidden = true;
   document.body.classList.remove('stats-open');
+  syncScrollLock();
   closeMenuEditor();
   showStatsHub();
 }
@@ -3499,7 +3565,7 @@ async function addCashIncome(label, amount, category = statsCategory) {
     // online-only: failed request will show on next refresh
   }
 
-  await refreshStats();
+  await refreshStats({ immediate: true });
 }
 
 async function addExpense(label, amount, category = statsCategory) {
@@ -3521,7 +3587,7 @@ async function addExpense(label, amount, category = statsCategory) {
     // online-only: failed request will show on next refresh
   }
 
-  await refreshStats();
+  await refreshStats({ immediate: true });
 }
 
 let statsSubmitLock = false;
@@ -3551,7 +3617,7 @@ async function deleteTransaction(id) {
   }
 
   if (editingTransactionId === id) closeEditTransaction();
-  await refreshStats();
+  await refreshStats({ immediate: true });
 }
 
 function openEditTransaction(item) {
@@ -3594,7 +3660,7 @@ async function saveEditedTransaction(label, amount) {
   }
 
   closeEditTransaction();
-  await refreshStats();
+  await refreshStats({ immediate: true });
 }
 
 heroIcon?.addEventListener('click', requestStatsAccess);

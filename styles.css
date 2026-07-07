@@ -187,13 +187,13 @@ body.is-splash-active {
   overflow: hidden;
   pointer-events: none;
   background: var(--cream);
+  contain: strict;
 }
 
 .bg-blob {
   position: absolute;
   border-radius: 50%;
   filter: blur(72px);
-  will-change: transform;
 }
 
 .bg-blob--1 {
@@ -232,6 +232,8 @@ body.is-splash-active {
     max(36px, calc(16px + env(safe-area-inset-top)))
     20px
     max(44px, calc(28px + env(safe-area-inset-bottom)));
+  content-visibility: auto;
+  contain-intrinsic-size: auto 800px;
 }
 
 body.has-cart .page {
@@ -521,8 +523,10 @@ body.has-cart .page {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 0;
   border-radius: 8px;
@@ -677,13 +681,18 @@ body.has-cart .stock-toast {
   animation: btn-squish 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-body.sheet-open {
-  overflow: hidden;
-}
-
+body.sheet-open,
 body.stats-open,
 body.stats-gate-open,
 body.menu-editor-open {
+  overflow: hidden;
+}
+
+body.is-scroll-locked {
+  position: fixed;
+  left: 0;
+  right: 0;
+  width: 100%;
   overflow: hidden;
 }
 
@@ -1179,7 +1188,11 @@ body.menu-editor-open {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 24px;
+  padding:
+    max(24px, env(safe-area-inset-top))
+    max(16px, env(safe-area-inset-right))
+    max(24px, env(safe-area-inset-bottom))
+    max(16px, env(safe-area-inset-left));
   animation: thanks-overlay-in 0.3s ease;
 }
 
@@ -1668,7 +1681,7 @@ body.menu-editor-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-height: 42px;
+  min-height: 44px;
   padding: 0 16px;
   border: 1px solid rgba(255, 255, 255, 0.72);
   border-radius: 999px;
@@ -1922,8 +1935,8 @@ body.menu-editor-open {
 .stats-delete-btn,
 .stats-cancel-btn {
   flex-shrink: 0;
-  min-width: 36px;
-  min-height: 36px;
+  min-width: 44px;
+  min-height: 44px;
   border: 1px solid rgba(255, 255, 255, 0.74);
   border-radius: 12px;
   background: rgba(255, 255, 255, 0.78);
@@ -2240,8 +2253,10 @@ body.menu-editor-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 34px;
-  height: 34px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.76);
   border-radius: 12px;
@@ -2580,8 +2595,10 @@ body.menu-editor-open {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
   padding: 0;
   border: 1px solid rgba(255, 255, 255, 0.54);
   border-radius: 50%;
@@ -2811,8 +2828,8 @@ body.menu-editor-open {
 }
 
 .stats-chart-period-btn {
-  min-height: 34px;
-  padding: 0 8px;
+  min-height: 44px;
+  padding: 0 10px;
   border: 0;
   border-radius: 14px;
   background: transparent;
@@ -3644,8 +3661,10 @@ body {
   }
 
   .qty-btn {
-    width: 32px;
-    height: 32px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 1rem;
   }
 
@@ -3803,9 +3822,9 @@ body {
   }
 
   .stats-chart-period-btn {
-    min-height: 32px;
-    padding: 0 4px;
-    font-size: 0.68rem;
+    min-height: 44px;
+    padding: 0 8px;
+    font-size: 0.72rem;
   }
 
   .stats-chart-bar-track {
@@ -3858,8 +3877,10 @@ body {
 
   .menu-editor-move-btn,
   .menu-editor-delete-btn {
-    width: 28px;
-    height: 28px;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
     font-size: 0.85rem;
   }
 
@@ -3946,4 +3967,144 @@ body {
   .thanks-steam {
     display: none;
   }
+
+  .stats-menu-entry-btn,
+  .stats-hub-card,
+  .stats-list-item,
+  .stats-card,
+  .stats-tab,
+  .stats-form,
+  .stats-balance,
+  .stats-chart-section,
+  .stats-youtube-channel,
+  .menu-editor-panel,
+  .app-splash-content {
+    backdrop-filter: none !important;
+  }
+}
+
+/* ── Performance: touch devices ── */
+@media (pointer: coarse) {
+  .bg-blob {
+    filter: blur(48px);
+    animation: none;
+    opacity: 0.75;
+  }
+
+  .stats-menu-entry-btn,
+  .stats-hub-card,
+  .stats-list-item,
+  .stats-card,
+  .stats-tab,
+  .stats-form,
+  .stats-balance,
+  .stats-chart-section,
+  .stats-youtube-channel,
+  .stats-hub-summary,
+  .menu-editor-panel {
+    backdrop-filter: none;
+    background: rgba(255, 255, 255, 0.94);
+  }
+
+  .stats-hub-card--coffee {
+    background:
+      radial-gradient(circle at top right, rgba(123, 182, 245, 0.22), transparent 38%),
+      rgba(69, 118, 155, 0.94);
+  }
+
+  .stats-hub-card--youtube {
+    background: linear-gradient(145deg, #cc181e 0%, #8b0f14 100%);
+  }
+}
+
+/* ── Desktop / wide screens ── */
+@media (min-width: 768px) {
+  .page,
+  .stats-panel,
+  .menu-editor-panel {
+    max-width: 520px;
+  }
+
+  .stats-hub-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  .stats-hub-card--youtube {
+    grid-column: 1 / -1;
+  }
+
+  .cart {
+    width: min(520px, calc(100% - 32px));
+  }
+
+  .stats-youtube-grid {
+    gap: 14px;
+  }
+
+  .stats-youtube-stat-value {
+    font-size: 1.2rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .page,
+  .stats-panel,
+  .menu-editor-panel {
+    max-width: 560px;
+  }
+
+  .cart {
+    width: min(560px, calc(100% - 40px));
+  }
+}
+
+/* ── Desktop hover (fine pointer only) ── */
+@media (hover: hover) and (pointer: fine) {
+  .row:not(.row--out-of-stock):hover {
+    border-color: rgba(255, 255, 255, 0.34);
+    box-shadow: 0 14px 28px rgba(0, 0, 0, 0.14);
+  }
+
+  .stats-hub-card-open:hover {
+    transform: translateY(-1px);
+  }
+
+  .stats-menu-entry-btn:hover,
+  .stats-tab:hover:not(.is-active) {
+    border-color: rgba(255, 214, 92, 0.55);
+  }
+
+  .cart-pay:hover {
+    filter: brightness(1.06);
+  }
+
+  .qty-btn[data-action="plus"]:hover {
+    background: rgba(212, 168, 83, 0.35);
+  }
+
+  .qty-btn[data-action="minus"]:hover {
+    background: rgba(255, 255, 255, 0.24);
+  }
+
+  .hero-icon:hover {
+    transform: scale(1.04);
+  }
+}
+
+/* ── Accessibility: keyboard focus ── */
+:focus {
+  outline: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--gold);
+  outline-offset: 2px;
+}
+
+.stats-hub-card-open:focus-visible,
+.stats-menu-entry-btn:focus-visible,
+.stats-tab:focus-visible {
+  outline-offset: 3px;
 }

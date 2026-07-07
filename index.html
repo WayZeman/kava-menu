@@ -13,12 +13,9 @@
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '72';
+      var version = '75';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -39,12 +36,13 @@
   <title>Кавове меню</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
+  <noscript><link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;600;700;800&display=swap" rel="stylesheet"></noscript>
   <link rel="preconnect" href="https://send.monobank.ua" crossorigin>
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=74">
+  <link rel="stylesheet" href="styles.css?v=75">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -134,10 +132,10 @@
 
         <div class="receipt-pay">
           <button class="receipt-pay-icon" type="button" data-provider="mono" aria-label="Monobank">
-            <img src="logos/mono.png" width="52" height="52" alt="">
+            <img src="logos/mono.png" width="52" height="52" alt="" loading="lazy" decoding="async">
           </button>
           <button class="receipt-pay-icon" type="button" data-provider="privat" aria-label="Приват24">
-            <img src="logos/privat.png" width="52" height="52" alt="">
+            <img src="logos/privat.png" width="52" height="52" alt="" loading="lazy" decoding="async">
           </button>
           <button class="receipt-pay-other" type="button" data-provider="other">Інші банки</button>
         </div>
@@ -153,7 +151,7 @@
     <div class="service-sheet-backdrop" data-car-wash-close></div>
     <div class="service-sheet-card" role="dialog" aria-modal="true" aria-labelledby="car-wash-title">
       <div class="service-sheet-icon" aria-hidden="true">
-        <img src="logos/car.png" width="40" height="40" alt="">
+        <img src="logos/car.png" width="40" height="40" alt="" loading="lazy" decoding="async">
       </div>
       <p class="service-sheet-label">Помивка машини</p>
       <p id="car-wash-title" class="service-sheet-title">Оберіть рівень забруднення</p>
@@ -553,6 +551,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=74"></script>
+  <script src="script.js?v=75" defer></script>
 </body>
 </html>
