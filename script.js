@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '85';
+const APP_VERSION = '86';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3255,13 +3255,16 @@ function formatYoutubeCompact(value) {
   const num = Number(value || 0);
   if (!Number.isFinite(num) || num < 0) return '0';
   if (num >= 1_000_000_000) {
-    return `${(num / 1_000_000_000).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} млрд`;
+    const billions = Math.round(num / 100_000_000) / 10;
+    return `${billions.toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} млрд`;
   }
   if (num >= 1_000_000) {
-    return `${(num / 1_000_000).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} млн`;
+    const millions = Math.round(num / 100_000) / 10;
+    return `${millions.toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} млн`;
   }
   if (num >= 1000) {
-    const thousands = Math.round((num / 1000) * 10) / 10;
+    // YouTube округлює до найближчої тисячі: 7 582 → 8,0 тис.
+    const thousands = Math.round(num / 1000);
     return `${thousands.toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} тис.`;
   }
   return num.toLocaleString('uk-UA');
@@ -3304,7 +3307,12 @@ function setYoutubeStatus(message, { isError = false } = {}) {
 
 function renderYoutubeChannelStats(channel) {
   if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = formatYoutubeCount(channel?.subscribers);
-  if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views, { compact: true });
+  if (statsYoutubeViews) {
+    statsYoutubeViews.textContent = formatYoutubeCount(channel?.views, { compact: true });
+    statsYoutubeViews.title = channel?.views
+      ? `${Number(channel.views).toLocaleString('uk-UA')} переглядів`
+      : '';
+  }
   if (statsYoutubeVideos) statsYoutubeVideos.textContent = formatYoutubeCount(channel?.videos);
   if (statsYoutubeTitle) {
     const config = STATS_CATEGORIES.youtube;
