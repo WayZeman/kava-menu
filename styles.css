@@ -2604,6 +2604,21 @@ body.is-scroll-locked {
   margin-bottom: 12px;
 }
 
+.stats-youtube-period {
+  margin: 4px 0 0;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: rgba(38, 35, 31, 0.5);
+}
+
+.stats-youtube-note {
+  margin: 10px 2px 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(38, 35, 31, 0.48);
+}
+
 .stats-youtube-title {
   margin: 4px 0 0;
   font-size: 0.82rem;

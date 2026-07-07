@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '84';
+const APP_VERSION = '85';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3251,14 +3251,34 @@ function renderOrderChart(incomes, category = statsCategory) {
   });
 }
 
-function formatYoutubeCount(value) {
-  return Number(value || 0).toLocaleString('uk-UA');
+function formatYoutubeCompact(value) {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num) || num < 0) return '0';
+  if (num >= 1_000_000_000) {
+    return `${(num / 1_000_000_000).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} млрд`;
+  }
+  if (num >= 1_000_000) {
+    return `${(num / 1_000_000).toLocaleString('uk-UA', { maximumFractionDigits: 1 })} млн`;
+  }
+  if (num >= 1000) {
+    const thousands = Math.round((num / 1000) * 10) / 10;
+    return `${thousands.toLocaleString('uk-UA', { minimumFractionDigits: 1, maximumFractionDigits: 1 })} тис.`;
+  }
+  return num.toLocaleString('uk-UA');
+}
+
+function formatYoutubeCount(value, { compact = false } = {}) {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return '0';
+  if (compact && num >= 1000) return formatYoutubeCompact(num);
+  return num.toLocaleString('uk-UA');
 }
 
 function getYoutubeHubMeta(summary) {
   if (youtubeChannelStats) {
     const parts = [
-      `${formatYoutubeCount(youtubeChannelStats.subscribers)} підписників`,
+      `${formatYoutubeCount(youtubeChannelStats.subscribers)} підп.`,
+      `${formatYoutubeCount(youtubeChannelStats.views, { compact: true })} перегл.`,
       `${formatYoutubeCount(youtubeChannelStats.videos)} відео`,
     ];
     return parts.join(' · ');
@@ -3284,7 +3304,7 @@ function setYoutubeStatus(message, { isError = false } = {}) {
 
 function renderYoutubeChannelStats(channel) {
   if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = formatYoutubeCount(channel?.subscribers);
-  if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views);
+  if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views, { compact: true });
   if (statsYoutubeVideos) statsYoutubeVideos.textContent = formatYoutubeCount(channel?.videos);
   if (statsYoutubeTitle) {
     const config = STATS_CATEGORIES.youtube;
