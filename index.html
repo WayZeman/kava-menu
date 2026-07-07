@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '79';
+      var version = '80';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=79">
+  <link rel="stylesheet" href="styles.css?v=80">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -334,47 +334,48 @@
           </article>
         </div>
 
-        <section class="stats-hub-chart-section" aria-label="Динаміка доходів і витрат">
-          <div class="stats-chart-head">
-            <h3 class="stats-section-heading">Динаміка доходів і витрат</h3>
-            <div class="stats-chart-period" role="tablist" aria-label="Період загальної статистики">
+        <section class="stats-hub-overview" aria-label="Загальна аналітика">
+          <header class="stats-hub-overview-head">
+            <div class="stats-hub-overview-intro">
+              <h3 class="stats-hub-overview-title">Загальна аналітика</h3>
+              <p class="stats-hub-overview-subtitle">Динаміка доходів і витрат</p>
+            </div>
+            <div class="stats-chart-period stats-hub-overview-period" role="tablist" aria-label="Період загальної статистики">
               <button type="button" class="stats-chart-period-btn is-active" data-hub-chart-period="week" aria-selected="true">Тиждень</button>
               <button type="button" class="stats-chart-period-btn" data-hub-chart-period="month" aria-selected="false">Місяць</button>
               <button type="button" class="stats-chart-period-btn" data-hub-chart-period="year" aria-selected="false">Рік</button>
             </div>
+          </header>
+
+          <div class="stats-hub-overview-legend" aria-hidden="true">
+            <span class="stats-hub-overview-legend-item stats-hub-overview-legend-item--income">Дохід</span>
+            <span class="stats-hub-overview-legend-item stats-hub-overview-legend-item--expense">Витрати</span>
           </div>
-          <div class="stats-flow-legend" aria-hidden="true">
-            <span class="stats-flow-legend-item stats-flow-legend-item--income">Дохід</span>
-            <span class="stats-flow-legend-item stats-flow-legend-item--expense">Витрати</span>
+
+          <div class="stats-hub-overview-chart">
+            <div class="stats-hub-overview-chart-scroll">
+              <div id="stats-hub-flow-chart" class="stats-line-chart stats-line-chart--week" role="img" aria-label="Графік доходів і витрат"></div>
+            </div>
           </div>
-          <div class="stats-chart-scroll stats-line-chart-scroll">
-            <div id="stats-hub-flow-chart" class="stats-line-chart stats-line-chart--week" role="img" aria-label="Графік доходів і витрат"></div>
+
+          <div class="stats-hub-overview-kpis" aria-label="Загальні підсумки">
+            <article class="stats-hub-kpi stats-hub-kpi--income">
+              <span class="stats-hub-kpi-label">Загальний дохід</span>
+              <strong id="stats-hub-total-income" class="stats-hub-kpi-value">0 грн</strong>
+              <span id="stats-hub-income-share" class="stats-hub-kpi-meta">0%</span>
+            </article>
+            <article class="stats-hub-kpi stats-hub-kpi--expense">
+              <span class="stats-hub-kpi-label">Загальні витрати</span>
+              <strong id="stats-hub-total-expenses" class="stats-hub-kpi-value">0 грн</strong>
+              <span id="stats-hub-expenses-share" class="stats-hub-kpi-meta">0%</span>
+            </article>
+            <article class="stats-hub-kpi stats-hub-kpi--balance">
+              <span class="stats-hub-kpi-label">Чистий баланс</span>
+              <strong id="stats-hub-balance-total" class="stats-hub-kpi-value">0 грн</strong>
+              <span id="stats-hub-balance-share" class="stats-hub-kpi-meta">0%</span>
+            </article>
           </div>
         </section>
-
-        <footer class="stats-hub-summary" aria-label="Загальні підсумки">
-          <div class="stats-hub-summary-row">
-            <span>Загальний дохід</span>
-            <div class="stats-hub-summary-value">
-              <strong id="stats-hub-total-income">0 грн</strong>
-              <span id="stats-hub-income-share" class="stats-hub-summary-meta">0%</span>
-            </div>
-          </div>
-          <div class="stats-hub-summary-row">
-            <span>Загальні витрати</span>
-            <div class="stats-hub-summary-value">
-              <strong id="stats-hub-total-expenses">0 грн</strong>
-              <span id="stats-hub-expenses-share" class="stats-hub-summary-meta">0%</span>
-            </div>
-          </div>
-          <div class="stats-hub-summary-row stats-hub-summary-row--balance">
-            <span>Чистий баланс</span>
-            <div class="stats-hub-summary-value">
-              <strong id="stats-hub-balance-total">0 грн</strong>
-              <span id="stats-hub-balance-share" class="stats-hub-summary-meta">0%</span>
-            </div>
-          </div>
-        </footer>
       </div>
 
       <div id="stats-category" class="stats-view stats-view--category" hidden>
@@ -576,6 +577,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=79" defer></script>
+  <script src="script.js?v=80" defer></script>
 </body>
 </html>
