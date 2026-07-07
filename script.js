@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '73';
+const APP_VERSION = '74';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -185,7 +185,8 @@ const STATS_CATEGORIES = {
   youtube: {
     id: 'youtube',
     label: 'YouTube',
-    subtitle: 'Дохід, витрати та статистика каналу',
+    channelUrl: 'https://www.youtube.com/@КіноМить',
+    subtitle: 'Дохід, витрати та статистика @КіноМить',
     menuTitle: '',
     menuMeta: '',
     chartHeading: 'Доходи YouTube по днях',
@@ -2887,8 +2888,13 @@ function renderYoutubeChannelStats(channel) {
   if (statsYoutubeViews) statsYoutubeViews.textContent = formatYoutubeCount(channel?.views);
   if (statsYoutubeVideos) statsYoutubeVideos.textContent = formatYoutubeCount(channel?.videos);
   if (statsYoutubeTitle) {
-    statsYoutubeTitle.textContent = channel?.title ? `Канал: ${channel.title}` : '';
-    statsYoutubeTitle.hidden = !channel?.title;
+    const config = STATS_CATEGORIES.youtube;
+    const link = channel?.url || config.channelUrl;
+    const name = channel?.title || 'КіноМить';
+    statsYoutubeTitle.innerHTML = link
+      ? `<a href="${link}" target="_blank" rel="noopener noreferrer">${name}</a>`
+      : name;
+    statsYoutubeTitle.hidden = false;
   }
   setYoutubeStatus('');
 }
@@ -2924,11 +2930,7 @@ async function loadYoutubeChannelStats() {
       if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = '—';
       if (statsYoutubeViews) statsYoutubeViews.textContent = '—';
       if (statsYoutubeVideos) statsYoutubeVideos.textContent = '—';
-      if (data.error === 'not_configured') {
-        setYoutubeStatus('Підключіть YOUTUBE_API_KEY та YOUTUBE_CHANNEL_ID у Vercel', { isError: true });
-      } else {
-        setYoutubeStatus('Не вдалося завантажити статистику каналу', { isError: true });
-      }
+      setYoutubeStatus('Не вдалося завантажити статистику каналу @КіноМить', { isError: true });
       return;
     }
 

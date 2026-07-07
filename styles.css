@@ -2502,6 +2502,16 @@ body.menu-editor-open {
   color: #6a6258;
 }
 
+.stats-youtube-title a {
+  color: #b42318;
+  text-decoration: none;
+  font-weight: 700;
+}
+
+.stats-youtube-title a:hover {
+  text-decoration: underline;
+}
+
 .stats-youtube-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
