@@ -2686,7 +2686,7 @@ body.is-scroll-locked {
 }
 
 .stats-hub-summary {
-  margin-top: 14px;
+  margin-top: 0;
   padding: 16px 18px;
   border-radius: 28px;
   background: rgba(255, 255, 255, 0.7);
@@ -2694,6 +2694,148 @@ body.is-scroll-locked {
   color: #26231f;
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 44px rgba(114, 86, 52, 0.08);
+}
+
+.stats-hub-chart-section {
+  margin-top: 14px;
+  margin-bottom: 14px;
+  padding: 16px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(255, 255, 255, 0.76);
+  backdrop-filter: blur(18px);
+  box-shadow: 0 22px 44px rgba(114, 86, 52, 0.08);
+}
+
+.stats-flow-legend {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.stats-flow-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: rgba(38, 35, 31, 0.68);
+}
+
+.stats-flow-legend-item::before {
+  content: '';
+  width: 10px;
+  height: 10px;
+  border-radius: 3px;
+}
+
+.stats-flow-legend-item--income::before {
+  background: linear-gradient(180deg, #9fd3ff 0%, #d4a853 100%);
+}
+
+.stats-flow-legend-item--expense::before {
+  background: linear-gradient(180deg, #f2a8a0 0%, #c45c4f 100%);
+}
+
+.stats-flow-chart {
+  display: grid;
+  gap: 8px;
+  align-items: end;
+  min-height: 168px;
+}
+
+.stats-flow-chart--week {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+}
+
+.stats-flow-chart--month {
+  grid-template-columns: repeat(30, minmax(36px, 1fr));
+  min-width: 900px;
+}
+
+.stats-flow-chart--year {
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+}
+
+.stats-flow-bar-group {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.stats-flow-bars {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 4px;
+  width: 100%;
+}
+
+.stats-flow-bar {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 28px;
+}
+
+.stats-flow-bar-value {
+  font-size: 0.58rem;
+  font-weight: 800;
+  line-height: 1.1;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  min-height: 1.1em;
+}
+
+.stats-flow-bar-value--income {
+  color: #7a5a1f;
+}
+
+.stats-flow-bar-value--expense {
+  color: #9a3b32;
+}
+
+.stats-flow-bar-track {
+  width: 100%;
+  height: 96px;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  border-radius: 12px;
+  background: rgba(63, 92, 122, 0.08);
+  overflow: hidden;
+}
+
+.stats-flow-bar-fill {
+  width: 100%;
+  height: 0;
+  border-radius: 12px 12px 6px 6px;
+  transition: height 0.35s ease;
+}
+
+.stats-flow-bar-fill--income {
+  background: linear-gradient(180deg, #9fd3ff 0%, #7ca8d4 28%, #d4a853 100%);
+}
+
+.stats-flow-bar-fill--expense {
+  background: linear-gradient(180deg, #f2b8b0 0%, #d9786c 42%, #b84a3d 100%);
+}
+
+.stats-flow-bar-fill.is-zero {
+  height: 0 !important;
+  opacity: 0;
+}
+
+.stats-flow-chart--month .stats-chart-day,
+.stats-flow-chart--year .stats-chart-day {
+  font-size: 0.62rem;
 }
 
 .stats-hub-summary-row {
@@ -3977,6 +4119,7 @@ body {
   .stats-balance,
   .stats-chart-section,
   .stats-youtube-channel,
+  .stats-hub-chart-section,
   .menu-editor-panel,
   .app-splash-content {
     backdrop-filter: none !important;
@@ -4000,6 +4143,7 @@ body {
   .stats-balance,
   .stats-chart-section,
   .stats-youtube-channel,
+  .stats-hub-chart-section,
   .stats-hub-summary,
   .menu-editor-panel {
     backdrop-filter: none;

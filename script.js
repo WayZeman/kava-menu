@@ -88,6 +88,8 @@ const statsHubIncomeShare = document.getElementById('stats-hub-income-share');
 const statsHubExpensesShare = document.getElementById('stats-hub-expenses-share');
 const statsHubBalanceTotal = document.getElementById('stats-hub-balance-total');
 const statsHubBalanceShare = document.getElementById('stats-hub-balance-share');
+const statsHubFlowChart = document.getElementById('stats-hub-flow-chart');
+const statsHubChartPeriodButtons = document.querySelectorAll('[data-hub-chart-period]');
 const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
 const statsRoiWrap = document.getElementById('stats-roi-wrap');
 const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
@@ -136,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '75';
+const APP_VERSION = '76';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -211,7 +213,13 @@ const CHART_PERIOD_CONFIG = {
     heading: 'Замовлення кави по місяцях',
   },
 };
+const HUB_CHART_PERIOD_CONFIG = {
+  week: { className: 'stats-flow-chart--week' },
+  month: { className: 'stats-flow-chart--month' },
+  year: { className: 'stats-flow-chart--year' },
+};
 let statsChartPeriod = 'week';
+let statsHubChartPeriod = 'week';
 let statsCategory = 'drinks';
 let menuEditorSingleSection = false;
 let categoryVisibility = { drinks: true, extras: true, services: true };
@@ -2833,6 +2841,134 @@ function fillChartBuckets(buckets, incomes, period, category = 'drinks') {
   return buckets;
 }
 
+function buildMoneyChartBuckets(period) {
+  return buildChartBuckets(period).map((bucket) => ({
+    ...bucket,
+    income: 0,
+    expense: 0,
+  }));
+}
+
+function fillMoneyChartBuckets(buckets, incomes, expenses, period) {
+  const map = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket]));
+  const useMonths = period === 'year';
+
+  incomes.forEach((income) => {
+    const amount = Number(income.amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
+    const key = useMonths
+      ? localMonthKey(income.createdAt)
+      : localDayKey(income.createdAt);
+
+    if (map[key]) map[key].income += amount;
+  });
+
+  expenses.forEach((expense) => {
+    const amount = Number(expense.amount || 0);
+    if (!Number.isFinite(amount) || amount <= 0) return;
+
+    const key = useMonths
+      ? localMonthKey(expense.createdAt)
+      : localDayKey(expense.createdAt);
+
+    if (map[key]) map[key].expense += amount;
+  });
+
+  return buckets;
+}
+
+function formatChartMoneyShort(value) {
+  const rounded = Math.round(value);
+  if (rounded >= 10000) {
+    return `${Math.round(rounded / 1000).toLocaleString('uk-UA')}к`;
+  }
+  if (rounded >= 1000) {
+    return `${(rounded / 1000).toLocaleString('uk-UA', { maximumFractionDigits: 1 })}к`;
+  }
+  return rounded > 0 ? String(rounded) : '0';
+}
+
+function setHubChartPeriod(period) {
+  if (!HUB_CHART_PERIOD_CONFIG[period]) return;
+  statsHubChartPeriod = period;
+
+  statsHubChartPeriodButtons.forEach((button) => {
+    const isActive = button.dataset.hubChartPeriod === period;
+    button.classList.toggle('is-active', isActive);
+    button.setAttribute('aria-selected', isActive ? 'true' : 'false');
+  });
+
+  if (statsHubFlowChart) {
+    statsHubFlowChart.className = `stats-flow-chart ${HUB_CHART_PERIOD_CONFIG[period].className}`;
+  }
+}
+
+function renderHubFlowChart(data) {
+  if (!statsHubFlowChart) return;
+
+  const buckets = fillMoneyChartBuckets(
+    buildMoneyChartBuckets(statsHubChartPeriod),
+    data.incomes,
+    data.expenses,
+    statsHubChartPeriod,
+  );
+  const maxValue = Math.max(
+    ...buckets.flatMap((bucket) => [bucket.income, bucket.expense]),
+    1,
+  );
+
+  statsHubFlowChart.innerHTML = '';
+  statsHubFlowChart.setAttribute(
+    'aria-label',
+    buckets.map((bucket) => (
+      `${bucket.label}: дохід ${formatStatsMoney(bucket.income)}, витрати ${formatStatsMoney(bucket.expense)}`
+    )).join('; '),
+  );
+
+  buckets.forEach((bucket) => {
+    const group = document.createElement('div');
+    group.className = 'stats-flow-bar-group';
+
+    const bars = document.createElement('div');
+    bars.className = 'stats-flow-bars';
+
+    [
+      { type: 'income', amount: bucket.income },
+      { type: 'expense', amount: bucket.expense },
+    ].forEach(({ type, amount }) => {
+      const column = document.createElement('div');
+      column.className = 'stats-flow-bar';
+
+      const value = document.createElement('span');
+      value.className = `stats-flow-bar-value stats-flow-bar-value--${type}`;
+      value.textContent = formatChartMoneyShort(amount);
+
+      const track = document.createElement('div');
+      track.className = 'stats-flow-bar-track';
+
+      const fill = document.createElement('div');
+      fill.className = `stats-flow-bar-fill stats-flow-bar-fill--${type}`;
+      const heightPercent = amount > 0
+        ? Math.max(8, Math.round((amount / maxValue) * 100))
+        : 0;
+      fill.style.height = `${heightPercent}%`;
+      if (amount === 0) fill.classList.add('is-zero');
+
+      track.appendChild(fill);
+      column.append(value, track);
+      bars.appendChild(column);
+    });
+
+    const label = document.createElement('span');
+    label.className = 'stats-chart-day';
+    label.textContent = bucket.label;
+
+    group.append(bars, label);
+    statsHubFlowChart.appendChild(group);
+  });
+}
+
 function setChartPeriod(period) {
   if (!CHART_PERIOD_CONFIG[period]) return;
   statsChartPeriod = period;
@@ -3373,6 +3509,7 @@ function renderStatsHub(data) {
   }
 
   renderStatsHubVisibility();
+  renderHubFlowChart(data);
 }
 
 function renderStatsCategoryView(data) {
@@ -3455,6 +3592,7 @@ function showStatsHub() {
   expensesListExpanded = false;
   setStatsTab('income');
   setChartPeriod('week');
+  setHubChartPeriod('week');
   closeEditTransaction();
   renderStatsHub(currentStatsData);
 }
@@ -3706,6 +3844,13 @@ statsChartPeriodButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setChartPeriod(button.dataset.chartPeriod);
     renderOrderChart(currentStatsData.incomes, statsCategory);
+  });
+});
+
+statsHubChartPeriodButtons.forEach((button) => {
+  button.addEventListener('click', () => {
+    setHubChartPeriod(button.dataset.hubChartPeriod);
+    renderHubFlowChart(currentStatsData);
   });
 });
 

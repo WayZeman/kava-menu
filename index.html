@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '75';
+      var version = '76';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=75">
+  <link rel="stylesheet" href="styles.css?v=76">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -327,6 +327,24 @@
           </article>
         </div>
 
+        <section class="stats-hub-chart-section" aria-label="Динаміка доходів і витрат">
+          <div class="stats-chart-head">
+            <h3 class="stats-section-heading">Динаміка доходів і витрат</h3>
+            <div class="stats-chart-period" role="tablist" aria-label="Період загальної статистики">
+              <button type="button" class="stats-chart-period-btn is-active" data-hub-chart-period="week" aria-selected="true">Тиждень</button>
+              <button type="button" class="stats-chart-period-btn" data-hub-chart-period="month" aria-selected="false">Місяць</button>
+              <button type="button" class="stats-chart-period-btn" data-hub-chart-period="year" aria-selected="false">Рік</button>
+            </div>
+          </div>
+          <div class="stats-flow-legend" aria-hidden="true">
+            <span class="stats-flow-legend-item stats-flow-legend-item--income">Дохід</span>
+            <span class="stats-flow-legend-item stats-flow-legend-item--expense">Витрати</span>
+          </div>
+          <div class="stats-chart-scroll">
+            <div id="stats-hub-flow-chart" class="stats-flow-chart stats-flow-chart--week" role="img" aria-label="Діаграма доходів і витрат"></div>
+          </div>
+        </section>
+
         <footer class="stats-hub-summary" aria-label="Загальні підсумки">
           <div class="stats-hub-summary-row">
             <span>Загальний дохід</span>
@@ -551,6 +569,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=75" defer></script>
+  <script src="script.js?v=76" defer></script>
 </body>
 </html>
