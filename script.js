@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '91';
+const APP_VERSION = '92';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -200,7 +200,7 @@ const YOUTUBE_CHANNELS = [
   {
     key: 'kinomity',
     label: '@КіноМить',
-    channelUrl: 'https://www.youtube.com/@КіноМить',
+    channelUrl: 'https://www.youtube.com/@КіноМить/shorts',
   },
   {
     key: 'lostchronicles',
@@ -3370,7 +3370,7 @@ function renderYoutubeChannelCard(config, channel, { loading = false } = {}) {
   heading.className = 'stats-youtube-channel-name';
 
   const link = document.createElement('a');
-  link.href = channel?.url || config.channelUrl;
+  link.href = config.channelUrl;
   link.target = '_blank';
   link.rel = 'noopener noreferrer';
   link.textContent = channel?.title || config.label.replace('@', '');

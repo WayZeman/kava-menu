@@ -1,5 +1,5 @@
 const DEFAULT_CHANNELS = [
-  'https://www.youtube.com/@КіноМить',
+  'https://www.youtube.com/@КіноМить/shorts',
   'https://www.youtube.com/@LostChroniclesua',
 ];
 const CACHE_MS = 5 * 60 * 1000;
