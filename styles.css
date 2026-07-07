@@ -1559,6 +1559,10 @@ body.menu-editor-open {
   margin-bottom: 0;
 }
 
+.stats-menu-entry--hub-theme {
+  margin-top: 14px;
+}
+
 .stats-menu-entry-btn {
   display: flex;
   align-items: center;
