@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '85';
+      var version = '88';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=85">
+  <link rel="stylesheet" href="styles.css?v=88">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -84,7 +84,10 @@
       <p class="lead">Що бажаєте сьогодні?</p>
     </header>
 
-    <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв"></section>
+    <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв">
+      <h2 class="menu-heading">Напої</h2>
+      <div id="drinks-menu-list"></div>
+    </section>
 
     <section id="extras-menu" class="menu menu--extras" aria-label="До кави" hidden>
       <h2 class="menu-heading">До кави</h2>
@@ -584,6 +587,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=85" defer></script>
+  <script src="script.js?v=88" defer></script>
 </body>
 </html>

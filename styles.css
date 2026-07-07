@@ -334,6 +334,13 @@ body.has-cart .page {
   gap: 10px;
 }
 
+.menu--drinks {
+  margin-top: 8px;
+  padding-top: 28px;
+  padding-bottom: 16px;
+  gap: 12px;
+}
+
 .menu--services {
   margin-top: 36px;
   padding-top: 28px;
@@ -350,6 +357,7 @@ body.has-cart .page {
   gap: 12px;
 }
 
+#drinks-menu-list,
 #extras-menu-list,
 #services-menu-list {
   display: flex;
@@ -3570,6 +3578,7 @@ body {
   gap: 14px;
 }
 
+.menu--drinks,
 .menu--extras,
 .menu--services {
   margin-top: 28px;
@@ -3579,6 +3588,10 @@ body {
   background: rgba(255, 255, 255, 0.52);
   backdrop-filter: blur(16px);
   box-shadow: 0 18px 40px rgba(114, 86, 52, 0.08);
+}
+
+.menu--drinks {
+  margin-top: 12px;
 }
 
 .menu-heading {

@@ -27,6 +27,7 @@ const thanksSkip = document.getElementById('thanks-skip');
 const thanksStatus = document.getElementById('thanks-status');
 const rows = document.querySelectorAll('[data-picker="car-wash"]');
 const drinksMenu = document.getElementById('drinks-menu');
+const drinksMenuList = document.getElementById('drinks-menu-list');
 const extrasMenu = document.getElementById('extras-menu');
 const extrasMenuList = document.getElementById('extras-menu-list');
 const servicesMenu = document.getElementById('services-menu');
@@ -138,7 +139,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '85';
+const APP_VERSION = '88';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -737,7 +738,7 @@ function handleMenuClick(event) {
 }
 
 function initMenuDelegation() {
-  [drinksMenu, extrasMenuList, servicesMenuList].forEach((container) => {
+  [drinksMenuList, extrasMenuList, servicesMenuList].forEach((container) => {
     container?.addEventListener('click', handleMenuClick);
   });
 }
@@ -853,16 +854,23 @@ function captureRowQuantities(container) {
 }
 
 function renderDrinksMenu() {
-  if (!drinksMenu) return;
+  if (!drinksMenu || !drinksMenuList) return;
 
-  const prevQty = captureRowQuantities(drinksMenu);
-  drinksMenu.innerHTML = '';
+  const prevQty = captureRowQuantities(drinksMenuList);
+  drinksMenuList.innerHTML = '';
+
+  if (!menuDrinks.length) {
+    drinksMenu.hidden = true;
+    return;
+  }
+
+  drinksMenu.hidden = false;
   menuDrinks.forEach((drink) => {
     const row = createDrinkRow(drink);
-    drinksMenu.appendChild(row);
+    drinksMenuList.appendChild(row);
     bindMenuRow(row);
   });
-  restoreRowQuantities(drinksMenu, prevQty);
+  restoreRowQuantities(drinksMenuList, prevQty);
 }
 
 function renderExtrasMenu() {
