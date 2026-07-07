@@ -139,7 +139,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '88';
+const APP_VERSION = '89';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -894,11 +894,17 @@ function renderExtrasMenu() {
 }
 
 function renderServicesMenu() {
-  if (!servicesMenuList) return;
+  if (!servicesMenu || !servicesMenuList) return;
 
   const prevQty = captureRowQuantities(servicesMenuList);
   servicesMenuList.innerHTML = '';
 
+  if (!menuServices.length) {
+    servicesMenu.hidden = true;
+    return;
+  }
+
+  servicesMenu.hidden = false;
   menuServices.forEach((service) => {
     const row = createServiceRow(service);
     servicesMenuList.appendChild(row);

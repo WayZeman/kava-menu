@@ -3623,12 +3623,6 @@ body {
   backdrop-filter: blur(16px);
 }
 
-.menu--services .row {
-  background:
-    radial-gradient(circle at bottom right, rgba(255, 189, 88, 0.14), transparent 32%),
-    rgba(255, 255, 255, 0.76);
-}
-
 .row.has-qty {
   border-color: rgba(255, 214, 92, 0.82);
   box-shadow:
