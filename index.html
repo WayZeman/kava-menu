@@ -18,7 +18,7 @@
   <meta http-equiv="Expires" content="0">
   <script>
     (function () {
-      var version = '64';
+      var version = '66';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -44,7 +44,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=64">
+  <link rel="stylesheet" href="styles.css?v=66">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -280,6 +280,7 @@
             <button type="button" class="stats-hub-card-open" data-open-category="drinks">
               <strong id="stats-hub-coffee-total" class="stats-hub-card-value">0 грн</strong>
               <span id="stats-hub-coffee-meta" class="stats-hub-card-meta">0 напоїв</span>
+              <span id="stats-hub-coffee-roi" class="stats-hub-card-roi">Окупність: —</span>
               <span class="stats-hub-card-hint" data-visibility-hint="drinks" hidden>Приховано в меню</span>
             </button>
           </article>
@@ -295,6 +296,7 @@
             <button type="button" class="stats-hub-card-open" data-open-category="extras">
               <strong id="stats-hub-extras-total" class="stats-hub-card-value">0 грн</strong>
               <span id="stats-hub-extras-meta" class="stats-hub-card-meta">0 позицій</span>
+              <span id="stats-hub-extras-roi" class="stats-hub-card-roi">Окупність: —</span>
               <span class="stats-hub-card-hint" data-visibility-hint="extras" hidden>Приховано в меню</span>
             </button>
           </article>
@@ -310,10 +312,22 @@
             <button type="button" class="stats-hub-card-open" data-open-category="services">
               <strong id="stats-hub-services-total" class="stats-hub-card-value">0 грн</strong>
               <span id="stats-hub-services-meta" class="stats-hub-card-meta">0 разів</span>
+              <span id="stats-hub-services-roi" class="stats-hub-card-roi">Окупність: —</span>
               <span class="stats-hub-card-hint" data-visibility-hint="services" hidden>Приховано в меню</span>
             </button>
           </article>
         </div>
+
+        <footer class="stats-hub-summary" aria-label="Загальні підсумки">
+          <div class="stats-hub-summary-row">
+            <span>Загальний дохід</span>
+            <strong id="stats-hub-total-income">0 грн</strong>
+          </div>
+          <div class="stats-hub-summary-row">
+            <span>Загальні витрати</span>
+            <strong id="stats-hub-total-expenses">0 грн</strong>
+          </div>
+        </footer>
       </div>
 
       <div id="stats-category" class="stats-view stats-view--category" hidden>
@@ -493,6 +507,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=64"></script>
+  <script src="script.js?v=66"></script>
 </body>
 </html>

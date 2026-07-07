@@ -63,10 +63,15 @@ const statsCategoryTitle = document.getElementById('stats-category-title');
 const statsCategorySubtitle = document.getElementById('stats-category-subtitle');
 const statsHubCoffeeTotal = document.getElementById('stats-hub-coffee-total');
 const statsHubCoffeeMeta = document.getElementById('stats-hub-coffee-meta');
+const statsHubCoffeeRoi = document.getElementById('stats-hub-coffee-roi');
 const statsHubExtrasTotal = document.getElementById('stats-hub-extras-total');
 const statsHubExtrasMeta = document.getElementById('stats-hub-extras-meta');
+const statsHubExtrasRoi = document.getElementById('stats-hub-extras-roi');
 const statsHubServicesTotal = document.getElementById('stats-hub-services-total');
 const statsHubServicesMeta = document.getElementById('stats-hub-services-meta');
+const statsHubServicesRoi = document.getElementById('stats-hub-services-roi');
+const statsHubTotalIncome = document.getElementById('stats-hub-total-income');
+const statsHubTotalExpenses = document.getElementById('stats-hub-total-expenses');
 const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
 const statsRoiWrap = document.getElementById('stats-roi-wrap');
 const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
@@ -114,7 +119,7 @@ const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
-const APP_VERSION = '64';
+const APP_VERSION = '66';
 const HAIRCUT_ID = 'haircut';
 const STATS_CATEGORIES = {
   drinks: {
@@ -2771,6 +2776,11 @@ function formatRoiPercent(value) {
   })}%`;
 }
 
+function getRoiPercent(income, expenses) {
+  if (expenses <= 0) return null;
+  return (income / expenses) * 100;
+}
+
 function setStatsTab(tab, { keepEdit = false } = {}) {
   const isIncome = tab === 'income';
   statsActiveTab = tab;
@@ -2813,7 +2823,7 @@ function renderRoi(income, expenses) {
 
   if (income >= expenses) {
     const profit = income - expenses;
-    statsRoiMain.textContent = formatRoiPercent(100);
+    statsRoiMain.textContent = formatRoiPercent(rawPercent);
     statsRoiSub.textContent = profit > 0
       ? `Окуплено · прибуток ${formatStatsMoney(profit)}`
       : 'Окуплено';
@@ -3019,6 +3029,14 @@ function renderStatsHubVisibility() {
 function renderStatsHub(data) {
   const summary = summarizeIncomes(data.incomes);
   const config = STATS_CATEGORIES;
+  const drinksExpenses = getExpensesByCategory(data.expenses, 'drinks')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const extrasExpenses = getExpensesByCategory(data.expenses, 'extras')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const servicesExpenses = getExpensesByCategory(data.expenses, 'services')
+    .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+  const totalIncome = summary.coffee + summary.extras + summary.haircut;
+  const totalExpenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
   if (statsHubCoffeeTotal) {
     statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
@@ -3029,6 +3047,10 @@ function renderStatsHub(data) {
       ...config.drinks.countLabels,
     );
   }
+  if (statsHubCoffeeRoi) {
+    const roi = getRoiPercent(summary.coffee, drinksExpenses);
+    statsHubCoffeeRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
+  }
   if (statsHubExtrasTotal) {
     statsHubExtrasTotal.textContent = formatStatsMoney(summary.extras);
   }
@@ -3038,6 +3060,10 @@ function renderStatsHub(data) {
       ...config.extras.countLabels,
     );
   }
+  if (statsHubExtrasRoi) {
+    const roi = getRoiPercent(summary.extras, extrasExpenses);
+    statsHubExtrasRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
+  }
   if (statsHubServicesTotal) {
     statsHubServicesTotal.textContent = formatStatsMoney(summary.haircut);
   }
@@ -3046,6 +3072,16 @@ function renderStatsHub(data) {
       getCategoryCount(summary, 'services'),
       ...config.services.countLabels,
     );
+  }
+  if (statsHubServicesRoi) {
+    const roi = getRoiPercent(summary.haircut, servicesExpenses);
+    statsHubServicesRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
+  }
+  if (statsHubTotalIncome) {
+    statsHubTotalIncome.textContent = formatStatsMoney(totalIncome);
+  }
+  if (statsHubTotalExpenses) {
+    statsHubTotalExpenses.textContent = formatStatsMoney(totalExpenses);
   }
 
   renderStatsHubVisibility();
