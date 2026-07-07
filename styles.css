@@ -2463,33 +2463,90 @@ body.is-scroll-locked {
 
 .stats-hub-card--coffee {
   background:
-    radial-gradient(circle at top right, rgba(123, 182, 245, 0.28), transparent 38%),
-    radial-gradient(circle at bottom left, rgba(230, 150, 74, 0.34), transparent 34%),
-    rgba(69, 118, 155, 0.9);
-  border-color: rgba(255, 255, 255, 0.26);
-  color: #fffef9;
+    radial-gradient(circle at 88% 12%, rgba(255, 220, 160, 0.38), transparent 42%),
+    radial-gradient(circle at 12% 88%, rgba(139, 90, 43, 0.45), transparent 38%),
+    linear-gradient(145deg, #7a4f2e 0%, #4a2c18 52%, #2f1a0f 100%);
+  border-color: rgba(255, 220, 160, 0.24);
+  color: #fff8ee;
+  box-shadow: 0 26px 48px rgba(61, 35, 20, 0.22);
 }
 
 .stats-hub-card--extras {
-  border-color: rgba(255, 255, 255, 0.78);
   background:
-    radial-gradient(circle at top right, rgba(255, 220, 123, 0.36), transparent 40%),
-    rgba(255, 255, 255, 0.72);
+    radial-gradient(circle at top right, rgba(255, 196, 72, 0.42), transparent 42%),
+    radial-gradient(circle at bottom left, rgba(255, 236, 188, 0.58), transparent 36%),
+    linear-gradient(160deg, #fff9ee 0%, #ffeccc 48%, #f0d49a 100%);
+  border-color: rgba(212, 168, 83, 0.42);
+  color: #4a3418;
+  box-shadow: 0 26px 48px rgba(180, 130, 50, 0.14);
 }
 
 .stats-hub-card--services {
-  border-color: rgba(255, 255, 255, 0.78);
   background:
-    radial-gradient(circle at bottom right, rgba(255, 191, 84, 0.26), transparent 34%),
-    rgba(255, 255, 255, 0.72);
+    radial-gradient(circle at top right, rgba(186, 208, 228, 0.42), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(110, 132, 152, 0.35), transparent 34%),
+    linear-gradient(145deg, #5f7588 0%, #42586a 55%, #2f3f4d 100%);
+  border-color: rgba(200, 215, 230, 0.26);
+  color: #f5f8fb;
+  box-shadow: 0 26px 48px rgba(47, 63, 77, 0.2);
 }
 
 .stats-hub-card--youtube {
-  border-color: rgba(255, 255, 255, 0.78);
   background:
-    radial-gradient(circle at top right, rgba(255, 140, 140, 0.28), transparent 40%),
-    radial-gradient(circle at bottom left, rgba(255, 220, 220, 0.22), transparent 34%),
-    rgba(255, 255, 255, 0.72);
+    radial-gradient(circle at top right, rgba(255, 130, 130, 0.4), transparent 40%),
+    radial-gradient(circle at bottom left, rgba(255, 70, 70, 0.28), transparent 34%),
+    linear-gradient(145deg, #ff3b30 0%, #e62117 48%, #b31217 100%);
+  border-color: rgba(255, 180, 180, 0.3);
+  color: #fff8f8;
+  box-shadow: 0 26px 48px rgba(180, 20, 20, 0.18);
+}
+
+.stats-hub-card--coffee .stats-hub-eye,
+.stats-hub-card--services .stats-hub-eye {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.14);
+  color: #fff;
+  box-shadow: none;
+}
+
+.stats-hub-card--coffee .stats-hub-eye.is-off,
+.stats-hub-card--services .stats-hub-eye.is-off {
+  background: rgba(0, 0, 0, 0.22);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.stats-hub-card--extras .stats-hub-eye {
+  border-color: rgba(180, 130, 50, 0.34);
+  background: rgba(255, 255, 255, 0.86);
+  color: #7a5a20;
+  box-shadow: 0 10px 20px rgba(140, 100, 40, 0.1);
+}
+
+.stats-hub-card--extras .stats-hub-eye.is-off {
+  background: rgba(255, 236, 184, 0.92);
+  border-color: rgba(212, 168, 83, 0.45);
+  color: #6a4e18;
+}
+
+.stats-hub-card--coffee .stats-hub-card-open:active,
+.stats-hub-card--services .stats-hub-card-open:active,
+.stats-hub-card--youtube .stats-hub-card-open:active {
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.stats-hub-card--extras .stats-hub-card-open:active {
+  background: rgba(120, 80, 20, 0.06);
+}
+
+.stats-hub-card--coffee .stats-hub-card-hint,
+.stats-hub-card--services .stats-hub-card-hint,
+.stats-hub-card--youtube .stats-hub-card-hint {
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.stats-hub-card--extras .stats-hub-card-hint {
+  color: rgba(74, 52, 24, 0.62);
 }
 
 .stats-hub-badge {
@@ -2500,10 +2557,10 @@ body.is-scroll-locked {
   height: 44px;
   min-width: 44px;
   min-height: 44px;
-  border: 1px solid rgba(255, 255, 255, 0.54);
+  border: 1px solid rgba(255, 255, 255, 0.42);
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.72);
-  color: #c4302b;
+  background: rgba(255, 255, 255, 0.92);
+  color: #e62117;
   box-shadow: 0 10px 20px rgba(34, 39, 46, 0.08);
   flex-shrink: 0;
 }
@@ -4142,7 +4199,6 @@ body {
   }
 
   .stats-menu-entry-btn,
-  .stats-hub-card,
   .stats-list-item,
   .stats-card,
   .stats-tab,
@@ -4157,10 +4213,24 @@ body {
     background: rgba(255, 255, 255, 0.94);
   }
 
+  .stats-hub-card {
+    backdrop-filter: none;
+  }
+
   .stats-hub-card--coffee {
-    background:
-      radial-gradient(circle at top right, rgba(123, 182, 245, 0.22), transparent 38%),
-      rgba(69, 118, 155, 0.94);
+    background: linear-gradient(145deg, #7a4f2e 0%, #2f1a0f 100%);
+  }
+
+  .stats-hub-card--extras {
+    background: linear-gradient(160deg, #fff9ee 0%, #f0d49a 100%);
+  }
+
+  .stats-hub-card--services {
+    background: linear-gradient(145deg, #5f7588 0%, #2f3f4d 100%);
+  }
+
+  .stats-hub-card--youtube {
+    background: linear-gradient(145deg, #ff3b30 0%, #b31217 100%);
   }
 }
 

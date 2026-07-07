@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '78';
+const APP_VERSION = '79';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
