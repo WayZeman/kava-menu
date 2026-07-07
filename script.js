@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '86';
+const APP_VERSION = '87';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3270,6 +3270,13 @@ function formatYoutubeCompact(value) {
   return num.toLocaleString('uk-UA');
 }
 
+function formatYoutubeViewsDisplay(value) {
+  const num = Number(value || 0);
+  if (!Number.isFinite(num)) return '0';
+  if (num < 10000) return formatYoutubeCount(num);
+  return formatYoutubeCount(num, { compact: true });
+}
+
 function formatYoutubeCount(value, { compact = false } = {}) {
   const num = Number(value || 0);
   if (!Number.isFinite(num)) return '0';
@@ -3281,7 +3288,7 @@ function getYoutubeHubMeta(summary) {
   if (youtubeChannelStats) {
     const parts = [
       `${formatYoutubeCount(youtubeChannelStats.subscribers)} підп.`,
-      `${formatYoutubeCount(youtubeChannelStats.views, { compact: true })} перегл.`,
+      `${formatYoutubeViewsDisplay(youtubeChannelStats.views)} перегл.`,
       `${formatYoutubeCount(youtubeChannelStats.videos)} відео`,
     ];
     return parts.join(' · ');
@@ -3308,7 +3315,7 @@ function setYoutubeStatus(message, { isError = false } = {}) {
 function renderYoutubeChannelStats(channel) {
   if (statsYoutubeSubscribers) statsYoutubeSubscribers.textContent = formatYoutubeCount(channel?.subscribers);
   if (statsYoutubeViews) {
-    statsYoutubeViews.textContent = formatYoutubeCount(channel?.views, { compact: true });
+    statsYoutubeViews.textContent = formatYoutubeViewsDisplay(channel?.views);
     statsYoutubeViews.title = channel?.views
       ? `${Number(channel.views).toLocaleString('uk-UA')} переглядів`
       : '';
@@ -3328,7 +3335,7 @@ function renderYoutubeChannelStats(channel) {
 
 async function refreshYoutubeStats() {
   try {
-    const response = await fetch('/api/youtube', { cache: 'no-store' });
+    const response = await fetch('/api/youtube?refresh=1', { cache: 'no-store' });
     const data = await response.json();
     if (data.ok && data.channel) {
       youtubeChannelStats = data.channel;
@@ -3354,7 +3361,7 @@ async function loadYoutubeChannelStats() {
   setYoutubeStatus('');
 
   try {
-    const response = await fetch('/api/youtube', { cache: 'no-store' });
+    const response = await fetch('/api/youtube?refresh=1', { cache: 'no-store' });
     const data = await response.json();
 
     if (!data.ok) {

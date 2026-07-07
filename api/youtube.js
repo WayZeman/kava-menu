@@ -1,5 +1,5 @@
 const DEFAULT_CHANNEL_URL = 'https://www.youtube.com/@КіноМить';
-const CACHE_MS = 5 * 60 * 1000;
+const CACHE_MS = 2 * 60 * 1000;
 const USER_AGENT = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
 
 let cached = null;
@@ -131,6 +131,68 @@ async function fetchViaApi(apiKey, channelUrl) {
   };
 }
 
+async function fetchRssVideoStats(channelId) {
+  if (!channelId) return null;
+
+  const response = await fetch(
+    `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(channelId)}`,
+    {
+      headers: {
+        'User-Agent': USER_AGENT,
+        'Accept': 'application/atom+xml,text/xml,*/*',
+      },
+    },
+  );
+
+  if (!response.ok) return null;
+
+  const xml = await response.text();
+  const matches = [...xml.matchAll(/<media:statistics views="(\d+)"/g)];
+  if (!matches.length) return null;
+
+  const views = matches.reduce((sum, match) => sum + Number(match[1] || 0), 0);
+  return {
+    views,
+    videos: matches.length,
+  };
+}
+
+function applyFresherViewCount(channel) {
+  if (!channel) return channel;
+
+  const publicViews = Number(channel.views || 0);
+  const rssViews = Number(channel.viewsFromFeed || 0);
+  const override = Number(process.env.YOUTUBE_VIEWS_OVERRIDE || 0);
+
+  if (Number.isFinite(override) && override > 0) {
+    channel.views = Math.round(override);
+    channel.viewsSource = 'manual_override';
+    return channel;
+  }
+
+  if (rssViews > publicViews) {
+    channel.views = rssViews;
+    channel.viewsSource = 'videos_feed';
+  } else {
+    channel.views = publicViews;
+    channel.viewsSource = channel.viewsSource || 'channel_about';
+  }
+
+  return channel;
+}
+
+async function enrichChannelStats(channel) {
+  if (!channel?.id) return channel;
+
+  const feed = await fetchRssVideoStats(channel.id);
+  if (feed) {
+    channel.viewsFromFeed = feed.views;
+    if (feed.videos > 0) channel.videos = feed.videos;
+  }
+
+  return applyFresherViewCount(channel);
+}
+
 async function scrapeChannelStats(channelUrl) {
   const response = await fetch(channelAboutUrl(channelUrl), {
     headers: {
@@ -170,8 +232,9 @@ export default async function handler(req, res) {
 
   const channelUrl = process.env.YOUTUBE_CHANNEL_URL || DEFAULT_CHANNEL_URL;
   const cacheKey = normalizeChannelUrl(channelUrl);
+  const forceRefresh = req.query?.refresh === '1';
 
-  if (cached && cached.key === cacheKey && Date.now() - cached.at < CACHE_MS) {
+  if (!forceRefresh && cached && cached.key === cacheKey && Date.now() - cached.at < CACHE_MS) {
     res.status(200).json({ ok: true, channel: cached.channel, cached: true });
     return;
   }
@@ -180,6 +243,7 @@ export default async function handler(req, res) {
     const apiKey = process.env.YOUTUBE_API_KEY;
     let channel = apiKey ? await fetchViaApi(apiKey, channelUrl) : null;
     if (!channel) channel = await scrapeChannelStats(channelUrl);
+    channel = await enrichChannelStats(channel);
 
     cached = { key: cacheKey, channel, at: Date.now() };
     res.status(200).json({ ok: true, channel });

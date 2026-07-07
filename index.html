@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '86';
+      var version = '87';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=86">
+  <link rel="stylesheet" href="styles.css?v=87">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -435,7 +435,7 @@
         <section id="stats-youtube-channel" class="stats-chart-section stats-youtube-channel" hidden aria-label="Статистика YouTube каналу">
           <div class="stats-chart-head">
             <h3 class="stats-section-heading">Статистика каналу</h3>
-            <p class="stats-youtube-period">За весь час · дані з YouTube</p>
+            <p class="stats-youtube-period">За весь час · оновлюється з YouTube</p>
             <p id="stats-youtube-title" class="stats-youtube-title" hidden></p>
           </div>
           <div class="stats-youtube-grid">
@@ -452,7 +452,7 @@
               <strong id="stats-youtube-videos" class="stats-youtube-stat-value">—</strong>
             </article>
           </div>
-          <p class="stats-youtube-note">Суми в грн — ваші записи доходів і витрат у додатку, не виплати з YouTube.</p>
+          <p class="stats-youtube-note">Перегляди рахуються по відео каналу й оновлюються швидше, ніж на публічній сторінці. Невелика різниця з YouTube Studio можлива. Суми в грн — ваші записи в додатку.</p>
           <p id="stats-youtube-status" class="stats-youtube-status" hidden></p>
         </section>
 
@@ -584,6 +584,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=86" defer></script>
+  <script src="script.js?v=87" defer></script>
 </body>
 </html>
