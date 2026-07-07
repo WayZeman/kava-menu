@@ -119,7 +119,7 @@ const MENU_EXTRAS_KEY = 'kava-menu-extras';
 const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
-const APP_VERSION = '67';
+const APP_VERSION = '68';
 const HAIRCUT_ID = 'haircut';
 const STATS_CATEGORIES = {
   drinks: {

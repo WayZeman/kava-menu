@@ -53,7 +53,10 @@ body.is-splash-active {
     max(24px, env(safe-area-inset-top))
     24px
     max(24px, env(safe-area-inset-bottom));
-  background: var(--cream);
+  background:
+    radial-gradient(circle at top right, rgba(255, 216, 106, 0.28), transparent 32%),
+    radial-gradient(circle at 14% 18%, rgba(146, 204, 255, 0.2), transparent 24%),
+    linear-gradient(180deg, #fffdf8 0%, #faf5ed 54%, #f4ecdf 100%);
 }
 
 .app-splash.is-exiting {
@@ -71,62 +74,80 @@ body.is-splash-active {
   flex-direction: column;
   align-items: center;
   text-align: center;
+  width: min(340px, 100%);
+  padding: 32px 26px 28px;
+  border-radius: 36px;
+  background:
+    radial-gradient(circle at top right, rgba(255, 220, 123, 0.34), transparent 32%),
+    radial-gradient(circle at 18% 20%, rgba(162, 210, 255, 0.18), transparent 24%),
+    rgba(255, 255, 255, 0.68);
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 28px 60px rgba(114, 86, 52, 0.14);
+  backdrop-filter: blur(22px);
   animation: splash-in 0.75s cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .app-splash-icon {
   position: relative;
-  width: 88px;
-  height: 88px;
-  margin-bottom: 22px;
-  color: var(--brown);
+  width: 104px;
+  height: 104px;
+  margin-bottom: 24px;
+  border-radius: 28px;
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.88),
+    0 18px 34px rgba(114, 86, 52, 0.12);
+  color: #24211d;
 }
 
 .app-splash-cup {
   display: block;
-  width: 100%;
-  height: 100%;
+  width: 72px;
+  height: 72px;
+  margin: 16px auto 0;
   animation: cup-float 3s ease-in-out infinite;
 }
 
 .app-splash-steam {
   position: absolute;
-  bottom: 52px;
+  bottom: 64px;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: rgba(92, 58, 40, 0.35);
+  background: rgba(116, 99, 84, 0.3);
   opacity: 0;
   animation: steam-rise 2.4s ease-in-out infinite;
 }
 
-.app-splash-steam--1 { left: 28px; animation-delay: 0s; }
-.app-splash-steam--2 { left: 42px; animation-delay: 0.55s; }
-.app-splash-steam--3 { left: 56px; animation-delay: 1.1s; }
+.app-splash-steam--1 { left: 34px; animation-delay: 0s; }
+.app-splash-steam--2 { left: 48px; animation-delay: 0.55s; }
+.app-splash-steam--3 { left: 62px; animation-delay: 1.1s; }
 
 .app-splash-title {
   margin: 0;
-  font-size: clamp(1.5rem, 6vw, 1.9rem);
+  font-size: clamp(1.65rem, 6vw, 2.05rem);
   font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--brown);
+  letter-spacing: -0.03em;
+  text-transform: none;
+  color: #22201d;
   line-height: 1.1;
 }
 
 .app-splash-tagline {
   margin: 10px 0 0;
-  font-size: 0.92rem;
+  font-size: 0.94rem;
   font-weight: 600;
-  color: var(--brown-light);
+  color: rgba(44, 40, 36, 0.62);
 }
 
 .app-splash-loader {
-  width: min(200px, 58vw);
-  height: 3px;
+  width: min(220px, 62vw);
+  height: 12px;
   margin-top: 28px;
   border-radius: 999px;
-  background: rgba(61, 35, 20, 0.1);
+  padding: 2px;
+  background: rgba(63, 92, 122, 0.09);
+  box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.86);
   overflow: hidden;
 }
 
@@ -135,7 +156,7 @@ body.is-splash-active {
   height: 100%;
   width: 36%;
   border-radius: inherit;
-  background: linear-gradient(90deg, var(--gold), #e8cc6a);
+  background: linear-gradient(90deg, #95c8ff 0%, #ffd369 100%);
   animation: splash-loader 1.35s ease-in-out infinite;
 }
 
