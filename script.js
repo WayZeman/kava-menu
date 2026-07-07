@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '92';
+const APP_VERSION = '93';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3329,19 +3329,40 @@ function setYoutubeStatus(message, { isError = false } = {}) {
 }
 
 function normalizeYoutubeChannelUrl(url) {
-  return String(url || '')
+  let value = String(url || '')
     .replace(/\/(shorts|videos|streams|playlists|featured|community|about)(\/.*)?$/, '')
     .replace(/\/$/, '');
+  try {
+    const parsed = new URL(value);
+    parsed.pathname = decodeURIComponent(parsed.pathname);
+    return parsed.toString().replace(/\/$/, '');
+  } catch {
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+}
+
+function getYoutubeHandleKey(url) {
+  const normalized = normalizeYoutubeChannelUrl(url);
+  const match = normalized.match(/@([^/?#]+)/i);
+  if (!match) return normalized;
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
 }
 
 function storeYoutubeChannels(channels) {
   youtubeChannelsStats = {};
   channels.forEach((channel) => {
-    const normalized = normalizeYoutubeChannelUrl(channel?.url);
     const config = YOUTUBE_CHANNELS.find(
-      (item) => normalizeYoutubeChannelUrl(item.channelUrl) === normalized,
+      (item) => getYoutubeHandleKey(item.channelUrl) === getYoutubeHandleKey(channel?.url),
     );
-    const key = config?.key || normalized;
+    const key = config?.key || getYoutubeHandleKey(channel?.url) || normalizeYoutubeChannelUrl(channel?.url);
     youtubeChannelsStats[key] = channel;
   });
 }

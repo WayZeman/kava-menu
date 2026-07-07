@@ -24,6 +24,11 @@ function normalizeChannelUrl(input) {
     url.pathname = url.pathname
       .replace(/\/(shorts|videos|streams|playlists|featured|community|about)(\/.*)?$/, '')
       .replace(/\/$/, '');
+    try {
+      url.pathname = decodeURIComponent(url.pathname);
+    } catch {
+      // keep encoded pathname
+    }
     return url.toString();
   }
 
