@@ -138,7 +138,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '76';
+const APP_VERSION = '77';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -214,9 +214,9 @@ const CHART_PERIOD_CONFIG = {
   },
 };
 const HUB_CHART_PERIOD_CONFIG = {
-  week: { className: 'stats-flow-chart--week' },
-  month: { className: 'stats-flow-chart--month' },
-  year: { className: 'stats-flow-chart--year' },
+  week: { className: 'stats-line-chart--week', pointGap: 44 },
+  month: { className: 'stats-line-chart--month', pointGap: 28 },
+  year: { className: 'stats-line-chart--year', pointGap: 52 },
 };
 let statsChartPeriod = 'week';
 let statsHubChartPeriod = 'week';
@@ -2900,8 +2900,22 @@ function setHubChartPeriod(period) {
   });
 
   if (statsHubFlowChart) {
-    statsHubFlowChart.className = `stats-flow-chart ${HUB_CHART_PERIOD_CONFIG[period].className}`;
+    statsHubFlowChart.className = `stats-line-chart ${HUB_CHART_PERIOD_CONFIG[period].className}`;
   }
+}
+
+function buildLineChartPath(points, closeBottom = false) {
+  if (!points.length) return '';
+  const [first] = points;
+  let path = `M ${first.x} ${first.y}`;
+  for (let i = 1; i < points.length; i += 1) {
+    path += ` L ${points[i].x} ${points[i].y}`;
+  }
+  if (closeBottom) {
+    const last = points[points.length - 1];
+    path += ` L ${last.x} ${points[0].bottom} L ${first.x} ${first.bottom} Z`;
+  }
+  return path;
 }
 
 function renderHubFlowChart(data) {
@@ -2918,7 +2932,30 @@ function renderHubFlowChart(data) {
     1,
   );
 
+  const config = HUB_CHART_PERIOD_CONFIG[statsHubChartPeriod];
+  const pointGap = config.pointGap;
+  const chartWidth = Math.max(buckets.length * pointGap, 280);
+  const chartHeight = 168;
+  const padTop = 18;
+  const padBottom = 28;
+  const padX = 16;
+  const plotW = chartWidth - padX * 2;
+  const plotH = chartHeight - padTop - padBottom;
+  const baseline = padTop + plotH;
+
+  const toPoint = (value, index) => {
+    const x = buckets.length <= 1
+      ? padX + plotW / 2
+      : padX + (index / (buckets.length - 1)) * plotW;
+    const y = baseline - (value / maxValue) * plotH;
+    return { x, y, bottom: baseline };
+  };
+
+  const incomePoints = buckets.map((bucket, index) => toPoint(bucket.income, index));
+  const expensePoints = buckets.map((bucket, index) => toPoint(bucket.expense, index));
+
   statsHubFlowChart.innerHTML = '';
+  statsHubFlowChart.style.width = `${chartWidth}px`;
   statsHubFlowChart.setAttribute(
     'aria-label',
     buckets.map((bucket) => (
@@ -2926,47 +2963,77 @@ function renderHubFlowChart(data) {
     )).join('; '),
   );
 
-  buckets.forEach((bucket) => {
-    const group = document.createElement('div');
-    group.className = 'stats-flow-bar-group';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('class', 'stats-line-chart-svg');
+  svg.setAttribute('viewBox', `0 0 ${chartWidth} ${chartHeight}`);
+  svg.setAttribute('preserveAspectRatio', 'none');
+  svg.setAttribute('aria-hidden', 'true');
 
-    const bars = document.createElement('div');
-    bars.className = 'stats-flow-bars';
-
-    [
-      { type: 'income', amount: bucket.income },
-      { type: 'expense', amount: bucket.expense },
-    ].forEach(({ type, amount }) => {
-      const column = document.createElement('div');
-      column.className = 'stats-flow-bar';
-
-      const value = document.createElement('span');
-      value.className = `stats-flow-bar-value stats-flow-bar-value--${type}`;
-      value.textContent = formatChartMoneyShort(amount);
-
-      const track = document.createElement('div');
-      track.className = 'stats-flow-bar-track';
-
-      const fill = document.createElement('div');
-      fill.className = `stats-flow-bar-fill stats-flow-bar-fill--${type}`;
-      const heightPercent = amount > 0
-        ? Math.max(8, Math.round((amount / maxValue) * 100))
-        : 0;
-      fill.style.height = `${heightPercent}%`;
-      if (amount === 0) fill.classList.add('is-zero');
-
-      track.appendChild(fill);
-      column.append(value, track);
-      bars.appendChild(column);
-    });
-
-    const label = document.createElement('span');
-    label.className = 'stats-chart-day';
-    label.textContent = bucket.label;
-
-    group.append(bars, label);
-    statsHubFlowChart.appendChild(group);
+  const grid = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+  grid.setAttribute('class', 'stats-line-chart-grid');
+  [0.25, 0.5, 0.75, 1].forEach((ratio) => {
+    const y = padTop + plotH * (1 - ratio);
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+    line.setAttribute('x1', String(padX));
+    line.setAttribute('x2', String(chartWidth - padX));
+    line.setAttribute('y1', String(y));
+    line.setAttribute('y2', String(y));
+    grid.appendChild(line);
   });
+  svg.appendChild(grid);
+
+  const defs = document.createElementNS('http://www.w3.org/2000/svg', 'defs');
+  defs.innerHTML = `
+    <linearGradient id="hub-income-area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#9fd3ff" stop-opacity="0.42"/>
+      <stop offset="100%" stop-color="#d4a853" stop-opacity="0.04"/>
+    </linearGradient>
+    <linearGradient id="hub-expense-area" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f2a8a0" stop-opacity="0.34"/>
+      <stop offset="100%" stop-color="#c45c4f" stop-opacity="0.03"/>
+    </linearGradient>
+  `;
+  svg.appendChild(defs);
+
+  [
+    { points: incomePoints, areaClass: 'stats-line-chart-area--income', lineClass: 'stats-line-chart-line--income', dotClass: 'stats-line-chart-dot--income', fill: 'url(#hub-income-area)', values: buckets.map((b) => b.income) },
+    { points: expensePoints, areaClass: 'stats-line-chart-area--expense', lineClass: 'stats-line-chart-line--expense', dotClass: 'stats-line-chart-dot--expense', fill: 'url(#hub-expense-area)', values: buckets.map((b) => b.expense) },
+  ].forEach(({ points, areaClass, lineClass, dotClass, fill, values }) => {
+    const area = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    area.setAttribute('class', `stats-line-chart-area ${areaClass}`);
+    area.setAttribute('d', buildLineChartPath(points, true));
+    area.setAttribute('fill', fill);
+    svg.appendChild(area);
+
+    const line = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    line.setAttribute('class', `stats-line-chart-line ${lineClass}`);
+    line.setAttribute('d', buildLineChartPath(points));
+    line.setAttribute('fill', 'none');
+    svg.appendChild(line);
+
+    points.forEach((point, index) => {
+      if (values[index] <= 0) return;
+
+      const dot = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+      dot.setAttribute('class', `stats-line-chart-dot ${dotClass}`);
+      dot.setAttribute('cx', String(point.x));
+      dot.setAttribute('cy', String(point.y));
+      dot.setAttribute('r', statsHubChartPeriod === 'month' ? '2.5' : '3.5');
+      svg.appendChild(dot);
+    });
+  });
+
+  const labels = document.createElement('div');
+  labels.className = 'stats-line-chart-labels';
+  labels.style.width = `${chartWidth}px`;
+  buckets.forEach((bucket) => {
+    const label = document.createElement('span');
+    label.className = 'stats-line-chart-label';
+    label.textContent = bucket.label;
+    labels.appendChild(label);
+  });
+
+  statsHubFlowChart.append(svg, labels);
 }
 
 function setChartPeriod(period) {
