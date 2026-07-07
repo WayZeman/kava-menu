@@ -2593,9 +2593,8 @@ body.is-scroll-locked {
 
 .stats-youtube-channel .stats-chart-head {
   margin-bottom: 12px;
+  align-items: flex-start;
 }
-
-.stats-youtube-channels {
   display: flex;
   flex-direction: column;
   gap: 12px;
@@ -2631,6 +2630,45 @@ body.is-scroll-locked {
 .stats-youtube-channel-handle {
   font-size: 0.72rem;
   font-weight: 600;
+  color: rgba(38, 35, 31, 0.48);
+}
+
+.stats-youtube-channels {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(38, 35, 31, 0.08);
+}
+
+.stats-youtube-channel-chart-title {
+  margin: 0 0 10px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #8a8175;
+}
+
+.stats-youtube-channel-chart .stats-chart-scroll {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  margin: 0 -4px;
+  padding: 0 4px 2px;
+}
+
+.stats-youtube-channel-chart .stats-daily-chart {
+  min-height: 132px;
+}
+
+.stats-youtube-channel-chart .stats-chart-bar-track {
+  height: 92px;
+}
+
+.stats-youtube-channel-chart-empty {
+  margin: 0;
+  padding: 18px 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-align: center;
   color: rgba(38, 35, 31, 0.48);
 }
 

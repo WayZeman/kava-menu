@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=93">
+  <link rel="stylesheet" href="styles.css?v=94">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -437,8 +437,15 @@
 
         <section id="stats-youtube-channel" class="stats-chart-section stats-youtube-channel" hidden aria-label="Статистика YouTube каналів">
           <div class="stats-chart-head">
-            <h3 class="stats-section-heading">Статистика каналів</h3>
-            <p class="stats-youtube-period">За весь час · дані з YouTube</p>
+            <div>
+              <h3 class="stats-section-heading">Статистика каналів</h3>
+              <p class="stats-youtube-period">За весь час · дані з YouTube</p>
+            </div>
+            <div class="stats-chart-period" role="tablist" aria-label="Період відео">
+              <button type="button" class="stats-chart-period-btn is-active" data-chart-period="week" aria-selected="true">Тиждень</button>
+              <button type="button" class="stats-chart-period-btn" data-chart-period="month" aria-selected="false">Місяць</button>
+              <button type="button" class="stats-chart-period-btn" data-chart-period="year" aria-selected="false">Рік</button>
+            </div>
           </div>
           <div id="stats-youtube-channels" class="stats-youtube-channels"></div>
           <p class="stats-youtube-note">Суми в грн — ваші записи доходів і витрат у додатку, не виплати з YouTube.</p>
@@ -573,6 +580,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=93" defer></script>
+  <script src="script.js?v=94" defer></script>
 </body>
 </html>

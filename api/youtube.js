@@ -62,6 +62,128 @@ function setCached(channelUrl, channel) {
   cache.set(normalizeChannelUrl(channelUrl), { channel, at: Date.now() });
 }
 
+const videoCache = new Map();
+
+function getVideoCache(channelId) {
+  const entry = videoCache.get(channelId);
+  if (entry && Date.now() - entry.at < CACHE_MS) return entry.videos;
+  return null;
+}
+
+function setVideoCache(channelId, videos) {
+  videoCache.set(channelId, { videos, at: Date.now() });
+}
+
+function parseRssVideos(xml) {
+  const entries = [];
+  const blocks = xml.match(/<entry>[\s\S]*?<\/entry>/g) || [];
+
+  blocks.forEach((block) => {
+    const videoId = block.match(/<yt:videoId>([^<]+)<\/yt:videoId>/)?.[1];
+    const publishedAt = block.match(/<published>([^<]+)<\/published>/)?.[1];
+    if (!videoId || !publishedAt) return;
+
+    const title = block.match(/<title>([^<]*)<\/title>/)?.[1] || '';
+    const link = block.match(/<link rel="alternate" href="([^"]+)"/)?.[1]
+      || `https://www.youtube.com/watch?v=${videoId}`;
+
+    entries.push({
+      id: videoId,
+      title,
+      publishedAt,
+      url: link,
+    });
+  });
+
+  return entries;
+}
+
+async function fetchVideosViaRss(channelId) {
+  const response = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
+    headers: {
+      'User-Agent': USER_AGENT,
+      Accept: 'application/atom+xml',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`youtube_rss_${response.status}`);
+  }
+
+  return parseRssVideos(await response.text());
+}
+
+async function fetchVideosViaApi(apiKey, channelId) {
+  const channelResponse = await fetch(
+    `https://www.googleapis.com/youtube/v3/channels?part=contentDetails&id=${channelId}&key=${apiKey}`,
+  );
+  if (!channelResponse.ok) return null;
+
+  const channelPayload = await channelResponse.json();
+  const uploadsPlaylistId = channelPayload?.items?.[0]?.contentDetails?.relatedPlaylists?.uploads;
+  if (!uploadsPlaylistId) return null;
+
+  const videos = [];
+  let pageToken = '';
+
+  do {
+    const params = new URLSearchParams({
+      part: 'snippet',
+      playlistId: uploadsPlaylistId,
+      maxResults: '50',
+      key: apiKey,
+    });
+    if (pageToken) params.set('pageToken', pageToken);
+
+    const playlistResponse = await fetch(`https://www.googleapis.com/youtube/v3/playlistItems?${params}`);
+    if (!playlistResponse.ok) break;
+
+    const playlistPayload = await playlistResponse.json();
+    (playlistPayload?.items || []).forEach((item) => {
+      const snippet = item?.snippet;
+      const videoId = snippet?.resourceId?.videoId;
+      const publishedAt = snippet?.publishedAt;
+      if (!videoId || !publishedAt) return;
+
+      videos.push({
+        id: videoId,
+        title: snippet?.title || '',
+        publishedAt,
+        url: `https://www.youtube.com/watch?v=${videoId}`,
+      });
+    });
+
+    pageToken = playlistPayload?.nextPageToken || '';
+  } while (pageToken && videos.length < 200);
+
+  return videos;
+}
+
+async function fetchChannelVideos(channel) {
+  const channelId = channel?.id;
+  if (!channelId) return [];
+
+  const cachedVideos = getVideoCache(channelId);
+  if (cachedVideos) return cachedVideos;
+
+  const apiKey = process.env.YOUTUBE_API_KEY;
+  let videos = [];
+
+  try {
+    if (apiKey) {
+      videos = await fetchVideosViaApi(apiKey, channelId) || [];
+    }
+    if (!videos.length) {
+      videos = await fetchVideosViaRss(channelId);
+    }
+  } catch {
+    videos = [];
+  }
+
+  setVideoCache(channelId, videos);
+  return videos;
+}
+
 function channelAboutUrl(channelUrl) {
   const url = new URL(normalizeChannelUrl(channelUrl));
   const path = url.pathname.replace(/\/about\/?$/, '').replace(/\/$/, '');
@@ -196,12 +318,30 @@ async function scrapeChannelStats(channelUrl) {
 
 async function fetchChannelStats(channelUrl) {
   const normalized = normalizeChannelUrl(channelUrl);
-  const cachedChannel = getCached(normalized);
-  if (cachedChannel) return cachedChannel;
+  let cachedChannel = getCached(normalized);
+  if (cachedChannel) {
+    if (!Array.isArray(cachedChannel.uploads)) {
+      const uploads = await fetchChannelVideos(cachedChannel);
+      cachedChannel = {
+        ...cachedChannel,
+        videoCount: cachedChannel.videoCount ?? cachedChannel.videos,
+        uploads,
+      };
+      setCached(normalized, cachedChannel);
+    }
+    return cachedChannel;
+  }
 
   const apiKey = process.env.YOUTUBE_API_KEY;
   let channel = apiKey ? await fetchViaApi(apiKey, normalized) : null;
   if (!channel) channel = await scrapeChannelStats(normalized);
+
+  const uploads = await fetchChannelVideos(channel);
+  channel = {
+    ...channel,
+    videoCount: channel.videos,
+    uploads,
+  };
 
   setCached(normalized, channel);
   return channel;

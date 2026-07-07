@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '93';
+const APP_VERSION = '94';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3224,21 +3224,39 @@ function setChartPeriod(period) {
   if (statsDailyChart) {
     statsDailyChart.className = `stats-daily-chart ${CHART_PERIOD_CONFIG[period].className}`;
   }
+
+  document.querySelectorAll('.stats-youtube-channel-chart-title').forEach((title) => {
+    title.textContent = getYoutubeChartHeading(period);
+  });
 }
 
-function renderOrderChart(incomes, category = statsCategory) {
-  if (!statsDailyChart) return;
+function fillVideoChartBuckets(buckets, videos, period) {
+  const map = Object.fromEntries(buckets.map((bucket) => [bucket.key, bucket]));
+  const useMonths = period === 'year';
 
-  const buckets = fillChartBuckets(
-    buildChartBuckets(statsChartPeriod),
-    incomes,
-    statsChartPeriod,
-    category,
-  );
+  (videos || []).forEach((video) => {
+    const key = useMonths
+      ? localMonthKey(video.publishedAt)
+      : localDayKey(video.publishedAt);
+
+    if (map[key]) map[key].count += 1;
+  });
+
+  return buckets;
+}
+
+function getYoutubeChartHeading(period = statsChartPeriod) {
+  if (period === 'year') return 'Відео по місяцях';
+  return 'Відео по днях';
+}
+
+function renderCountChart(container, buckets) {
+  if (!container) return;
+
   const maxCount = Math.max(...buckets.map((bucket) => bucket.count), 1);
 
-  statsDailyChart.innerHTML = '';
-  statsDailyChart.setAttribute(
+  container.innerHTML = '';
+  container.setAttribute(
     'aria-label',
     buckets.map((bucket) => `${bucket.label}: ${bucket.count}`).join(', '),
   );
@@ -3269,8 +3287,34 @@ function renderOrderChart(incomes, category = statsCategory) {
     label.textContent = bucket.label;
 
     bar.append(track, count, label);
-    statsDailyChart.appendChild(bar);
+    container.appendChild(bar);
   });
+}
+
+function renderOrderChart(incomes, category = statsCategory) {
+  if (!statsDailyChart) return;
+
+  const buckets = fillChartBuckets(
+    buildChartBuckets(statsChartPeriod),
+    incomes,
+    statsChartPeriod,
+    category,
+  );
+
+  renderCountChart(statsDailyChart, buckets);
+}
+
+function renderYoutubeVideoChart(container, videos, period = statsChartPeriod) {
+  if (!container) return;
+
+  const buckets = fillVideoChartBuckets(
+    buildChartBuckets(period),
+    videos,
+    period,
+  );
+
+  container.className = `stats-daily-chart ${CHART_PERIOD_CONFIG[period].className}`;
+  renderCountChart(container, buckets);
 }
 
 function formatYoutubeCompact(value) {
@@ -3301,7 +3345,7 @@ function getYoutubeHubMeta(summary) {
   if (loaded.length) {
     const subscribers = loaded.reduce((sum, channel) => sum + (channel.subscribers || 0), 0);
     const views = loaded.reduce((sum, channel) => sum + (channel.views || 0), 0);
-    const videos = loaded.reduce((sum, channel) => sum + (channel.videos || 0), 0);
+    const videos = loaded.reduce((sum, channel) => sum + Number(channel.videoCount ?? channel.videos ?? 0), 0);
     const parts = [
       `${formatYoutubeCount(subscribers)} підп.`,
       `${formatYoutubeCount(views, { compact: true })} перегл.`,
@@ -3408,10 +3452,36 @@ function renderYoutubeChannelCard(config, channel, { loading = false } = {}) {
   grid.append(
     createYoutubeStat('Підписники', channel ? formatYoutubeCount(channel.subscribers) : placeholder),
     createYoutubeStat('Перегляди', channel ? formatYoutubeCount(channel.views, { compact: true }) : placeholder),
-    createYoutubeStat('Відео', channel ? formatYoutubeCount(channel.videos) : placeholder),
+    createYoutubeStat('Відео', channel ? formatYoutubeCount(channel.videoCount ?? channel.videos) : placeholder),
   );
 
   card.append(heading, grid);
+
+  const chartSection = document.createElement('div');
+  chartSection.className = 'stats-youtube-channel-chart';
+
+  const chartHeading = document.createElement('h5');
+  chartHeading.className = 'stats-youtube-channel-chart-title';
+  chartHeading.textContent = getYoutubeChartHeading();
+
+  const chartScroll = document.createElement('div');
+  chartScroll.className = 'stats-chart-scroll';
+
+  const chartEl = document.createElement('div');
+  chartEl.className = `stats-daily-chart ${CHART_PERIOD_CONFIG[statsChartPeriod].className}`;
+  chartEl.setAttribute('role', 'img');
+  chartEl.setAttribute('aria-label', `Діаграма відео ${config.label}`);
+
+  chartScroll.appendChild(chartEl);
+  chartSection.append(chartHeading, chartScroll);
+  card.appendChild(chartSection);
+
+  if (!loading && channel?.uploads?.length) {
+    renderYoutubeVideoChart(chartEl, channel.uploads, statsChartPeriod);
+  } else if (!loading) {
+    chartEl.innerHTML = '<p class="stats-youtube-channel-chart-empty">Немає даних про відео за цей період</p>';
+  }
+
   return card;
 }
 
@@ -4205,9 +4275,11 @@ statsChartPeriodButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setChartPeriod(button.dataset.chartPeriod);
     const config = STATS_CATEGORIES[statsCategory];
-    if (!config?.analyticsOnly) {
-      renderOrderChart(currentStatsData.incomes, statsCategory);
+    if (config?.analyticsOnly) {
+      renderYoutubeChannelsStats();
+      return;
     }
+    renderOrderChart(currentStatsData.incomes, statsCategory);
   });
 });
 
