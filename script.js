@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '98';
+const APP_VERSION = '99';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3084,6 +3084,32 @@ function renderHubOverviewKpis(data, period = statsHubChartPeriod) {
   }
 }
 
+function niceHubChartMax(value) {
+  if (!Number.isFinite(value) || value <= 0) return 1000;
+  const thousands = value / 1000;
+  const niceThousands = niceChartMax(thousands);
+  return niceThousands * 1000;
+}
+
+function formatHubChartAxisMoney(value) {
+  const rounded = Math.round(value);
+  if (rounded === 0) return '0';
+
+  if (rounded >= 1_000_000) {
+    const millions = rounded / 1_000_000;
+    if (Math.abs(millions - Math.round(millions)) < 0.05) {
+      return `${Math.round(millions).toLocaleString('uk-UA')}М`;
+    }
+    return `${millions.toLocaleString('uk-UA', { maximumFractionDigits: 1 })}М`;
+  }
+
+  const thousands = rounded / 1000;
+  if (Math.abs(thousands - Math.round(thousands)) < 0.05) {
+    return `${Math.round(thousands).toLocaleString('uk-UA')}к`;
+  }
+  return `${thousands.toLocaleString('uk-UA', { maximumFractionDigits: 1 })}к`;
+}
+
 function formatChartAxisMoney(value) {
   const rounded = Math.round(value);
   if (rounded >= 1000000) {
@@ -3108,12 +3134,12 @@ function renderHubFlowChart(data) {
     ...buckets.flatMap((bucket) => [bucket.income, bucket.expense]),
     0,
   );
-  const maxValue = niceChartMax(rawMax);
+  const maxValue = niceHubChartMax(rawMax);
 
   const config = HUB_CHART_PERIOD_CONFIG[statsHubChartPeriod];
   const scrollEl = statsHubFlowChart.closest('.stats-hub-overview-chart-scroll');
   const chartHeight = 220;
-  const padLeft = 50;
+  const padLeft = 58;
   const padRight = 14;
   const padTop = 16;
   const padBottom = 38;
@@ -3204,7 +3230,7 @@ function renderHubFlowChart(data) {
     tick.setAttribute('x', String(padLeft - 10));
     tick.setAttribute('y', String(y + (ratio === 0 ? -2 : 3)));
     tick.setAttribute('text-anchor', 'end');
-    tick.textContent = formatChartAxisMoney(maxValue * ratio);
+    tick.textContent = formatHubChartAxisMoney(maxValue * ratio);
     grid.appendChild(tick);
   });
   svg.appendChild(grid);
