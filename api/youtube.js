@@ -59,7 +59,11 @@ function getCached(channelUrl) {
 }
 
 function setCached(channelUrl, channel) {
-  cache.set(normalizeChannelUrl(channelUrl), { channel, at: Date.now() });
+  const payload = { ...channel };
+  if (Array.isArray(payload.uploads) && payload.uploads.length === 0) {
+    delete payload.uploads;
+  }
+  cache.set(normalizeChannelUrl(channelUrl), { channel: payload, at: Date.now() });
 }
 
 const videoCache = new Map();
@@ -201,7 +205,7 @@ async function mapWithConcurrency(items, mapper, concurrency = 6) {
   return results;
 }
 
-async function fetchVideosViaScrape(channelUrl, maxVideos = 30) {
+async function fetchVideosViaScrape(channelUrl, maxVideos = 15) {
   const baseUrl = normalizeChannelUrl(channelUrl);
   const listingCandidates = [
     String(channelUrl || '').includes('/shorts') ? String(channelUrl) : '',
@@ -300,7 +304,7 @@ async function fetchChannelVideos(channel, channelUrl) {
       }
     }
     if (!videos.length) {
-      videos = await fetchVideosViaScrape(channelUrl || channel.url, 30);
+      videos = await fetchVideosViaScrape(channelUrl || channel.url, 15);
     }
   } catch {
     videos = [];
@@ -493,7 +497,7 @@ export default async function handler(req, res) {
   if (requestedUrl) {
     const normalized = normalizeChannelUrl(requestedUrl);
     const cachedChannel = getCached(normalized);
-    if (cachedChannel) {
+    if (cachedChannel && Array.isArray(cachedChannel.uploads) && cachedChannel.uploads.length > 0) {
       res.status(200).json({ ok: true, channel: cachedChannel, cached: true });
       return;
     }
