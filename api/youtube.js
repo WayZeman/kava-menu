@@ -66,11 +66,12 @@ const videoCache = new Map();
 
 function getVideoCache(channelId) {
   const entry = videoCache.get(channelId);
-  if (entry && Date.now() - entry.at < CACHE_MS) return entry.videos;
+  if (entry && entry.videos.length > 0 && Date.now() - entry.at < CACHE_MS) return entry.videos;
   return null;
 }
 
 function setVideoCache(channelId, videos) {
+  if (!videos.length) return;
   videoCache.set(channelId, { videos, at: Date.now() });
 }
 
@@ -102,7 +103,8 @@ async function fetchVideosViaRss(channelId) {
   const response = await fetch(`https://www.youtube.com/feeds/videos.xml?channel_id=${channelId}`, {
     headers: {
       'User-Agent': USER_AGENT,
-      Accept: 'application/atom+xml',
+      Accept: 'application/atom+xml, application/xml, text/xml, */*',
+      'Accept-Language': 'uk-UA,uk;q=0.9,en;q=0.8',
     },
   });
 
@@ -110,7 +112,124 @@ async function fetchVideosViaRss(channelId) {
     throw new Error(`youtube_rss_${response.status}`);
   }
 
-  return parseRssVideos(await response.text());
+  const xml = await response.text();
+  const videos = parseRssVideos(xml);
+  if (!videos.length) {
+    throw new Error('youtube_rss_empty');
+  }
+
+  return videos;
+}
+
+function extractVideoIdsFromHtml(html, limit = 30) {
+  const ids = [...html.matchAll(/"videoId":"([A-Za-z0-9_-]{11})"/g)].map((match) => match[1]);
+  return [...new Set(ids)].slice(0, limit);
+}
+
+async function fetchVideoIdsFromListing(listingUrl, limit = 30) {
+  const response = await fetch(listingUrl, {
+    headers: {
+      'User-Agent': USER_AGENT,
+      'Accept-Language': 'uk-UA,uk;q=0.9,en;q=0.8',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`youtube_listing_${response.status}`);
+  }
+
+  const html = await response.text();
+  const ids = extractVideoIdsFromHtml(html, limit);
+  if (!ids.length) {
+    throw new Error('youtube_listing_empty');
+  }
+
+  return ids;
+}
+
+function decodeHtmlText(value) {
+  return String(value || '')
+    .replace(/\\u0026/g, '&')
+    .replace(/\\"/g, '"')
+    .replace(/\\\//g, '/');
+}
+
+async function fetchVideoMeta(videoId) {
+  const response = await fetch(`https://www.youtube.com/watch?v=${videoId}`, {
+    headers: {
+      'User-Agent': USER_AGENT,
+      'Accept-Language': 'uk-UA,uk;q=0.9,en;q=0.8',
+    },
+  });
+
+  if (!response.ok) {
+    throw new Error(`youtube_video_${response.status}`);
+  }
+
+  const html = await response.text();
+  const dateMatch = html.match(/"publishDate":"([^"]+)"/)
+    || html.match(/itemprop="datePublished" content="([^"]+)"/);
+  if (!dateMatch) return null;
+
+  const titleMatch = html.match(/<meta name="title" content="([^"]+)"/)
+    || html.match(/<meta property="og:title" content="([^"]+)"/);
+  const publishedAt = new Date(dateMatch[1]);
+  if (Number.isNaN(publishedAt.getTime())) return null;
+
+  const isShort = /"url":"https:\/\/www\.youtube\.com\/shorts\//.test(html)
+    || html.includes(`/shorts/${videoId}`);
+
+  return {
+    id: videoId,
+    title: decodeHtmlText(titleMatch?.[1] || ''),
+    publishedAt: publishedAt.toISOString(),
+    url: isShort ? `https://www.youtube.com/shorts/${videoId}` : `https://www.youtube.com/watch?v=${videoId}`,
+  };
+}
+
+async function mapWithConcurrency(items, mapper, concurrency = 6) {
+  const results = [];
+  for (let index = 0; index < items.length; index += concurrency) {
+    const chunk = items.slice(index, index + concurrency);
+    const chunkResults = await Promise.allSettled(chunk.map(mapper));
+    chunkResults.forEach((result) => {
+      if (result.status === 'fulfilled' && result.value) {
+        results.push(result.value);
+      }
+    });
+  }
+  return results;
+}
+
+async function fetchVideosViaScrape(channelUrl, maxVideos = 30) {
+  const baseUrl = normalizeChannelUrl(channelUrl);
+  const listingCandidates = [
+    String(channelUrl || '').includes('/shorts') ? String(channelUrl) : '',
+    `${baseUrl}/shorts`,
+    `${baseUrl}/videos`,
+  ].filter(Boolean);
+
+  let videoIds = [];
+  for (const listingUrl of listingCandidates) {
+    try {
+      videoIds = await fetchVideoIdsFromListing(listingUrl, maxVideos);
+      if (videoIds.length) break;
+    } catch {
+      // try next listing tab
+    }
+  }
+
+  if (!videoIds.length) return [];
+
+  const videos = await mapWithConcurrency(
+    videoIds,
+    (videoId) => fetchVideoMeta(videoId),
+    6,
+  );
+
+  return videos.sort(
+    (left, right) => new Date(right.publishedAt).getTime() - new Date(left.publishedAt).getTime(),
+  );
 }
 
 async function fetchVideosViaApi(apiKey, channelId) {
@@ -159,7 +278,7 @@ async function fetchVideosViaApi(apiKey, channelId) {
   return videos;
 }
 
-async function fetchChannelVideos(channel) {
+async function fetchChannelVideos(channel, channelUrl) {
   const channelId = channel?.id;
   if (!channelId) return [];
 
@@ -174,7 +293,14 @@ async function fetchChannelVideos(channel) {
       videos = await fetchVideosViaApi(apiKey, channelId) || [];
     }
     if (!videos.length) {
-      videos = await fetchVideosViaRss(channelId);
+      try {
+        videos = await fetchVideosViaRss(channelId);
+      } catch {
+        videos = [];
+      }
+    }
+    if (!videos.length) {
+      videos = await fetchVideosViaScrape(channelUrl || channel.url, 30);
     }
   } catch {
     videos = [];
@@ -320,8 +446,8 @@ async function fetchChannelStats(channelUrl) {
   const normalized = normalizeChannelUrl(channelUrl);
   let cachedChannel = getCached(normalized);
   if (cachedChannel) {
-    if (!Array.isArray(cachedChannel.uploads)) {
-      const uploads = await fetchChannelVideos(cachedChannel);
+    if (!Array.isArray(cachedChannel.uploads) || cachedChannel.uploads.length === 0) {
+      const uploads = await fetchChannelVideos(cachedChannel, normalized);
       cachedChannel = {
         ...cachedChannel,
         videoCount: cachedChannel.videoCount ?? cachedChannel.videos,
@@ -336,7 +462,7 @@ async function fetchChannelStats(channelUrl) {
   let channel = apiKey ? await fetchViaApi(apiKey, normalized) : null;
   if (!channel) channel = await scrapeChannelStats(normalized);
 
-  const uploads = await fetchChannelVideos(channel);
+  const uploads = await fetchChannelVideos(channel, normalized);
   channel = {
     ...channel,
     videoCount: channel.videos,
