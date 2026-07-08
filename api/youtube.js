@@ -205,12 +205,14 @@ async function mapWithConcurrency(items, mapper, concurrency = 6) {
   return results;
 }
 
-async function fetchVideosViaScrape(channelUrl, maxVideos = 15) {
+async function fetchVideosViaScrape(channelUrl, channelId, maxVideos = 15) {
   const baseUrl = normalizeChannelUrl(channelUrl);
   const listingCandidates = [
     String(channelUrl || '').includes('/shorts') ? String(channelUrl) : '',
     `${baseUrl}/shorts`,
+    channelId ? `https://www.youtube.com/channel/${channelId}/shorts` : '',
     `${baseUrl}/videos`,
+    channelId ? `https://www.youtube.com/channel/${channelId}/videos` : '',
   ].filter(Boolean);
 
   let videoIds = [];
@@ -304,7 +306,7 @@ async function fetchChannelVideos(channel, channelUrl) {
       }
     }
     if (!videos.length) {
-      videos = await fetchVideosViaScrape(channelUrl || channel.url, 15);
+      videos = await fetchVideosViaScrape(channelUrl || channel.url, channelId, 15);
     }
   } catch {
     videos = [];
@@ -517,10 +519,14 @@ export default async function handler(req, res) {
 
   try {
     const urls = getChannelList();
-    const results = await Promise.allSettled(urls.map((url) => fetchChannelStats(url)));
-    const channels = results
-      .filter((result) => result.status === 'fulfilled' && result.value)
-      .map((result) => result.value);
+    const channels = [];
+    for (const url of urls) {
+      try {
+        channels.push(await fetchChannelStats(url));
+      } catch {
+        // skip failed channel load
+      }
+    }
 
     if (!channels.length) {
       res.status(502).json({
