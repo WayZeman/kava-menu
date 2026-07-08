@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '97';
+const APP_VERSION = '98';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3015,6 +3015,75 @@ function buildLineChartPath(points, closeBottom = false) {
   return path;
 }
 
+function getHubPeriodLabel(period = statsHubChartPeriod) {
+  if (period === 'month') return 'за місяць';
+  if (period === 'year') return 'за рік';
+  return 'за тиждень';
+}
+
+function getHubPeriodKpis(data, period = statsHubChartPeriod) {
+  const buckets = fillMoneyChartBuckets(
+    buildMoneyChartBuckets(period),
+    data.incomes,
+    data.expenses,
+    period,
+  );
+  const totals = buckets.reduce(
+    (acc, bucket) => ({
+      income: acc.income + bucket.income,
+      expense: acc.expense + bucket.expense,
+    }),
+    { income: 0, expense: 0 },
+  );
+  const totalFlow = totals.income + totals.expense;
+  const balance = totals.income - totals.expense;
+
+  return {
+    income: totals.income,
+    expense: totals.expense,
+    balance,
+    incomeShare: totalFlow > 0 ? (totals.income / totalFlow) * 100 : 0,
+    expenseShare: totalFlow > 0 ? (totals.expense / totalFlow) * 100 : 0,
+    balanceShare: totals.income > 0 ? (balance / totals.income) * 100 : 0,
+  };
+}
+
+function renderHubOverviewKpis(data, period = statsHubChartPeriod) {
+  const kpis = getHubPeriodKpis(data, period);
+  const periodLabel = getHubPeriodLabel(period);
+
+  const incomeLabel = document.querySelector('.stats-hub-kpi--income .stats-hub-kpi-label');
+  const expenseLabel = document.querySelector('.stats-hub-kpi--expense .stats-hub-kpi-label');
+  const balanceLabel = document.querySelector('.stats-hub-kpi--balance .stats-hub-kpi-label');
+
+  if (incomeLabel) incomeLabel.textContent = `Дохід ${periodLabel}`;
+  if (expenseLabel) expenseLabel.textContent = `Витрати ${periodLabel}`;
+  if (balanceLabel) balanceLabel.textContent = `Баланс ${periodLabel}`;
+
+  if (statsHubTotalIncome) {
+    statsHubTotalIncome.textContent = formatStatsMoney(kpis.income);
+  }
+  if (statsHubTotalExpenses) {
+    statsHubTotalExpenses.textContent = formatStatsMoney(kpis.expense);
+  }
+  if (statsHubIncomeShare) {
+    statsHubIncomeShare.textContent = `${formatRoiPercent(kpis.incomeShare)} потоку`;
+  }
+  if (statsHubExpensesShare) {
+    statsHubExpensesShare.textContent = `${formatRoiPercent(kpis.expenseShare)} потоку`;
+  }
+  if (statsHubBalanceTotal) {
+    statsHubBalanceTotal.textContent = formatBalanceMoney(kpis.balance);
+    statsHubBalanceTotal.classList.toggle('is-positive', kpis.balance > 0);
+    statsHubBalanceTotal.classList.toggle('is-negative', kpis.balance < 0);
+  }
+  if (statsHubBalanceShare) {
+    statsHubBalanceShare.textContent = kpis.income > 0
+      ? `${formatSignedPercent(kpis.balanceShare)} маржа`
+      : '0.00% маржа';
+  }
+}
+
 function formatChartAxisMoney(value) {
   const rounded = Math.round(value);
   if (rounded >= 1000000) {
@@ -3852,13 +3921,6 @@ function renderStatsHub(data) {
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const youtubeExpenses = getExpensesByCategory(data.expenses, 'youtube')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const totalIncome = summary.coffee + summary.extras + summary.haircut + summary.youtube;
-  const totalExpenses = data.expenses.reduce((sum, item) => sum + Number(item.amount || 0), 0);
-  const totalFlow = totalIncome + totalExpenses;
-  const balance = totalIncome - totalExpenses;
-  const incomeShare = totalFlow > 0 ? (totalIncome / totalFlow) * 100 : 0;
-  const expenseShare = totalFlow > 0 ? (totalExpenses / totalFlow) * 100 : 0;
-  const balanceShare = totalIncome > 0 ? (balance / totalIncome) * 100 : 0;
 
   if (statsHubCoffeeTotal) {
     statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
@@ -3909,28 +3971,8 @@ function renderStatsHub(data) {
     const roi = getRoiPercent(summary.youtube, youtubeExpenses);
     statsHubYoutubeRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatRoiPercent(roi)}`;
   }
-  if (statsHubTotalIncome) {
-    statsHubTotalIncome.textContent = formatStatsMoney(totalIncome);
-  }
-  if (statsHubTotalExpenses) {
-    statsHubTotalExpenses.textContent = formatStatsMoney(totalExpenses);
-  }
-  if (statsHubIncomeShare) {
-    statsHubIncomeShare.textContent = `${formatRoiPercent(incomeShare)} потоку`;
-  }
-  if (statsHubExpensesShare) {
-    statsHubExpensesShare.textContent = `${formatRoiPercent(expenseShare)} потоку`;
-  }
-  if (statsHubBalanceTotal) {
-    statsHubBalanceTotal.textContent = formatBalanceMoney(balance);
-    statsHubBalanceTotal.classList.toggle('is-positive', balance > 0);
-    statsHubBalanceTotal.classList.toggle('is-negative', balance < 0);
-  }
-  if (statsHubBalanceShare) {
-    statsHubBalanceShare.textContent = totalIncome > 0
-      ? `${formatSignedPercent(balanceShare)} маржа`
-      : '0.00% маржа';
-  }
+
+  renderHubOverviewKpis(data, statsHubChartPeriod);
 
   renderStatsHubVisibility();
   renderHubFlowChart(data);
@@ -4287,6 +4329,7 @@ statsHubChartPeriodButtons.forEach((button) => {
   button.addEventListener('click', () => {
     setHubChartPeriod(button.dataset.hubChartPeriod);
     renderHubFlowChart(currentStatsData);
+    renderHubOverviewKpis(currentStatsData, statsHubChartPeriod);
   });
 });
 
