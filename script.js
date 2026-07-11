@@ -136,7 +136,7 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '99';
+const APP_VERSION = '100';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -223,7 +223,7 @@ function getCategoryChartHeading(category = statsCategory, period = statsChartPe
 }
 const HUB_CHART_PERIOD_CONFIG = {
   week: { className: 'stats-line-chart--week', scrollable: false },
-  month: { className: 'stats-line-chart--month', scrollable: true, pointGap: 34 },
+  month: { className: 'stats-line-chart--month', scrollable: false },
   year: { className: 'stats-line-chart--year', scrollable: false },
 };
 let statsChartPeriod = 'week';
