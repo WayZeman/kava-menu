@@ -3662,85 +3662,56 @@ body {
 .loyalty-card {
   position: relative;
   overflow: hidden;
-  margin-top: 14px;
-  padding: 18px 16px 16px;
-  border-radius: 28px;
-  background:
-    radial-gradient(circle at 88% 12%, rgba(255, 214, 140, 0.55), transparent 42%),
-    linear-gradient(155deg, rgba(255, 251, 244, 0.98), rgba(244, 214, 160, 0.72));
-  border: 1px solid rgba(255, 255, 255, 0.88);
-  box-shadow:
-    0 18px 40px rgba(114, 86, 52, 0.1),
-    inset 0 1px 0 rgba(255, 255, 255, 0.75);
-}
-
-.loyalty-card-glow {
-  position: absolute;
-  inset: -40% auto auto 55%;
-  width: 180px;
-  height: 180px;
-  border-radius: 50%;
-  background: radial-gradient(circle, rgba(255, 220, 150, 0.45), transparent 70%);
-  pointer-events: none;
-  animation: loyalty-glow 4.5s ease-in-out infinite;
+  margin-top: 12px;
+  padding: 14px 14px 12px;
+  border-radius: 24px;
+  background: rgba(255, 255, 255, 0.56);
+  border: 1px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 14px 32px rgba(114, 86, 52, 0.07);
+  backdrop-filter: blur(14px);
 }
 
 .loyalty-card.is-ready {
+  border-color: rgba(201, 151, 63, 0.35);
   box-shadow:
-    0 18px 44px rgba(154, 106, 52, 0.16),
-    0 0 0 1px rgba(201, 151, 63, 0.28),
-    inset 0 1px 0 rgba(255, 255, 255, 0.8);
+    0 14px 32px rgba(114, 86, 52, 0.08),
+    0 0 0 1px rgba(201, 151, 63, 0.12);
 }
 
 .loyalty-card.is-celebrating {
-  animation: loyalty-card-pulse 0.7s ease;
+  animation: loyalty-card-pulse 0.65s ease;
 }
 
 .loyalty-card-head {
   position: relative;
   z-index: 1;
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
-  gap: 12px;
-  margin-bottom: 14px;
-}
-
-.loyalty-card-eyebrow {
-  margin: 0 0 4px;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: rgba(122, 90, 58, 0.72);
+  gap: 10px;
+  margin-bottom: 12px;
 }
 
 .loyalty-card-title {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: 0.78rem;
   font-weight: 800;
-  letter-spacing: -0.02em;
-  line-height: 1.25;
-  color: #3d2314;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: rgba(44, 40, 36, 0.72);
 }
 
 .loyalty-card-meta {
-  margin: 2px 0 0;
+  margin: 0;
   flex-shrink: 0;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.72);
-  border: 1px solid rgba(154, 106, 52, 0.16);
-  font-size: 0.7rem;
-  font-weight: 700;
+  font-size: 0.78rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
   color: #7a5a3a;
-  white-space: nowrap;
 }
 
 .loyalty-card.is-ready .loyalty-card-meta {
-  background: linear-gradient(135deg, #fff4d8, #f0c57a);
-  color: #3d2314;
-  animation: loyalty-meta-glow 1.4s ease-in-out infinite;
+  color: #9a6a34;
 }
 
 .loyalty-stamps {
@@ -3748,87 +3719,70 @@ body {
   z-index: 1;
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 10px;
+  gap: 8px;
 }
 
 .loyalty-stamp {
   aspect-ratio: 1;
   width: 100%;
   border-radius: 999px;
-  border: 2px dashed rgba(122, 90, 58, 0.28);
-  background: rgba(255, 255, 255, 0.62);
+  border: 1.5px solid rgba(122, 90, 58, 0.16);
+  background: rgba(255, 255, 255, 0.7);
   display: grid;
   place-items: center;
-  color: rgba(122, 90, 58, 0.32);
+  color: rgba(122, 90, 58, 0.28);
   transform-origin: center;
   transition:
-    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-    background 0.28s ease,
-    border-color 0.28s ease,
-    color 0.28s ease,
-    box-shadow 0.28s ease;
+    transform 0.25s cubic-bezier(0.22, 1, 0.36, 1),
+    background 0.25s ease,
+    border-color 0.25s ease,
+    color 0.25s ease,
+    box-shadow 0.25s ease;
 }
 
 .loyalty-stamp svg {
-  width: 48%;
-  height: 48%;
+  width: 44%;
+  height: 44%;
 }
 
 .loyalty-stamp--gift {
-  border-style: solid;
-  border-color: rgba(154, 106, 52, 0.34);
-  background:
-    radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.85), transparent 50%),
-    rgba(255, 248, 232, 0.9);
-  color: rgba(154, 106, 52, 0.55);
+  border-color: rgba(154, 106, 52, 0.28);
+  background: rgba(255, 248, 236, 0.92);
+  color: rgba(154, 106, 52, 0.48);
 }
 
 .loyalty-stamp.is-filled {
-  border-style: solid;
-  border-color: #9a6a34;
-  background: linear-gradient(160deg, #f4d08a 0%, #c9973f 100%);
+  border-color: transparent;
+  background: linear-gradient(160deg, #efc57d 0%, #c9973f 100%);
   color: #3d2314;
-  box-shadow: 0 8px 18px rgba(154, 106, 52, 0.22);
+  box-shadow: 0 6px 14px rgba(154, 106, 52, 0.18);
 }
 
 .loyalty-stamp.is-pending {
-  border-style: solid;
-  border-color: rgba(154, 106, 52, 0.55);
-  background: rgba(255, 255, 255, 0.92);
-  color: rgba(154, 106, 52, 0.78);
-  box-shadow: inset 0 0 0 2px rgba(201, 151, 63, 0.16);
-  animation: loyalty-stamp-breathe 1.2s ease-in-out infinite;
+  border-color: rgba(154, 106, 52, 0.42);
+  background: rgba(255, 255, 255, 0.95);
+  color: rgba(154, 106, 52, 0.7);
+  animation: loyalty-stamp-breathe 1.3s ease-in-out infinite;
 }
 
 .loyalty-stamp.is-ready {
   border-color: #c9973f;
   color: #9a6a34;
-  box-shadow: 0 0 0 4px rgba(240, 197, 122, 0.28);
-  animation: loyalty-gift-ready 1.5s ease-in-out infinite;
+  box-shadow: 0 0 0 3px rgba(240, 197, 122, 0.22);
+  animation: loyalty-gift-ready 1.6s ease-in-out infinite;
 }
 
 .loyalty-stamp.is-reward,
 .loyalty-stamp.is-just-filled {
-  animation: loyalty-stamp-pop 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
-  animation-delay: calc(var(--stamp-i, 0) * 45ms);
+  animation: loyalty-stamp-pop 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--stamp-i, 0) * 40ms);
 }
 
 .loyalty-stamp.is-reward {
-  border-style: solid;
-  border-color: #b8862f;
-  background: linear-gradient(150deg, #ffe09a 0%, #e0a84a 45%, #c9973f 100%);
+  border-color: transparent;
+  background: linear-gradient(150deg, #ffe3a4 0%, #d4a04a 100%);
   color: #3d2314;
-  box-shadow: 0 10px 24px rgba(154, 106, 52, 0.28);
-}
-
-.loyalty-card-hint {
-  position: relative;
-  z-index: 1;
-  margin: 12px 2px 0;
-  font-size: 0.72rem;
-  font-weight: 600;
-  line-height: 1.35;
-  color: rgba(90, 68, 45, 0.72);
+  box-shadow: 0 8px 18px rgba(154, 106, 52, 0.22);
 }
 
 .loyalty-burst {
@@ -3840,54 +3794,43 @@ body {
 
 .loyalty-spark {
   position: absolute;
-  left: 72%;
-  top: 58%;
-  width: 8px;
-  height: 8px;
+  left: 78%;
+  top: 42%;
+  width: 7px;
+  height: 7px;
   border-radius: 999px;
   background: #f0c57a;
-  box-shadow: 0 0 12px rgba(240, 197, 122, 0.8);
-  animation: loyalty-spark 0.9s ease-out forwards;
-  animation-delay: calc(var(--spark-i, 0) * 28ms);
+  box-shadow: 0 0 10px rgba(240, 197, 122, 0.75);
+  animation: loyalty-spark 0.85s ease-out forwards;
+  animation-delay: calc(var(--spark-i, 0) * 24ms);
 }
 
 .loyalty-spark:nth-child(odd) {
   background: #fff;
-  width: 6px;
-  height: 6px;
-}
-
-@keyframes loyalty-glow {
-  0%, 100% { transform: translateY(0) scale(1); opacity: 0.7; }
-  50% { transform: translateY(10px) scale(1.08); opacity: 1; }
+  width: 5px;
+  height: 5px;
 }
 
 @keyframes loyalty-card-pulse {
   0% { transform: scale(1); }
-  40% { transform: scale(1.015); }
+  40% { transform: scale(1.012); }
   100% { transform: scale(1); }
 }
 
-@keyframes loyalty-meta-glow {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
-}
-
 @keyframes loyalty-stamp-pop {
-  0% { transform: scale(0.72); opacity: 0.4; }
-  60% { transform: scale(1.14); opacity: 1; }
+  0% { transform: scale(0.78); opacity: 0.45; }
+  60% { transform: scale(1.1); opacity: 1; }
   100% { transform: scale(1); }
 }
 
 @keyframes loyalty-stamp-breathe {
   0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.04); }
+  50% { transform: scale(1.035); }
 }
 
 @keyframes loyalty-gift-ready {
-  0%, 100% { transform: scale(1) rotate(0deg); }
-  40% { transform: scale(1.06) rotate(-3deg); }
-  70% { transform: scale(1.06) rotate(3deg); }
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.05); }
 }
 
 @keyframes loyalty-spark {
@@ -3896,9 +3839,7 @@ body {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .loyalty-card-glow,
   .loyalty-card.is-celebrating,
-  .loyalty-card.is-ready .loyalty-card-meta,
   .loyalty-stamp.is-pending,
   .loyalty-stamp.is-ready,
   .loyalty-stamp.is-reward,

@@ -141,7 +141,7 @@ const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '102';
+const APP_VERSION = '103';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1666,18 +1666,15 @@ function getLoyaltyPreviewSlots(stamps, pendingUnits = []) {
 function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrated = false } = {}) {
   if (!freeCoffeeStamps) return;
 
-  const untilFree = Math.max(1, freeCoffeeCycle - freeCoffeeStampsCount);
   const readyForGift = freeCoffeeStampsCount >= freeCoffeeCycle - 1;
 
   if (freeCoffeeMeta) {
     if (celebrated || freeCoffeeCelebrate) {
-      freeCoffeeMeta.textContent = 'Подарунок отримано!';
+      freeCoffeeMeta.textContent = 'Готово';
     } else if (readyForGift) {
-      freeCoffeeMeta.textContent = 'Наступна — безкоштовно';
+      freeCoffeeMeta.textContent = 'Подарунок';
     } else {
-      freeCoffeeMeta.textContent = untilFree === 1
-        ? 'Ще 1 до подарунка'
-        : `Ще ${untilFree} до подарунка`;
+      freeCoffeeMeta.textContent = `${freeCoffeeStampsCount}/${freeCoffeeCycle}`;
     }
   }
 

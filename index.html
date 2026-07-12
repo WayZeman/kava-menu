@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '102';
+      var version = '103';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=102">
+  <link rel="stylesheet" href="styles.css?v=103">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -89,17 +89,12 @@
       <div id="drinks-menu-list"></div>
     </section>
 
-    <section id="free-coffee" class="loyalty-card" aria-label="Картка лояльності" hidden>
-      <div class="loyalty-card-glow" aria-hidden="true"></div>
+    <section id="free-coffee" class="loyalty-card" aria-label="10-та кава в подарунок" hidden>
       <div class="loyalty-card-head">
-        <div class="loyalty-card-copy">
-          <p class="loyalty-card-eyebrow">Картка лояльності</p>
-          <h2 class="loyalty-card-title">Кожна 10-та кава — в подарунок</h2>
-        </div>
-        <p id="free-coffee-meta" class="loyalty-card-meta">Ще 10 до подарунка</p>
+        <h2 class="loyalty-card-title">10-та кава в подарунок</h2>
+        <p id="free-coffee-meta" class="loyalty-card-meta">0/10</p>
       </div>
-      <div id="free-coffee-stamps" class="loyalty-stamps" role="list" aria-label="Печатки лояльності"></div>
-      <p class="loyalty-card-hint">З кожною кавою з’являється печатка. Десята — безкоштовно.</p>
+      <div id="free-coffee-stamps" class="loyalty-stamps" role="list" aria-label="Прогрес"></div>
     </section>
 
     <section id="extras-menu" class="menu menu--extras" aria-label="До кави" hidden>
@@ -593,6 +588,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=102" defer></script>
+  <script src="script.js?v=103" defer></script>
 </body>
 </html>
