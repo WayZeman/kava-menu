@@ -135,9 +135,15 @@ body.is-splash-active {
 
 .app-splash-tagline {
   margin: 10px 0 0;
+  max-width: 16rem;
   font-size: 0.94rem;
   font-weight: 600;
+  line-height: 1.35;
   color: rgba(44, 40, 36, 0.62);
+}
+
+.app-splash-tagline.is-loyalty {
+  color: #7a5a3a;
 }
 
 .app-splash-loader {

@@ -19,6 +19,7 @@ const cartPay = document.getElementById('cart-pay');
 const fxLayer = document.getElementById('fx-layer');
 const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
+const appSplashLoyalty = document.getElementById('app-splash-loyalty');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -140,8 +141,9 @@ const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
+const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '103';
+const APP_VERSION = '104';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1605,6 +1607,47 @@ function getDeviceId() {
   }
 }
 
+function getLoyaltyUntilFree(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
+  const size = Math.max(2, Math.round(Number(cycle) || LOYALTY_CYCLE));
+  const progress = Math.max(0, Math.min(size - 1, Math.round(Number(stamps) || 0)));
+  return Math.max(1, size - progress);
+}
+
+function formatLoyaltySplashText(untilFree) {
+  const left = Math.max(1, Math.round(Number(untilFree) || LOYALTY_CYCLE));
+  return `До безкоштовної кави залишилось ${left}`;
+}
+
+function cacheLoyaltyProgress(stamps, cycle) {
+  try {
+    localStorage.setItem(LOYALTY_CACHE_KEY, JSON.stringify({
+      stamps: Math.max(0, Math.round(Number(stamps) || 0)),
+      cycle: Math.max(2, Math.round(Number(cycle) || LOYALTY_CYCLE)),
+    }));
+  } catch {
+    // ignore
+  }
+}
+
+function readCachedLoyaltyProgress() {
+  try {
+    const raw = localStorage.getItem(LOYALTY_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    const cycle = Math.max(2, Math.round(Number(data?.cycle) || LOYALTY_CYCLE));
+    const stamps = Math.max(0, Math.min(cycle - 1, Math.round(Number(data?.stamps) || 0)));
+    return { stamps, cycle };
+  } catch {
+    return null;
+  }
+}
+
+function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
+  if (!appSplashLoyalty) return;
+  appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
+  appSplashLoyalty.classList.add('is-loyalty');
+}
+
 function loyaltyCupMarkup() {
   return `
     <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
@@ -1746,6 +1789,9 @@ function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = fals
   if (Number.isFinite(nextStamps)) {
     freeCoffeeStampsCount = Math.max(0, Math.min(freeCoffeeCycle - 1, Math.round(nextStamps)));
   }
+
+  cacheLoyaltyProgress(freeCoffeeStampsCount, freeCoffeeCycle);
+  updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
 
   freeCoffeePendingUnits = [];
   freeCoffeeCelebrate = Boolean(celebrated || payload.celebrated);
@@ -2745,9 +2791,18 @@ function dismissSplash() {
 async function bootApp() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-  const minSplashMs = reducedMotion ? 0 : coarsePointer ? 700 : 1100;
+  const minSplashMs = reducedMotion ? 0 : coarsePointer ? 1100 : 1400;
   const started = Date.now();
   const maxTimer = window.setTimeout(dismissSplash, 6000);
+
+  const cachedLoyalty = readCachedLoyaltyProgress();
+  if (cachedLoyalty) {
+    freeCoffeeStampsCount = cachedLoyalty.stamps;
+    freeCoffeeCycle = cachedLoyalty.cycle;
+    updateSplashLoyaltyMessage(cachedLoyalty.stamps, cachedLoyalty.cycle);
+  } else {
+    updateSplashLoyaltyMessage(0, LOYALTY_CYCLE);
+  }
 
   initMenuDelegation();
 
