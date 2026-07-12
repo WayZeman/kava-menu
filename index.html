@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '104';
+      var version = '105';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=104">
+  <link rel="stylesheet" href="styles.css?v=105">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -429,6 +429,17 @@
           </article>
         </div>
 
+        <div id="stats-coffee-split" class="stats-coffee-split" hidden>
+          <article class="stats-coffee-split-card">
+            <span class="stats-coffee-split-label">Куплені</span>
+            <strong id="stats-coffee-paid" class="stats-coffee-split-value">0</strong>
+          </article>
+          <article class="stats-coffee-split-card stats-coffee-split-card--gift">
+            <span class="stats-coffee-split-label">Подарункові</span>
+            <strong id="stats-coffee-gift" class="stats-coffee-split-value">0</strong>
+          </article>
+        </div>
+
       <section id="stats-daily-chart-section" class="stats-chart-section">
         <div class="stats-chart-head">
           <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
@@ -588,6 +599,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=104" defer></script>
+  <script src="script.js?v=105" defer></script>
 </body>
 </html>

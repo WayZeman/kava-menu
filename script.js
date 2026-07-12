@@ -94,6 +94,9 @@ const statsHubFlowChart = document.getElementById('stats-hub-flow-chart');
 const statsHubChartPeriodButtons = document.querySelectorAll('[data-hub-chart-period]');
 const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
 const statsRoiWrap = document.getElementById('stats-roi-wrap');
+const statsCoffeeSplit = document.getElementById('stats-coffee-split');
+const statsCoffeePaid = document.getElementById('stats-coffee-paid');
+const statsCoffeeGift = document.getElementById('stats-coffee-gift');
 const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
 const statsBalanceExpenseLabel = document.getElementById('stats-balance-expense-label');
 const statsBalanceTotalLabel = document.getElementById('stats-balance-total-label');
@@ -143,7 +146,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '104';
+const APP_VERSION = '105';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -2952,6 +2955,8 @@ function splitIncomeRecord(record) {
   let extras = 0;
   let youtube = 0;
   let coffeeDrinks = 0;
+  let coffeePaidDrinks = 0;
+  let coffeeGiftDrinks = 0;
   let haircutCount = 0;
   let extrasCount = 0;
   let youtubeCount = 0;
@@ -2989,6 +2994,9 @@ function splitIncomeRecord(record) {
         } else {
           coffee += value;
           coffeeDrinks += qty;
+          const freeQty = Math.max(0, Math.min(qty, Math.round(Number(line?.freeQty) || 0)));
+          coffeeGiftDrinks += freeQty;
+          coffeePaidDrinks += qty - freeQty;
         }
       });
     } else if (isHaircutName(record.label)) {
@@ -2997,6 +3005,11 @@ function splitIncomeRecord(record) {
     } else {
       coffee += amount;
       coffeeDrinks += 1;
+      if (String(record.provider || '') === 'free' || amount <= 0) {
+        coffeeGiftDrinks += 1;
+      } else {
+        coffeePaidDrinks += 1;
+      }
     }
     return {
       coffee,
@@ -3004,6 +3017,8 @@ function splitIncomeRecord(record) {
       extras,
       youtube,
       coffeeDrinks,
+      coffeePaidDrinks,
+      coffeeGiftDrinks,
       haircutCount,
       extrasCount,
       youtubeCount,
@@ -3026,6 +3041,7 @@ function splitIncomeRecord(record) {
   } else {
     coffee += amount;
     manualCoffeeCount += 1;
+    coffeePaidDrinks += 1;
   }
 
   return {
@@ -3034,6 +3050,8 @@ function splitIncomeRecord(record) {
     extras,
     youtube,
     coffeeDrinks,
+    coffeePaidDrinks,
+    coffeeGiftDrinks,
     haircutCount,
     extrasCount,
     youtubeCount,
@@ -3180,6 +3198,8 @@ function summarizeIncomes(incomes) {
     summary.extras += part.extras;
     summary.youtube += part.youtube;
     summary.coffeeDrinks += part.coffeeDrinks;
+    summary.coffeePaidDrinks += part.coffeePaidDrinks;
+    summary.coffeeGiftDrinks += part.coffeeGiftDrinks;
     summary.haircutCount += part.haircutCount;
     summary.extrasCount += part.extrasCount;
     summary.youtubeCount += part.youtubeCount;
@@ -3191,6 +3211,8 @@ function summarizeIncomes(incomes) {
     extras: 0,
     youtube: 0,
     coffeeDrinks: 0,
+    coffeePaidDrinks: 0,
+    coffeeGiftDrinks: 0,
     haircutCount: 0,
     extrasCount: 0,
     youtubeCount: 0,
@@ -4388,10 +4410,16 @@ function renderStatsHub(data) {
     statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
   }
   if (statsHubCoffeeMeta) {
-    statsHubCoffeeMeta.textContent = formatCountLabel(
-      getCategoryCount(summary, 'drinks'),
-      ...config.drinks.countLabels,
-    );
+    const paid = summary.coffeePaidDrinks;
+    const gift = summary.coffeeGiftDrinks;
+    if (gift > 0) {
+      statsHubCoffeeMeta.textContent = `${paid} куплено · ${gift} подарунк.`;
+    } else {
+      statsHubCoffeeMeta.textContent = formatCountLabel(
+        getCategoryCount(summary, 'drinks'),
+        ...config.drinks.countLabels,
+      );
+    }
   }
   if (statsHubCoffeeRoi) {
     const roi = getRoiPercent(summary.coffee, drinksExpenses);
@@ -4473,6 +4501,18 @@ function renderStatsCategoryView(data) {
   const roiLabelEl = document.querySelector('.stats-card--roi .stats-card-label');
   if (roiLabelEl) roiLabelEl.textContent = config.roiLabel || 'Окупність';
   if (statsRoiWrap) statsRoiWrap.hidden = false;
+
+  if (statsCoffeeSplit) {
+    const showCoffeeSplit = category === 'drinks';
+    statsCoffeeSplit.hidden = !showCoffeeSplit;
+    if (showCoffeeSplit) {
+      const summary = summarizeIncomes(data.incomes);
+      const paid = summary.coffeePaidDrinks;
+      const gift = summary.coffeeGiftDrinks;
+      if (statsCoffeePaid) statsCoffeePaid.textContent = String(paid);
+      if (statsCoffeeGift) statsCoffeeGift.textContent = String(gift);
+    }
+  }
 
   statsIncome.textContent = formatStatsMoney(categoryIncome);
   statsExpensesTotal.textContent = formatStatsMoney(expensesTotal);

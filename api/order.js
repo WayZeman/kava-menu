@@ -46,6 +46,7 @@ function buildOrderRecord(body) {
       qty,
       amount,
       category,
+      freeQty: Math.max(0, Math.min(qty, Math.round(Number(item?.freeQty) || 0))),
     });
   }
 
