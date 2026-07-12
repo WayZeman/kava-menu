@@ -470,7 +470,7 @@ export async function saveFullMenuToDb({ drinks, extras, services, visibility })
   };
 }
 
-const FREE_COFFEE_LIMIT = 10;
+const LOYALTY_CYCLE = 10;
 let freeCoffeeTableReady = false;
 
 async function ensureFreeCoffeeTable(sql) {
@@ -497,14 +497,48 @@ async function ensureFreeCoffeeTable(sql) {
   freeCoffeeTableReady = true;
 }
 
-function normalizeFreeCoffeeRow(row) {
-  const limit = Number(row?.limit_count || FREE_COFFEE_LIMIT);
-  const used = Math.max(0, Math.min(limit, Number(row?.used || 0)));
+/** Progress 0..9 toward a free coffee. The 10th drink in each cycle is free. */
+export function simulateLoyaltyCycle(stamps, drinkQty, cycle = LOYALTY_CYCLE) {
+  const size = Math.max(2, Math.round(Number(cycle) || LOYALTY_CYCLE));
+  let progress = Math.max(0, Math.min(size - 1, Math.round(Number(stamps) || 0)));
+  const drinks = Math.max(0, Math.round(Number(drinkQty) || 0));
+  let freeDrinks = 0;
+  let paidDrinks = 0;
+  const units = [];
+
+  for (let index = 0; index < drinks; index += 1) {
+    if (progress >= size - 1) {
+      units.push('free');
+      freeDrinks += 1;
+      progress = 0;
+    } else {
+      units.push('paid');
+      paidDrinks += 1;
+      progress += 1;
+    }
+  }
+
+  return {
+    stamps: progress,
+    freeDrinks,
+    paidDrinks,
+    units,
+    cycle: size,
+    untilFree: progress === 0 && freeDrinks > 0 ? size : size - progress,
+  };
+}
+
+function normalizeLoyaltyRow(row) {
+  const cycle = Number(row?.limit_count || LOYALTY_CYCLE);
+  const stamps = Math.max(0, Math.min(cycle - 1, Number(row?.used || 0)));
   return {
     deviceId: row?.device_id || null,
-    used,
-    limit,
-    remaining: Math.max(0, limit - used),
+    stamps,
+    used: stamps,
+    limit: cycle,
+    cycle,
+    remaining: Math.max(1, cycle - stamps),
+    untilFree: Math.max(1, cycle - stamps),
   };
 }
 
@@ -527,24 +561,27 @@ export async function getFreeCoffeeBalance(deviceId) {
   if (!rows[0]) {
     return {
       deviceId: id,
+      stamps: 0,
       used: 0,
-      limit: FREE_COFFEE_LIMIT,
-      remaining: FREE_COFFEE_LIMIT,
+      limit: LOYALTY_CYCLE,
+      cycle: LOYALTY_CYCLE,
+      remaining: LOYALTY_CYCLE,
+      untilFree: LOYALTY_CYCLE,
     };
   }
 
-  return normalizeFreeCoffeeRow(rows[0]);
+  return normalizeLoyaltyRow(rows[0]);
 }
 
-export async function claimFreeCoffee({ deviceId, orderId, qty }) {
+export async function claimFreeCoffee({ deviceId, orderId, drinkQty, qty }) {
   const sql = getSql();
   if (!sql) return null;
 
   const id = String(deviceId || '').trim();
   const order = String(orderId || '').trim();
-  const requested = Math.max(0, Math.round(Number(qty) || 0));
+  const drinks = Math.max(0, Math.round(Number(drinkQty ?? qty) || 0));
 
-  if (!id || id.length > 120 || !order || order.length > 120 || requested <= 0) {
+  if (!id || id.length > 120 || !order || order.length > 120 || drinks <= 0) {
     return null;
   }
 
@@ -562,6 +599,7 @@ export async function claimFreeCoffee({ deviceId, orderId, qty }) {
     return {
       ...balance,
       claimed: Number(existingClaim[0].qty || 0),
+      freeDrinks: Number(existingClaim[0].qty || 0),
       alreadyClaimed: true,
     };
   }
@@ -569,37 +607,38 @@ export async function claimFreeCoffee({ deviceId, orderId, qty }) {
   const current = await getFreeCoffeeBalance(id);
   if (!current) return null;
 
-  const claimed = Math.min(requested, current.remaining);
-  if (claimed <= 0) {
-    return {
-      ...current,
-      claimed: 0,
-      alreadyClaimed: false,
-    };
-  }
-
-  const nextUsed = current.used + claimed;
+  const simulation = simulateLoyaltyCycle(current.stamps, drinks, current.cycle);
+  const nextStamps = simulation.stamps;
+  const claimed = simulation.freeDrinks;
 
   await sql`
     INSERT INTO free_coffee (device_id, used, limit_count, updated_at)
-    VALUES (${id}, ${nextUsed}, ${FREE_COFFEE_LIMIT}, NOW())
+    VALUES (${id}, ${nextStamps}, ${LOYALTY_CYCLE}, NOW())
     ON CONFLICT (device_id) DO UPDATE SET
-      used = ${nextUsed},
+      used = ${nextStamps},
       updated_at = NOW()
   `;
 
-  await sql`
-    INSERT INTO free_coffee_claims (order_id, device_id, qty)
-    VALUES (${order}, ${id}, ${claimed})
-    ON CONFLICT (order_id) DO NOTHING
-  `;
+  if (claimed > 0) {
+    await sql`
+      INSERT INTO free_coffee_claims (order_id, device_id, qty)
+      VALUES (${order}, ${id}, ${claimed})
+      ON CONFLICT (order_id) DO NOTHING
+    `;
+  }
 
   return {
     deviceId: id,
-    used: nextUsed,
-    limit: FREE_COFFEE_LIMIT,
-    remaining: Math.max(0, FREE_COFFEE_LIMIT - nextUsed),
+    stamps: nextStamps,
+    used: nextStamps,
+    limit: LOYALTY_CYCLE,
+    cycle: LOYALTY_CYCLE,
+    remaining: Math.max(1, LOYALTY_CYCLE - nextStamps),
+    untilFree: Math.max(1, LOYALTY_CYCLE - nextStamps),
     claimed,
+    freeDrinks: claimed,
+    paidDrinks: simulation.paidDrinks,
     alreadyClaimed: false,
+    celebrated: claimed > 0,
   };
 }

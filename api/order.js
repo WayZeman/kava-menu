@@ -185,15 +185,22 @@ export default async function handler(req, res) {
   }
 
   let freeCoffee = null;
-  if (isNewOrder && deviceId && freeDrinks > 0) {
-    try {
-      freeCoffee = await claimFreeCoffee({
-        deviceId,
-        orderId: saved.id,
-        qty: freeDrinks,
-      });
-    } catch {
-      freeCoffee = null;
+  if (isNewOrder && deviceId) {
+    const drinkCount = items.reduce((sum, item) => {
+      if (String(item?.category || '').trim() !== 'drink') return sum;
+      return sum + (Number(item?.qty) || 0);
+    }, 0);
+
+    if (drinkCount > 0) {
+      try {
+        freeCoffee = await claimFreeCoffee({
+          deviceId,
+          orderId: saved.id,
+          drinkQty: drinkCount,
+        });
+      } catch {
+        freeCoffee = null;
+      }
     }
   }
 
