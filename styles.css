@@ -3659,6 +3659,86 @@ body {
   margin-top: 12px;
 }
 
+.free-coffee {
+  margin-top: 14px;
+  padding: 16px 14px 14px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, rgba(255, 249, 238, 0.95), rgba(240, 212, 154, 0.55));
+  border: 1px solid rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 36px rgba(114, 86, 52, 0.08);
+}
+
+.free-coffee-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.free-coffee-title {
+  margin: 0;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: #3d2314;
+}
+
+.free-coffee-meta {
+  margin: 0;
+  font-size: 0.74rem;
+  font-weight: 700;
+  color: #7a5a3a;
+  white-space: nowrap;
+}
+
+.free-coffee-stamps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.free-coffee-stamp {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 999px;
+  border: 2px solid rgba(122, 90, 58, 0.28);
+  background: rgba(255, 255, 255, 0.72);
+  display: grid;
+  place-items: center;
+  color: rgba(122, 90, 58, 0.35);
+  transition: transform 0.25s ease, background 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+}
+
+.free-coffee-stamp svg {
+  width: 46%;
+  height: 46%;
+}
+
+.free-coffee-stamp.is-filled {
+  border-color: #9a6a34;
+  background: linear-gradient(160deg, #f0c57a 0%, #c9973f 100%);
+  color: #3d2314;
+  box-shadow: 0 8px 18px rgba(154, 106, 52, 0.22);
+}
+
+.free-coffee-stamp.is-pending {
+  border-color: rgba(154, 106, 52, 0.55);
+  background: rgba(255, 255, 255, 0.92);
+  color: rgba(154, 106, 52, 0.72);
+  box-shadow: inset 0 0 0 2px rgba(201, 151, 63, 0.18);
+}
+
+.free-coffee-stamp.is-just-filled {
+  animation: free-stamp-pop 0.45s ease;
+}
+
+@keyframes free-stamp-pop {
+  0% { transform: scale(0.82); }
+  55% { transform: scale(1.12); }
+  100% { transform: scale(1); }
+}
+
 .menu-heading {
   margin-bottom: 12px;
   font-size: 0.82rem;

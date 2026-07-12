@@ -1,5 +1,6 @@
 import {
   buildOrderLabel,
+  claimFreeCoffee,
   getFullMenuFromDb,
   insertIncome,
   saveFullMenuToDb,
@@ -19,6 +20,7 @@ function providerLabel(provider) {
   if (provider === 'mono') return 'Monobank';
   if (provider === 'privat') return 'Приват24';
   if (provider === 'other') return 'Інші банки';
+  if (provider === 'free') return 'Безкоштовно';
   return 'Банк';
 }
 
@@ -34,7 +36,7 @@ function buildOrderRecord(body) {
     const qty = Number(item?.qty);
     const amount = Number(item?.amount);
     if (!name || !Number.isFinite(qty) || qty <= 0) continue;
-    if (!Number.isFinite(amount) || amount <= 0) continue;
+    if (!Number.isFinite(amount) || amount < 0) continue;
 
     total += amount * qty;
     const category = String(item?.category || '').trim() || null;
@@ -50,7 +52,7 @@ function buildOrderRecord(body) {
   if (!lines.length) return null;
 
   const parsedTotal = Number(body?.total);
-  if (Number.isFinite(parsedTotal) && parsedTotal > 0) {
+  if (Number.isFinite(parsedTotal) && parsedTotal >= 0) {
     total = parsedTotal;
   }
 
@@ -134,7 +136,7 @@ export default async function handler(req, res) {
       return;
     }
 
-    if (!Number.isFinite(amount) || amount <= 0 || amount > 100000) {
+    if (!Number.isFinite(amount) || amount < 0 || amount > 100000) {
       res.status(400).json({ ok: false, error: 'invalid_item' });
       return;
     }
@@ -144,13 +146,24 @@ export default async function handler(req, res) {
     lines.push(`• ${name} × ${qty} — ${lineTotal} грн`);
   }
 
+  const paidTotalRaw = Number(req.body?.total);
+  const paidTotal = Number.isFinite(paidTotalRaw) && paidTotalRaw >= 0
+    ? paidTotalRaw
+    : total;
+
+  const freeDrinksRaw = Number(req.body?.freeDrinks);
+  const freeDrinks = Number.isFinite(freeDrinksRaw) && freeDrinksRaw > 0
+    ? Math.round(freeDrinksRaw)
+    : 0;
+  const deviceId = String(req.body?.deviceId || '').trim();
+
   const providerRaw = String(req.body?.provider || '').trim() || 'bank';
   const provider = providerLabel(providerRaw);
 
   const orderRecord = buildOrderRecord({
     id: req.body?.id,
     items,
-    total,
+    total: paidTotal,
     provider: providerRaw,
   });
 
@@ -171,6 +184,19 @@ export default async function handler(req, res) {
     return;
   }
 
+  let freeCoffee = null;
+  if (isNewOrder && deviceId && freeDrinks > 0) {
+    try {
+      freeCoffee = await claimFreeCoffee({
+        deviceId,
+        orderId: saved.id,
+        qty: freeDrinks,
+      });
+    } catch {
+      freeCoffee = null;
+    }
+  }
+
   if (isNewOrder) {
     try {
       await applyOrderedExtraStock(orderRecord?.items || []);
@@ -183,15 +209,19 @@ export default async function handler(req, res) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (isNewOrder && token && chatId) {
+    const freeLine = freeCoffee?.claimed
+      ? `Безкоштовно: ${freeCoffee.claimed} кав`
+      : null;
     const text = [
       '🧾 Чек замовлення',
       '',
       ...lines,
       '',
-      `Разом: ${total} грн`,
+      `Разом: ${paidTotal} грн`,
+      freeLine,
       `Оплата: ${provider}`,
       `🕐 ${formatOrderDate()}`,
-    ].join('\n');
+    ].filter(Boolean).join('\n');
 
     try {
       await sendTelegramMessage(token, chatId, text);
@@ -200,5 +230,5 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(200).json({ ok: true, income: saved });
+  res.status(200).json({ ok: true, income: saved, freeCoffee });
 }

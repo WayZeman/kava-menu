@@ -28,6 +28,9 @@ const thanksStatus = document.getElementById('thanks-status');
 const rows = document.querySelectorAll('[data-picker="car-wash"]');
 const drinksMenu = document.getElementById('drinks-menu');
 const drinksMenuList = document.getElementById('drinks-menu-list');
+const freeCoffeeSection = document.getElementById('free-coffee');
+const freeCoffeeStamps = document.getElementById('free-coffee-stamps');
+const freeCoffeeMeta = document.getElementById('free-coffee-meta');
 const extrasMenu = document.getElementById('extras-menu');
 const extrasMenuList = document.getElementById('extras-menu-list');
 const servicesMenu = document.getElementById('services-menu');
@@ -136,7 +139,9 @@ const MENU_SERVICES_KEY = 'kava-menu-services';
 const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
-const APP_VERSION = '100';
+const DEVICE_ID_KEY = 'kava-device-id';
+const FREE_COFFEE_LIMIT = 10;
+const APP_VERSION = '101';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -232,6 +237,9 @@ let statsCategory = 'drinks';
 let menuEditorSingleSection = false;
 let categoryVisibility = { drinks: true, extras: true, services: true };
 let youtubeChannelsStats = {};
+let freeCoffeeUsed = 0;
+let freeCoffeeLimit = FREE_COFFEE_LIMIT;
+let freeCoffeePending = 0;
 let scrollLockY = 0;
 let refreshStatsTimer = null;
 let incomesListExpanded = false;
@@ -937,6 +945,10 @@ function applyCategoryVisibility() {
     drinksMenu.hidden = !categoryVisibility.drinks || !menuDrinks.length;
   }
 
+  if (freeCoffeeSection) {
+    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
+  }
+
   if (extrasMenu) {
     extrasMenu.hidden = !categoryVisibility.extras || !menuExtras.length;
   }
@@ -1490,6 +1502,162 @@ function getCartSummary() {
   return { items, totalQty, total };
 }
 
+function isDrinkCartItem(item) {
+  return item?.category === 'drink';
+}
+
+function countDrinkQty(items) {
+  return (items || [])
+    .filter((item) => isDrinkCartItem(item))
+    .reduce((sum, item) => sum + Number(item.qty || 0), 0);
+}
+
+function getFreeCoffeeRemaining() {
+  return Math.max(0, freeCoffeeLimit - freeCoffeeUsed);
+}
+
+function getCartPricing(items = getCartSummary().items) {
+  const list = (items || []).filter((item) => item.qty > 0);
+  const subtotal = list.reduce((sum, item) => sum + item.amount * item.qty, 0);
+  const drinkQty = countDrinkQty(list);
+  const freeDrinks = Math.min(drinkQty, getFreeCoffeeRemaining());
+
+  let remainingFree = freeDrinks;
+  let freeValue = 0;
+  const pricedItems = list.map((item) => {
+    if (!isDrinkCartItem(item) || remainingFree <= 0) {
+      return {
+        ...item,
+        freeQty: 0,
+        paidQty: item.qty,
+        lineTotal: item.amount * item.qty,
+      };
+    }
+
+    const freeQty = Math.min(item.qty, remainingFree);
+    remainingFree -= freeQty;
+    freeValue += freeQty * item.amount;
+
+    return {
+      ...item,
+      freeQty,
+      paidQty: item.qty - freeQty,
+      lineTotal: (item.qty - freeQty) * item.amount,
+    };
+  });
+
+  return {
+    items: pricedItems,
+    drinkQty,
+    freeDrinks,
+    freeValue,
+    subtotal,
+    paidTotal: Math.max(0, subtotal - freeValue),
+  };
+}
+
+function getDeviceId() {
+  try {
+    let id = localStorage.getItem(DEVICE_ID_KEY);
+    if (id && id.length <= 120) return id;
+
+    id = (typeof crypto !== 'undefined' && crypto.randomUUID)
+      ? `device-${crypto.randomUUID()}`
+      : `device-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    localStorage.setItem(DEVICE_ID_KEY, id);
+    return id;
+  } catch {
+    return `device-temp-${Date.now()}`;
+  }
+}
+
+function freeCoffeeCupMarkup() {
+  return `
+    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path d="M4 8h12v7a3 3 0 0 1-3 3H7a3 3 0 0 1-3-3V8z" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M16 10h2.2A2.8 2.8 0 0 1 21 12.8 2.8 2.8 0 0 1 18.2 15.6H16" stroke="currentColor" stroke-width="1.8"/>
+      <path d="M8 4.5c.4.7.4 1.3 0 2M11 4.5c.4.7.4 1.3 0 2" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+    </svg>
+  `;
+}
+
+function renderFreeCoffeeStamps({ animateFrom = freeCoffeeUsed } = {}) {
+  if (!freeCoffeeStamps) return;
+
+  const used = Math.max(0, Math.min(freeCoffeeLimit, freeCoffeeUsed));
+  const pendingEnd = Math.max(0, Math.min(freeCoffeeLimit, used + freeCoffeePending));
+  const remaining = Math.max(0, freeCoffeeLimit - used);
+
+  if (freeCoffeeMeta) {
+    freeCoffeeMeta.textContent = remaining > 0
+      ? `Залишилось ${remaining}`
+      : 'Ліміт використано';
+  }
+
+  if (freeCoffeeSection) {
+    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
+  }
+
+  freeCoffeeStamps.replaceChildren();
+
+  for (let index = 0; index < freeCoffeeLimit; index += 1) {
+    const stamp = document.createElement('span');
+    stamp.className = 'free-coffee-stamp';
+    stamp.setAttribute('role', 'listitem');
+    stamp.innerHTML = freeCoffeeCupMarkup();
+
+    if (index < used) {
+      stamp.classList.add('is-filled');
+      stamp.setAttribute('aria-label', `Кава ${index + 1} отримана`);
+      if (index >= animateFrom && index < used) {
+        stamp.classList.add('is-just-filled');
+      }
+    } else if (index < pendingEnd) {
+      stamp.classList.add('is-pending');
+      stamp.setAttribute('aria-label', `Кава ${index + 1} у цьому замовленні`);
+    } else {
+      stamp.setAttribute('aria-label', `Кава ${index + 1} ще доступна`);
+    }
+
+    freeCoffeeStamps.appendChild(stamp);
+  }
+}
+
+function setFreeCoffeeBalance({ used, limit } = {}, { animate = false } = {}) {
+  const prevUsed = freeCoffeeUsed;
+  if (Number.isFinite(Number(limit)) && Number(limit) > 0) {
+    freeCoffeeLimit = Math.round(Number(limit));
+  }
+  if (Number.isFinite(Number(used))) {
+    freeCoffeeUsed = Math.max(0, Math.min(freeCoffeeLimit, Math.round(Number(used))));
+  }
+  freeCoffeePending = 0;
+  renderFreeCoffeeStamps({ animateFrom: animate ? prevUsed : freeCoffeeUsed });
+  updateCart();
+}
+
+async function loadFreeCoffeeBalance() {
+  const deviceId = getDeviceId();
+  try {
+    const response = await fetch(`/api/free-coffee?deviceId=${encodeURIComponent(deviceId)}`, {
+      cache: 'no-store',
+    });
+    const data = await response.json();
+    if (!data?.ok) return;
+    setFreeCoffeeBalance({ used: data.used, limit: data.limit });
+  } catch {
+    renderFreeCoffeeStamps();
+  }
+}
+
+function applyFreeCoffeeClaim(claim, { animate = true } = {}) {
+  if (!claim) return;
+  setFreeCoffeeBalance(
+    { used: claim.used, limit: claim.limit },
+    { animate },
+  );
+}
+
 function savePendingPayment(order, orderId) {
   sessionStorage.setItem(PAYMENT_KEY, JSON.stringify({
     order,
@@ -1581,7 +1749,18 @@ function renderReceiptLines(items) {
 
     const sum = document.createElement('span');
     sum.className = 'receipt-line-sum';
-    sum.textContent = `${item.amount * item.qty} грн`;
+    const freeQty = Number(item.freeQty || 0);
+    const lineTotal = Number.isFinite(item.lineTotal)
+      ? item.lineTotal
+      : item.amount * item.qty;
+
+    if (freeQty > 0 && lineTotal === 0) {
+      sum.textContent = 'безкоштовно';
+    } else if (freeQty > 0) {
+      sum.textContent = `${lineTotal} грн (−${freeQty})`;
+    } else {
+      sum.textContent = `${lineTotal} грн`;
+    }
 
     meta.append(qty, sum);
     li.append(name, meta);
@@ -1800,7 +1979,11 @@ function clearCart() {
 }
 
 function updateCart() {
-  const { items, totalQty, total } = getCartSummary();
+  const { items, totalQty } = getCartSummary();
+  const pricing = getCartPricing(items);
+
+  freeCoffeePending = pricing.freeDrinks;
+  renderFreeCoffeeStamps();
 
   if (!items.length) {
     cart.hidden = true;
@@ -1815,8 +1998,19 @@ function updateCart() {
   document.body.classList.add('has-cart');
 
   const cupLabel = formatQtyLabel(totalQty);
-  cartCount.textContent = cupLabel;
-  cartTotal.textContent = `${total} грн`;
+  if (pricing.freeDrinks > 0 && pricing.paidTotal === 0) {
+    cartCount.textContent = `${cupLabel} · безкоштовно`;
+    cartTotal.textContent = '0 грн';
+    cartPay.textContent = 'Отримати';
+  } else if (pricing.freeDrinks > 0) {
+    cartCount.textContent = `${cupLabel} · −${pricing.freeDrinks} безкошт.`;
+    cartTotal.textContent = `${pricing.paidTotal} грн`;
+    cartPay.textContent = 'Оплатити';
+  } else {
+    cartCount.textContent = cupLabel;
+    cartTotal.textContent = `${pricing.paidTotal} грн`;
+    cartPay.textContent = 'Оплатити';
+  }
 
   if (isNewCart) {
     cart.classList.add('cart-enter');
@@ -1852,13 +2046,14 @@ function dismissOverlays() {
 }
 
 function openSheet() {
-  const { items, total } = getCartSummary();
+  const { items } = getCartSummary();
   if (!items.length) return;
 
-  paymentTotal = total;
-  sheetTitle.textContent = `${total} грн`;
+  const pricing = getCartPricing(items);
+  paymentTotal = pricing.paidTotal;
+  sheetTitle.textContent = pricing.paidTotal > 0 ? `${pricing.paidTotal} грн` : 'Безкоштовно';
   if (receiptDate) receiptDate.textContent = formatReceiptDate();
-  renderReceiptLines(items);
+  renderReceiptLines(pricing.items);
   sheet.hidden = false;
   document.body.classList.add('sheet-open');
   syncScrollLock();
@@ -1944,10 +2139,20 @@ function openPaymentUrl(url) {
 }
 
 function snapshotOrder() {
-  const { items, total } = getCartSummary();
+  const pricing = getCartPricing();
   return {
-    items: items.map((item) => ({ ...item })),
-    total,
+    items: pricing.items.map((item) => ({
+      id: item.id,
+      name: item.name,
+      amount: item.amount,
+      qty: item.qty,
+      category: item.category,
+      freeQty: item.freeQty || 0,
+    })),
+    total: pricing.paidTotal,
+    freeDrinks: pricing.freeDrinks,
+    freeValue: pricing.freeValue,
+    subtotal: pricing.subtotal,
   };
 }
 
@@ -1961,6 +2166,8 @@ function notifyOrder(order, provider, orderId) {
     items: order.items,
     total: order.total,
     provider,
+    deviceId: getDeviceId(),
+    freeDrinks: Number(order.freeDrinks || 0),
   });
 
   const postOrder = () => fetch('/api/order', {
@@ -1968,12 +2175,19 @@ function notifyOrder(order, provider, orderId) {
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
+  }).then(async (response) => {
+    try {
+      const data = await response.json();
+      if (data?.freeCoffee) applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
+    } catch {
+      // ignore parse errors
+    }
   }).catch(() => {
     // payment flow should continue even if notification fails
   });
 
-  // Інші банки: користувач лишається на сторінці — fetch надійніший за sendBeacon
-  if (provider === 'other') {
+  // Fetch when we need free-coffee response or user stays on the page
+  if (provider === 'other' || provider === 'free' || Number(order.freeDrinks || 0) > 0) {
     postOrder();
     return;
   }
@@ -2000,6 +2214,27 @@ function goToPayment(provider) {
   payActions.forEach((action) => {
     action.disabled = true;
   });
+
+  if (order.total === 0) {
+    if (order.freeDrinks > 0) {
+      setFreeCoffeeBalance(
+        { used: freeCoffeeUsed + order.freeDrinks, limit: freeCoffeeLimit },
+        { animate: true },
+      );
+    }
+    notifyOrder(order, 'free', orderId);
+    closeSheet();
+    awaitingPayment = false;
+    clearPendingPayment();
+    pendingOrder = null;
+    pendingOrderId = null;
+    clearCart();
+    showThanks();
+    window.setTimeout(() => {
+      loadFreeCoffeeBalance();
+    }, 900);
+    return;
+  }
 
   if (provider === 'other') {
     otherPaymentRecorded = false;
@@ -2374,8 +2609,10 @@ async function bootApp() {
 
   try {
     await initMenu();
+    await loadFreeCoffeeBalance();
   } catch {
     // show menu with cached data or empty state
+    renderFreeCoffeeStamps();
   }
 
   const wait = Math.max(0, minSplashMs - (Date.now() - started));

@@ -469,3 +469,137 @@ export async function saveFullMenuToDb({ drinks, extras, services, visibility })
     updatedAt: rows[0].updated_at,
   };
 }
+
+const FREE_COFFEE_LIMIT = 10;
+let freeCoffeeTableReady = false;
+
+async function ensureFreeCoffeeTable(sql) {
+  if (freeCoffeeTableReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS free_coffee (
+      device_id TEXT PRIMARY KEY,
+      used INTEGER NOT NULL DEFAULT 0,
+      limit_count INTEGER NOT NULL DEFAULT 10,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS free_coffee_claims (
+      order_id TEXT PRIMARY KEY,
+      device_id TEXT NOT NULL,
+      qty INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  freeCoffeeTableReady = true;
+}
+
+function normalizeFreeCoffeeRow(row) {
+  const limit = Number(row?.limit_count || FREE_COFFEE_LIMIT);
+  const used = Math.max(0, Math.min(limit, Number(row?.used || 0)));
+  return {
+    deviceId: row?.device_id || null,
+    used,
+    limit,
+    remaining: Math.max(0, limit - used),
+  };
+}
+
+export async function getFreeCoffeeBalance(deviceId) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(deviceId || '').trim();
+  if (!id || id.length > 120) return null;
+
+  await ensureFreeCoffeeTable(sql);
+
+  const rows = await sql`
+    SELECT device_id, used, limit_count, updated_at
+    FROM free_coffee
+    WHERE device_id = ${id}
+    LIMIT 1
+  `;
+
+  if (!rows[0]) {
+    return {
+      deviceId: id,
+      used: 0,
+      limit: FREE_COFFEE_LIMIT,
+      remaining: FREE_COFFEE_LIMIT,
+    };
+  }
+
+  return normalizeFreeCoffeeRow(rows[0]);
+}
+
+export async function claimFreeCoffee({ deviceId, orderId, qty }) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(deviceId || '').trim();
+  const order = String(orderId || '').trim();
+  const requested = Math.max(0, Math.round(Number(qty) || 0));
+
+  if (!id || id.length > 120 || !order || order.length > 120 || requested <= 0) {
+    return null;
+  }
+
+  await ensureFreeCoffeeTable(sql);
+
+  const existingClaim = await sql`
+    SELECT order_id, device_id, qty
+    FROM free_coffee_claims
+    WHERE order_id = ${order}
+    LIMIT 1
+  `;
+
+  if (existingClaim[0]) {
+    const balance = await getFreeCoffeeBalance(id);
+    return {
+      ...balance,
+      claimed: Number(existingClaim[0].qty || 0),
+      alreadyClaimed: true,
+    };
+  }
+
+  const current = await getFreeCoffeeBalance(id);
+  if (!current) return null;
+
+  const claimed = Math.min(requested, current.remaining);
+  if (claimed <= 0) {
+    return {
+      ...current,
+      claimed: 0,
+      alreadyClaimed: false,
+    };
+  }
+
+  const nextUsed = current.used + claimed;
+
+  await sql`
+    INSERT INTO free_coffee (device_id, used, limit_count, updated_at)
+    VALUES (${id}, ${nextUsed}, ${FREE_COFFEE_LIMIT}, NOW())
+    ON CONFLICT (device_id) DO UPDATE SET
+      used = ${nextUsed},
+      updated_at = NOW()
+  `;
+
+  await sql`
+    INSERT INTO free_coffee_claims (order_id, device_id, qty)
+    VALUES (${order}, ${id}, ${claimed})
+    ON CONFLICT (order_id) DO NOTHING
+  `;
+
+  return {
+    deviceId: id,
+    used: nextUsed,
+    limit: FREE_COFFEE_LIMIT,
+    remaining: Math.max(0, FREE_COFFEE_LIMIT - nextUsed),
+    claimed,
+    alreadyClaimed: false,
+  };
+}
