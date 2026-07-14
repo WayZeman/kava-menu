@@ -150,7 +150,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '112';
+const APP_VERSION = '113';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {

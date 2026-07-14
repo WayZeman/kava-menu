@@ -3148,34 +3148,55 @@ body.is-scroll-locked {
 }
 
 .stats-hub-card-value {
-  font-size: 1.38rem;
+  font-size: 1.42rem;
   font-weight: 800;
   color: inherit;
   font-variant-numeric: tabular-nums;
   letter-spacing: -0.03em;
 }
 
-.stats-hub-card-value.is-positive {
-  color: #5f7a2e;
+.stats-hub-card-value.is-positive,
+.stats-hub-card-value.is-negative {
+  opacity: 1;
 }
 
-.stats-hub-card-value.is-negative {
-  color: #b44a3a;
+/* Light cards: darker high-contrast amounts */
+.stats-hub-card--extras .stats-hub-card-value.is-positive {
+  color: #1f6b24;
+}
+
+.stats-hub-card--extras .stats-hub-card-value.is-negative {
+  color: #b1221a;
+}
+
+/* Dark / tinted cards: keep bright readable numbers */
+.stats-hub-card--coffee .stats-hub-card-value.is-positive,
+.stats-hub-card--services .stats-hub-card-value.is-positive,
+.stats-hub-card--youtube .stats-hub-card-value.is-positive {
+  color: #eaffc4;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
+}
+
+.stats-hub-card--coffee .stats-hub-card-value.is-negative,
+.stats-hub-card--services .stats-hub-card-value.is-negative,
+.stats-hub-card--youtube .stats-hub-card-value.is-negative {
+  color: #ffe7a8;
+  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.35);
 }
 
 .stats-hub-card-meta {
-  font-size: 0.78rem;
-  font-weight: 600;
+  font-size: 0.8rem;
+  font-weight: 650;
   color: inherit;
-  opacity: 0.76;
+  opacity: 0.9;
 }
 
 .stats-hub-card-roi {
-  font-size: 0.78rem;
-  font-weight: 700;
+  font-size: 0.82rem;
+  font-weight: 750;
   color: inherit;
   font-variant-numeric: tabular-nums;
-  opacity: 0.92;
+  opacity: 1;
 }
 
 .stats-hub-card-hint {
@@ -3860,11 +3881,31 @@ body.is-scroll-locked {
 }
 
 .stats-hub-card-roi.is-negative {
-  color: #b44a3a;
+  color: #b1221a;
 }
 
 .stats-hub-card-roi.is-positive {
-  color: #7a8f3d;
+  color: #1f6b24;
+}
+
+.stats-hub-card--coffee .stats-hub-card-roi.is-positive,
+.stats-hub-card--services .stats-hub-card-roi.is-positive,
+.stats-hub-card--youtube .stats-hub-card-roi.is-positive {
+  color: #dff7a8;
+}
+
+.stats-hub-card--coffee .stats-hub-card-roi.is-negative,
+.stats-hub-card--services .stats-hub-card-roi.is-negative,
+.stats-hub-card--youtube .stats-hub-card-roi.is-negative {
+  color: #ffe0a0;
+}
+
+.stats-hub-card--extras .stats-hub-card-roi.is-positive {
+  color: #1f6b24;
+}
+
+.stats-hub-card--extras .stats-hub-card-roi.is-negative {
+  color: #b1221a;
 }
 
 @keyframes thanks-overlay-in {
