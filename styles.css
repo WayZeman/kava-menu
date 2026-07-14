@@ -3777,6 +3777,13 @@ body.is-scroll-locked {
   box-shadow: 0 4px 18px rgba(212, 168, 83, 0.18);
 }
 
+.stats-card--roi-negative {
+  border-color: rgba(184, 74, 58, 0.35);
+  background:
+    radial-gradient(circle at top right, rgba(255, 140, 120, 0.2), transparent 34%),
+    rgba(255, 255, 255, 0.72);
+}
+
 .stats-roi-head {
   display: flex;
   align-items: baseline;
@@ -3794,6 +3801,10 @@ body.is-scroll-locked {
 
 .stats-card--roi-complete .stats-roi-percent {
   color: #9a7b28;
+}
+
+.stats-card--roi-negative .stats-roi-percent {
+  color: #b44a3a;
 }
 
 .stats-roi-track {
@@ -3816,6 +3827,10 @@ body.is-scroll-locked {
   background: linear-gradient(90deg, #c9a227 0%, #e8cc6a 100%);
 }
 
+.stats-card--roi-negative .stats-roi-fill {
+  background: linear-gradient(90deg, #e08a7a 0%, #c45a4a 100%);
+}
+
 .stats-roi-caption {
   margin: 10px 0 0;
   font-size: 0.84rem;
@@ -3830,6 +3845,18 @@ body.is-scroll-locked {
 
 .stats-card--roi-complete .stats-roi-caption {
   color: #9a7b28;
+}
+
+.stats-card--roi-negative .stats-roi-caption {
+  color: #a35245;
+}
+
+.stats-hub-card-roi.is-negative {
+  color: #b44a3a;
+}
+
+.stats-hub-card-roi.is-positive {
+  color: #7a8f3d;
 }
 
 @keyframes thanks-overlay-in {
