@@ -146,7 +146,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '105';
+const APP_VERSION = '106';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3172,7 +3172,7 @@ function getCategoryIncomeTotal(incomes, category) {
 }
 
 function getCategoryCount(summary, category) {
-  if (category === 'drinks') return summary.coffeeDrinks + summary.manualCoffeeCount;
+  if (category === 'drinks') return summary.coffeePaidDrinks;
   if (category === 'extras') return summary.extrasCount;
   if (category === 'youtube') return summary.youtubeCount;
   return summary.haircutCount;
@@ -3237,8 +3237,8 @@ function localMonthKey(value) {
 
 function coffeeDrinkCount(income) {
   const part = splitIncomeRecord(income);
-  if (income.source === 'order') return part.coffeeDrinks;
-  if (part.manualCoffeeCount > 0) return 1;
+  if (income.source === 'order') return part.coffeePaidDrinks;
+  if (part.manualCoffeeCount > 0 || part.coffeePaidDrinks > 0) return part.coffeePaidDrinks || 1;
   return 0;
 }
 
@@ -4410,16 +4410,10 @@ function renderStatsHub(data) {
     statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
   }
   if (statsHubCoffeeMeta) {
-    const paid = summary.coffeePaidDrinks;
-    const gift = summary.coffeeGiftDrinks;
-    if (gift > 0) {
-      statsHubCoffeeMeta.textContent = `${paid} куплено · ${gift} подарунк.`;
-    } else {
-      statsHubCoffeeMeta.textContent = formatCountLabel(
-        getCategoryCount(summary, 'drinks'),
-        ...config.drinks.countLabels,
-      );
-    }
+    statsHubCoffeeMeta.textContent = formatCountLabel(
+      getCategoryCount(summary, 'drinks'),
+      ...config.drinks.countLabels,
+    );
   }
   if (statsHubCoffeeRoi) {
     const roi = getRoiPercent(summary.coffee, drinksExpenses);
