@@ -3155,6 +3155,14 @@ body.is-scroll-locked {
   letter-spacing: -0.03em;
 }
 
+.stats-hub-card-value.is-positive {
+  color: #5f7a2e;
+}
+
+.stats-hub-card-value.is-negative {
+  color: #b44a3a;
+}
+
 .stats-hub-card-meta {
   font-size: 0.78rem;
   font-weight: 600;

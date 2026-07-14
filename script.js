@@ -150,7 +150,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '111';
+const APP_VERSION = '112';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -4531,9 +4531,14 @@ function renderStatsHub(data) {
   const youtubeExpenses = getExpensesByCategory(data.expenses, 'youtube')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
 
-  if (statsHubCoffeeTotal) {
-    statsHubCoffeeTotal.textContent = formatStatsMoney(summary.coffee);
-  }
+  const setHubBalance = (el, balance) => {
+    if (!el) return;
+    el.textContent = formatBalanceMoney(balance);
+    el.classList.toggle('is-positive', balance > 0);
+    el.classList.toggle('is-negative', balance < 0);
+  };
+
+  setHubBalance(statsHubCoffeeTotal, summary.coffee - drinksExpenses);
   if (statsHubCoffeeMeta) {
     statsHubCoffeeMeta.textContent = formatCountLabel(
       getCategoryCount(summary, 'drinks'),
@@ -4546,9 +4551,7 @@ function renderStatsHub(data) {
     statsHubCoffeeRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubCoffeeRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
-  if (statsHubExtrasTotal) {
-    statsHubExtrasTotal.textContent = formatStatsMoney(summary.extras);
-  }
+  setHubBalance(statsHubExtrasTotal, summary.extras - extrasExpenses);
   if (statsHubExtrasMeta) {
     statsHubExtrasMeta.textContent = formatCountLabel(
       getCategoryCount(summary, 'extras'),
@@ -4561,9 +4564,7 @@ function renderStatsHub(data) {
     statsHubExtrasRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubExtrasRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
-  if (statsHubServicesTotal) {
-    statsHubServicesTotal.textContent = formatStatsMoney(summary.haircut);
-  }
+  setHubBalance(statsHubServicesTotal, summary.haircut - servicesExpenses);
   if (statsHubServicesMeta) {
     statsHubServicesMeta.textContent = formatCountLabel(
       getCategoryCount(summary, 'services'),
@@ -4576,9 +4577,7 @@ function renderStatsHub(data) {
     statsHubServicesRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubServicesRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
-  if (statsHubYoutubeTotal) {
-    statsHubYoutubeTotal.textContent = formatStatsMoney(summary.youtube);
-  }
+  setHubBalance(statsHubYoutubeTotal, summary.youtube - youtubeExpenses);
   if (statsHubYoutubeMeta) {
     statsHubYoutubeMeta.textContent = getYoutubeHubMeta(summary);
   }
