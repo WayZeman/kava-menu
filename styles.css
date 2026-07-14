@@ -1552,22 +1552,36 @@ body.is-scroll-locked {
   margin-bottom: 18px;
 }
 
-.stats-header--hub .stats-header-top {
+.stats-header--category {
+  margin-top: 10px;
+  margin-bottom: 26px;
+}
+
+.stats-header--hub .stats-header-top,
+.stats-header--category .stats-header-top {
   margin-bottom: 18px;
 }
 
-.stats-header--hub .stats-header-center {
+.stats-header--hub .stats-header-center,
+.stats-header--category .stats-header-center {
   text-align: center;
   padding: 0 12px;
 }
 
 .stats-header--hub .stats-title,
-.stats-header--hub .stats-subtitle {
+.stats-header--hub .stats-subtitle,
+.stats-header--category .stats-title,
+.stats-header--category .stats-subtitle {
   text-align: center;
 }
 
-.stats-header--hub .stats-subtitle {
-  margin-top: 6px;
+.stats-header--hub .stats-subtitle,
+.stats-header--category .stats-subtitle {
+  margin-top: 8px;
+  max-width: 22em;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.4;
 }
 
 .stats-header-row {

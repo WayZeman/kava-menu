@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=107">
+  <link rel="stylesheet" href="styles.css?v=108">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -395,10 +395,14 @@
       </div>
 
       <div id="stats-category" class="stats-view stats-view--category" hidden>
-        <header class="stats-header">
-          <button class="stats-back" type="button" data-stats-hub-back aria-label="Назад до розділів">← Розділи</button>
-          <h2 id="stats-category-title" class="stats-title">Кава</h2>
-          <p id="stats-category-subtitle" class="stats-subtitle">Дохід, витрати та меню</p>
+        <header class="stats-header stats-header--category">
+          <div class="stats-header-top">
+            <button class="stats-back" type="button" data-stats-hub-back aria-label="Назад до розділів">← Розділи</button>
+          </div>
+          <div class="stats-header-center">
+            <h2 id="stats-category-title" class="stats-title">Кава</h2>
+            <p id="stats-category-subtitle" class="stats-subtitle">Дохід, витрати та меню напоїв</p>
+          </div>
         </header>
 
         <section class="stats-menu-entry" aria-label="Налаштування меню">
@@ -599,6 +603,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=107" defer></script>
+  <script src="script.js?v=108" defer></script>
 </body>
 </html>
