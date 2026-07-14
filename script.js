@@ -26,6 +26,10 @@ const thanksFeedback = document.getElementById('thanks-feedback');
 const thanksSend = document.getElementById('thanks-send');
 const thanksSkip = document.getElementById('thanks-skip');
 const thanksStatus = document.getElementById('thanks-status');
+const giftReward = document.getElementById('gift-reward');
+const giftRewardConfetti = document.getElementById('gift-reward-confetti');
+const giftRewardText = document.getElementById('gift-reward-text');
+const giftRewardClose = document.getElementById('gift-reward-close');
 const rows = document.querySelectorAll('[data-picker="car-wash"]');
 const drinksMenu = document.getElementById('drinks-menu');
 const drinksMenuList = document.getElementById('drinks-menu-list');
@@ -146,7 +150,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '108';
+const APP_VERSION = '109';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -363,6 +367,9 @@ const cartItems = new Map();
 let paymentTotal = 0;
 let recoverTimer = null;
 let thanksTimer = null;
+let giftRewardTimer = null;
+let giftRewardThenThanks = false;
+let giftRewardShown = false;
 let receiptBuildTimer = null;
 let pendingOrder = null;
 let pendingOrderId = null;
@@ -1833,13 +1840,15 @@ async function loadFreeCoffeeBalance() {
 
 function applyFreeCoffeeClaim(claim, { animate = true } = {}) {
   if (!claim) return;
+  const claimed = Number(claim.claimed || claim.freeDrinks || 0);
+  const celebrated = Boolean(claim.celebrated || claimed > 0);
   setFreeCoffeeBalance(
     {
       stamps: claim.stamps ?? claim.used,
       cycle: claim.cycle ?? claim.limit,
-      celebrated: Boolean(claim.celebrated || claim.claimed > 0 || claim.freeDrinks > 0),
+      celebrated,
     },
-    { animate, celebrated: Boolean(claim.celebrated || claim.claimed > 0 || claim.freeDrinks > 0) },
+    { animate, celebrated },
   );
   updateCart();
 }
@@ -2422,7 +2431,7 @@ function goToPayment(provider) {
     pendingOrder = null;
     pendingOrderId = null;
     clearCart();
-    showThanks();
+    completeOrderCelebration(order);
     window.setTimeout(() => {
       loadFreeCoffeeBalance();
     }, 900);
@@ -2494,6 +2503,87 @@ function closeThanks() {
     thanksSend.disabled = false;
     thanksSend.textContent = 'Надіслати';
   }
+}
+
+function buildGiftConfetti() {
+  if (!giftRewardConfetti) return;
+  giftRewardConfetti.replaceChildren();
+
+  const colors = ['#ff4d4f', '#ff8a1f', '#ffd45c', '#ff6b3d', '#fff1c2', '#d4a24c', '#ffb347'];
+  const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const count = reduced ? 12 : 42;
+
+  for (let index = 0; index < count; index += 1) {
+    const piece = document.createElement('span');
+    const kind = index % 5 === 0 ? 'ribbon' : index % 3 === 0 ? 'circle' : 'rect';
+    piece.className = `gift-reward-piece${kind === 'circle' ? ' is-circle' : ''}${kind === 'ribbon' ? ' is-ribbon' : ''}`;
+    const size = kind === 'circle' ? 7 + (index % 5) : 6 + (index % 7);
+    piece.style.left = `${(index * 17 + 11) % 100}%`;
+    piece.style.width = `${size}px`;
+    piece.style.height = `${kind === 'ribbon' ? size * 1.8 : size}px`;
+    piece.style.background = colors[index % colors.length];
+    piece.style.setProperty('--drift', `${(index % 2 === 0 ? 1 : -1) * (18 + (index % 40))}px`);
+    piece.style.setProperty('--spin', `${360 + (index % 8) * 90}deg`);
+    piece.style.animationDuration = `${2.4 + (index % 10) * 0.22}s`;
+    piece.style.animationDelay = `${(index % 12) * 0.05}s`;
+    giftRewardConfetti.appendChild(piece);
+  }
+}
+
+function closeGiftReward({ skipThanks = false } = {}) {
+  if (!giftReward) return;
+
+  giftReward.hidden = true;
+  document.body.classList.remove('gift-reward-open');
+  giftRewardShown = false;
+
+  if (giftRewardTimer) {
+    clearTimeout(giftRewardTimer);
+    giftRewardTimer = null;
+  }
+
+  if (giftRewardConfetti) giftRewardConfetti.replaceChildren();
+
+  const showThanksAfter = giftRewardThenThanks && !skipThanks;
+  giftRewardThenThanks = false;
+  if (showThanksAfter) showThanks();
+}
+
+function showGiftReward(freeCount = 1, { thenThanks = true } = {}) {
+  if (!giftReward) {
+    if (thenThanks) showThanks();
+    return;
+  }
+
+  const count = Math.max(1, Math.round(Number(freeCount) || 1));
+  giftRewardThenThanks = Boolean(thenThanks);
+  giftRewardShown = true;
+
+  if (giftRewardText) {
+    giftRewardText.textContent = count > 1
+      ? `У подарунок: ${count} напої`
+      : 'Ваша 10-та кава — у подарунок';
+  }
+
+  buildGiftConfetti();
+  giftReward.hidden = false;
+  document.body.classList.add('gift-reward-open');
+
+  if (giftRewardTimer) clearTimeout(giftRewardTimer);
+  giftRewardTimer = window.setTimeout(() => {
+    closeGiftReward();
+  }, 6500);
+
+  window.setTimeout(() => giftRewardClose?.focus(), 120);
+}
+
+function completeOrderCelebration(order) {
+  const freeCount = Number(order?.freeDrinks || 0);
+  if (freeCount > 0) {
+    showGiftReward(freeCount, { thenThanks: true });
+    return;
+  }
+  showThanks();
 }
 
 function showThanks() {
@@ -2601,7 +2691,7 @@ async function finishOtherPayment() {
   });
   if (order) await applyOrderStockChanges(order);
   clearCart();
-  showThanks();
+  completeOrderCelebration(order);
 }
 async function confirmPaymentSuccess() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
@@ -2613,7 +2703,7 @@ async function confirmPaymentSuccess() {
   closeConfirmSheet();
   if (order) await applyOrderStockChanges(order);
   clearCart();
-  showThanks();
+  completeOrderCelebration(order);
 }
 
 function cancelPendingPayment() {
@@ -2726,6 +2816,10 @@ sheet.querySelectorAll('[data-close]').forEach((el) => {
 
 thanksForm?.addEventListener('submit', handleThanksSubmit);
 thanksSkip?.addEventListener('click', closeThanks);
+giftRewardClose?.addEventListener('click', () => closeGiftReward());
+giftReward?.addEventListener('click', (event) => {
+  if (event.target === giftReward) closeGiftReward();
+});
 
 confirmYes.addEventListener('click', confirmPaymentSuccess);
 confirmNo.addEventListener('click', cancelPendingPayment);
@@ -2734,7 +2828,9 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    if (menuEditor && !menuEditor.hidden) closeMenuEditor();
+    if (giftReward && !giftReward.hidden) closeGiftReward();
+    else if (thanks && !thanks.hidden) closeThanks();
+    else if (menuEditor && !menuEditor.hidden) closeMenuEditor();
     else if (statsGate && !statsGate.hidden) closeStatsGate();
     else if (statsPanel && !statsPanel.hidden) closeStats();
     else if (carWashSheet && !carWashSheet.hidden) closeCarWashSheet();
