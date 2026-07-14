@@ -150,7 +150,7 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '109';
+const APP_VERSION = '110';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -369,6 +369,7 @@ let recoverTimer = null;
 let thanksTimer = null;
 let giftRewardTimer = null;
 let giftRewardThenThanks = false;
+let giftRewardOnClose = null;
 let giftRewardShown = false;
 let receiptBuildTimer = null;
 let pendingOrder = null;
@@ -2431,7 +2432,7 @@ function goToPayment(provider) {
     pendingOrder = null;
     pendingOrderId = null;
     clearCart();
-    completeOrderCelebration(order);
+    completeOrderCelebration();
     window.setTimeout(() => {
       loadFreeCoffeeBalance();
     }, 900);
@@ -2544,19 +2545,26 @@ function closeGiftReward({ skipThanks = false } = {}) {
 
   if (giftRewardConfetti) giftRewardConfetti.replaceChildren();
 
+  const onClose = giftRewardOnClose;
+  giftRewardOnClose = null;
+
   const showThanksAfter = giftRewardThenThanks && !skipThanks;
   giftRewardThenThanks = false;
-  if (showThanksAfter) showThanks();
+
+  if (typeof onClose === 'function') onClose();
+  else if (showThanksAfter) showThanks();
 }
 
-function showGiftReward(freeCount = 1, { thenThanks = true } = {}) {
+function showGiftReward(freeCount = 1, { thenThanks = false, onClose = null } = {}) {
   if (!giftReward) {
-    if (thenThanks) showThanks();
+    if (typeof onClose === 'function') onClose();
+    else if (thenThanks) showThanks();
     return;
   }
 
   const count = Math.max(1, Math.round(Number(freeCount) || 1));
   giftRewardThenThanks = Boolean(thenThanks);
+  giftRewardOnClose = typeof onClose === 'function' ? onClose : null;
   giftRewardShown = true;
 
   if (giftRewardText) {
@@ -2577,12 +2585,7 @@ function showGiftReward(freeCount = 1, { thenThanks = true } = {}) {
   window.setTimeout(() => giftRewardClose?.focus(), 120);
 }
 
-function completeOrderCelebration(order) {
-  const freeCount = Number(order?.freeDrinks || 0);
-  if (freeCount > 0) {
-    showGiftReward(freeCount, { thenThanks: true });
-    return;
-  }
+function completeOrderCelebration() {
   showThanks();
 }
 
@@ -2691,7 +2694,7 @@ async function finishOtherPayment() {
   });
   if (order) await applyOrderStockChanges(order);
   clearCart();
-  completeOrderCelebration(order);
+  completeOrderCelebration();
 }
 async function confirmPaymentSuccess() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
@@ -2703,7 +2706,7 @@ async function confirmPaymentSuccess() {
   closeConfirmSheet();
   if (order) await applyOrderStockChanges(order);
   clearCart();
-  completeOrderCelebration(order);
+  completeOrderCelebration();
 }
 
 function cancelPendingPayment() {
@@ -2775,18 +2778,32 @@ let cartPayTapLock = false;
 function handleCartPayTap(event) {
   if (event.cancelable) event.preventDefault();
   if (cart.hidden || cartPayTapLock) return;
+  if (giftReward && !giftReward.hidden) return;
 
   cartPayTapLock = true;
   pulseClass(cartPay, 'btn-squish', 180);
-  loader.hidden = false;
-  loaderText.textContent = 'Формуємо чек…';
 
-  if (receiptBuildTimer) clearTimeout(receiptBuildTimer);
-  receiptBuildTimer = setTimeout(() => {
-    receiptBuildTimer = null;
-    loader.hidden = true;
-    openSheet();
-  }, 550);
+  const pricing = getCartPricing();
+  const openCheckout = () => {
+    loader.hidden = false;
+    loaderText.textContent = 'Формуємо чек…';
+
+    if (receiptBuildTimer) clearTimeout(receiptBuildTimer);
+    receiptBuildTimer = setTimeout(() => {
+      receiptBuildTimer = null;
+      loader.hidden = true;
+      openSheet();
+    }, pricing.freeDrinks > 0 ? 350 : 550);
+  };
+
+  if (pricing.freeDrinks > 0) {
+    showGiftReward(pricing.freeDrinks, {
+      thenThanks: false,
+      onClose: openCheckout,
+    });
+  } else {
+    openCheckout();
+  }
 
   setTimeout(() => {
     cartPayTapLock = false;
