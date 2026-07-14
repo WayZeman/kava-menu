@@ -1753,6 +1753,10 @@ body.is-scroll-locked {
   margin: 0 0 16px;
 }
 
+.stats-coffee-split[hidden] {
+  display: none;
+}
+
 .stats-coffee-split-card {
   padding: 14px 14px 12px;
   border-radius: 22px;
