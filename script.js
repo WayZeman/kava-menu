@@ -36,6 +36,15 @@ const drinksMenuList = document.getElementById('drinks-menu-list');
 const freeCoffeeSection = document.getElementById('free-coffee');
 const freeCoffeeStamps = document.getElementById('free-coffee-stamps');
 const freeCoffeeMeta = document.getElementById('free-coffee-meta');
+const userAnalyticsOpen = document.getElementById('user-analytics-open');
+const userAnalytics = document.getElementById('user-analytics');
+const userAnalyticsSummary = document.getElementById('user-analytics-summary');
+const userAnalyticsChart = document.getElementById('user-analytics-chart');
+const userAnalyticsList = document.getElementById('user-analytics-list');
+const healthWarning = document.getElementById('health-warning');
+const healthWarningText = document.getElementById('health-warning-text');
+const healthRefuse = document.getElementById('health-refuse');
+const healthNotForMe = document.getElementById('health-not-for-me');
 const extrasMenu = document.getElementById('extras-menu');
 const extrasMenuList = document.getElementById('extras-menu-list');
 const servicesMenu = document.getElementById('services-menu');
@@ -149,8 +158,10 @@ const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
+const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
-const APP_VERSION = '113';
+const HEALTH_CUP_LIMIT = 5;
+const APP_VERSION = '114';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -250,6 +261,9 @@ let freeCoffeeStampsCount = 0;
 let freeCoffeeCycle = LOYALTY_CYCLE;
 let freeCoffeePendingUnits = [];
 let freeCoffeeCelebrate = false;
+let checkoutForSelf = true;
+let userCoffeeDays = [];
+let userCoffeeToday = 0;
 let scrollLockY = 0;
 let refreshStatsTimer = null;
 let incomesListExpanded = false;
@@ -1618,6 +1632,243 @@ function getDeviceId() {
   }
 }
 
+function getKyivDayKey(value = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value instanceof Date ? value : new Date(value));
+}
+
+function readLocalUserCoffee() {
+  try {
+    const raw = localStorage.getItem(USER_COFFEE_KEY);
+    if (!raw) return { days: [] };
+    const data = JSON.parse(raw);
+    const days = Array.isArray(data?.days) ? data.days : [];
+    return {
+      days: days
+        .map((row) => ({
+          day: String(row?.day || ''),
+          cups: Math.max(0, Math.round(Number(row?.cups) || 0)),
+          otherCups: Math.max(0, Math.round(Number(row?.otherCups) || 0)),
+        }))
+        .filter((row) => row.day),
+    };
+  } catch {
+    return { days: [] };
+  }
+}
+
+function writeLocalUserCoffee(days) {
+  try {
+    localStorage.setItem(USER_COFFEE_KEY, JSON.stringify({ days }));
+  } catch {
+    // ignore
+  }
+}
+
+function applyUserCoffeeStats(payload = {}) {
+  const days = Array.isArray(payload.days) ? payload.days : [];
+  userCoffeeDays = days
+    .map((row) => ({
+      day: String(row?.day || ''),
+      cups: Math.max(0, Math.round(Number(row?.cups) || 0)),
+      otherCups: Math.max(0, Math.round(Number(row?.otherCups) || 0)),
+    }))
+    .filter((row) => row.day)
+    .sort((a, b) => String(b.day).localeCompare(String(a.day)));
+
+  const todayKey = getKyivDayKey();
+  const todayEntry = userCoffeeDays.find((row) => row.day === todayKey);
+  userCoffeeToday = Number.isFinite(Number(payload.today))
+    ? Math.max(0, Math.round(Number(payload.today)))
+    : (todayEntry?.cups || 0);
+
+  writeLocalUserCoffee(userCoffeeDays);
+}
+
+function recordLocalUserCoffee(drinkQty, forSelf = true) {
+  const cups = Math.max(0, Math.round(Number(drinkQty) || 0));
+  if (cups <= 0) return;
+
+  const day = getKyivDayKey();
+  const days = [...userCoffeeDays];
+  let entry = days.find((row) => row.day === day);
+  if (!entry) {
+    entry = { day, cups: 0, otherCups: 0 };
+    days.unshift(entry);
+  }
+
+  if (forSelf) entry.cups += cups;
+  else entry.otherCups += cups;
+
+  applyUserCoffeeStats({ days, today: days.find((row) => row.day === getKyivDayKey())?.cups || 0 });
+}
+
+async function loadUserCoffeeStats() {
+  applyUserCoffeeStats(readLocalUserCoffee());
+  const deviceId = getDeviceId();
+  try {
+    const response = await fetch(`/api/my-coffee?deviceId=${encodeURIComponent(deviceId)}`, {
+      cache: 'no-store',
+    });
+    const data = await response.json();
+    if (data?.ok) applyUserCoffeeStats(data);
+  } catch {
+    // keep local cache
+  }
+}
+
+function formatUserCoffeeDayLabel(dayKey) {
+  const parts = String(dayKey).split('-');
+  if (parts.length !== 3) return dayKey;
+  return `${parts[2]}.${parts[1]}`;
+}
+
+function formatCupWord(count) {
+  const n = Math.abs(Math.round(Number(count) || 0));
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return `${n} чашка`;
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return `${n} чашки`;
+  return `${n} чашок`;
+}
+
+function renderUserAnalyticsView() {
+  const today = userCoffeeToday;
+  if (userAnalyticsSummary) {
+    userAnalyticsSummary.textContent = today > HEALTH_CUP_LIMIT
+      ? `Сьогодні: ${formatCupWord(today)} · рекомендуємо не перевищувати ${HEALTH_CUP_LIMIT}`
+      : `Сьогодні: ${formatCupWord(today)}`;
+  }
+
+  const chartDays = [...userCoffeeDays]
+    .sort((a, b) => String(a.day).localeCompare(String(b.day)))
+    .slice(-14);
+
+  if (userAnalyticsChart) {
+    userAnalyticsChart.replaceChildren();
+    if (!chartDays.length) {
+      const empty = document.createElement('p');
+      empty.className = 'user-analytics-note';
+      empty.style.padding = '20px 8px';
+      empty.textContent = 'Ще немає записів. Після замовлення з’явиться історія.';
+      userAnalyticsChart.appendChild(empty);
+    } else {
+      const maxCups = Math.max(1, ...chartDays.map((row) => row.cups));
+      chartDays.forEach((row) => {
+        const wrap = document.createElement('div');
+        wrap.className = 'user-analytics-bar-wrap';
+
+        const value = document.createElement('span');
+        value.className = 'user-analytics-bar-value';
+        value.textContent = String(row.cups);
+
+        const bar = document.createElement('span');
+        bar.className = `user-analytics-bar${row.cups > HEALTH_CUP_LIMIT ? ' is-over' : ''}`;
+        bar.style.height = `${Math.max(8, Math.round((row.cups / maxCups) * 78))}px`;
+
+        const label = document.createElement('span');
+        label.className = 'user-analytics-bar-label';
+        label.textContent = formatUserCoffeeDayLabel(row.day);
+
+        wrap.append(value, bar, label);
+        userAnalyticsChart.appendChild(wrap);
+      });
+    }
+  }
+
+  if (userAnalyticsList) {
+    userAnalyticsList.replaceChildren();
+    const listDays = userCoffeeDays.slice(0, 21);
+    if (!listDays.length) return;
+    listDays.forEach((row) => {
+      const li = document.createElement('li');
+      const left = document.createElement('span');
+      left.textContent = formatUserCoffeeDayLabel(row.day);
+      const right = document.createElement('strong');
+      right.textContent = formatCupWord(row.cups);
+      li.append(left, right);
+      userAnalyticsList.appendChild(li);
+    });
+  }
+}
+
+function closeUserAnalytics() {
+  if (!userAnalytics) return;
+  userAnalytics.hidden = true;
+  document.body.classList.remove('user-analytics-open');
+}
+
+async function openUserAnalytics() {
+  if (!userAnalytics) return;
+  await loadUserCoffeeStats();
+  renderUserAnalyticsView();
+  userAnalytics.hidden = false;
+  document.body.classList.add('user-analytics-open');
+}
+
+function closeHealthWarning() {
+  if (!healthWarning) return;
+  healthWarning.hidden = true;
+  document.body.classList.remove('health-warning-open');
+}
+
+function showHealthWarning({ today, cartQty }) {
+  return new Promise((resolve) => {
+    if (!healthWarning) {
+      resolve('continue');
+      return;
+    }
+
+    if (healthWarningText) {
+      healthWarningText.textContent = `Сьогодні вже ${formatCupWord(today)}, а в кошику ще ${formatCupWord(cartQty)}. Ми вдячні за підтримку, але хвилюємось за ваше здоров’я. Можна зменшити кількість, або продовжити, якщо напої не для вас.`;
+    }
+
+    const finish = (result) => {
+      healthRefuse?.removeEventListener('click', onRefuse);
+      healthNotForMe?.removeEventListener('click', onNotForMe);
+      healthWarning?.querySelectorAll('[data-health-close]').forEach((el) => {
+        el.removeEventListener('click', onClose);
+      });
+      closeHealthWarning();
+      resolve(result);
+    };
+
+    const onClose = () => finish('close');
+    const onRefuse = () => finish('refuse');
+    const onNotForMe = () => finish('not-for-me');
+
+    healthRefuse?.addEventListener('click', onRefuse);
+    healthNotForMe?.addEventListener('click', onNotForMe);
+    healthWarning.querySelectorAll('[data-health-close]').forEach((el) => {
+      el.addEventListener('click', onClose);
+    });
+
+    healthWarning.hidden = false;
+    document.body.classList.add('health-warning-open');
+  });
+}
+
+function trimCartDrinksToLimit(maxCups) {
+  let allowed = Math.max(0, Math.round(Number(maxCups) || 0));
+  const drinks = getCartSummary().items
+    .filter((item) => isDrinkCartItem(item))
+    .sort((a, b) => Number(b.qty) - Number(a.qty));
+
+  drinks.forEach((item) => {
+    const row = document.querySelector(`.row[data-id="${item.id}"]`);
+    if (!row) return;
+    const next = Math.min(item.qty, allowed);
+    allowed -= next;
+    setRowQty(row, next);
+  });
+
+  updateCart();
+}
+
 function getLoyaltyUntilFree(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
   const size = Math.max(2, Math.round(Number(cycle) || LOYALTY_CYCLE));
   const progress = Math.max(0, Math.min(size - 1, Math.round(Number(stamps) || 0)));
@@ -2263,6 +2514,7 @@ function closeSheet() {
     document.body.classList.remove('sheet-open');
   }
   paymentTotal = 0;
+  if (!awaitingPayment) checkoutForSelf = true;
   syncScrollLock();
 }
 
@@ -2350,6 +2602,7 @@ function snapshotOrder() {
     freeValue: pricing.freeValue,
     subtotal: pricing.subtotal,
     drinkQty: pricing.drinkQty,
+    forSelf: checkoutForSelf !== false,
   };
 }
 
@@ -2366,6 +2619,7 @@ function notifyOrder(order, provider, orderId) {
     deviceId: getDeviceId(),
     freeDrinks: Number(order.freeDrinks || 0),
     drinkQty: Number(order.drinkQty || 0),
+    forSelf: order.forSelf !== false,
   });
 
   const postOrder = () => fetch('/api/order', {
@@ -2431,10 +2685,15 @@ function goToPayment(provider) {
     clearPendingPayment();
     pendingOrder = null;
     pendingOrderId = null;
+    if (order.drinkQty > 0) {
+      recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+    }
     clearCart();
+    checkoutForSelf = true;
     completeOrderCelebration();
     window.setTimeout(() => {
       loadFreeCoffeeBalance();
+      loadUserCoffeeStats();
     }, 900);
     return;
   }
@@ -2656,6 +2915,7 @@ function resetPendingPayment() {
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
+  checkoutForSelf = true;
   payActions.forEach((action) => {
     action.disabled = false;
   });
@@ -2693,8 +2953,13 @@ async function finishOtherPayment() {
     action.disabled = false;
   });
   if (order) await applyOrderStockChanges(order);
+  if (order?.drinkQty > 0) {
+    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+  }
   clearCart();
+  checkoutForSelf = true;
   completeOrderCelebration();
+  loadUserCoffeeStats();
 }
 async function confirmPaymentSuccess() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
@@ -2705,8 +2970,13 @@ async function confirmPaymentSuccess() {
   awaitingPayment = false;
   closeConfirmSheet();
   if (order) await applyOrderStockChanges(order);
+  if (order?.drinkQty > 0) {
+    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+  }
   clearCart();
+  checkoutForSelf = true;
   completeOrderCelebration();
+  loadUserCoffeeStats();
 }
 
 function cancelPendingPayment() {
@@ -2715,6 +2985,7 @@ function cancelPendingPayment() {
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
+  checkoutForSelf = true;
   closeConfirmSheet();
   payActions.forEach((action) => {
     action.disabled = false;
@@ -2775,10 +3046,11 @@ carWashSheet?.querySelectorAll('[data-car-wash-close]').forEach((el) => {
 
 let cartPayTapLock = false;
 
-function handleCartPayTap(event) {
+async function handleCartPayTap(event) {
   if (event.cancelable) event.preventDefault();
   if (cart.hidden || cartPayTapLock) return;
   if (giftReward && !giftReward.hidden) return;
+  if (healthWarning && !healthWarning.hidden) return;
 
   cartPayTapLock = true;
   pulseClass(cartPay, 'btn-squish', 180);
@@ -2796,18 +3068,53 @@ function handleCartPayTap(event) {
     }, pricing.freeDrinks > 0 ? 350 : 550);
   };
 
-  if (pricing.freeDrinks > 0) {
-    showGiftReward(pricing.freeDrinks, {
-      thenThanks: false,
-      onClose: openCheckout,
-    });
-  } else {
-    openCheckout();
-  }
+  const startCheckoutFlow = () => {
+    const latest = getCartPricing();
+    if (!latest.items.length) return;
 
-  setTimeout(() => {
-    cartPayTapLock = false;
-  }, 700);
+    if (latest.freeDrinks > 0) {
+      showGiftReward(latest.freeDrinks, {
+        thenThanks: false,
+        onClose: openCheckout,
+      });
+    } else {
+      openCheckout();
+    }
+  };
+
+  try {
+    await loadUserCoffeeStats();
+    const today = userCoffeeToday;
+    const cartDrinks = Number(pricing.drinkQty || 0);
+    const projected = today + cartDrinks;
+
+    if (checkoutForSelf && cartDrinks > 0 && projected > HEALTH_CUP_LIMIT) {
+      const choice = await showHealthWarning({ today, cartQty: cartDrinks });
+      if (choice === 'close') return;
+      if (choice === 'refuse') {
+        trimCartDrinksToLimit(HEALTH_CUP_LIMIT - today);
+        const after = getCartPricing();
+        if (!after.items.length || after.drinkQty + today > HEALTH_CUP_LIMIT) {
+          // if still over because today alone >= limit and cart has only drinks removed, allow continue only if remaining items exist
+          if (!after.items.length) return;
+        }
+        checkoutForSelf = true;
+        startCheckoutFlow();
+        return;
+      }
+      if (choice === 'not-for-me') {
+        checkoutForSelf = false;
+        startCheckoutFlow();
+        return;
+      }
+    }
+
+    startCheckoutFlow();
+  } finally {
+    setTimeout(() => {
+      cartPayTapLock = false;
+    }, 700);
+  }
 }
 
 cartPay.addEventListener('pointerup', handleCartPayTap);
@@ -2837,6 +3144,12 @@ giftRewardClose?.addEventListener('click', () => closeGiftReward());
 giftReward?.addEventListener('click', (event) => {
   if (event.target === giftReward) closeGiftReward();
 });
+userAnalyticsOpen?.addEventListener('click', () => {
+  openUserAnalytics();
+});
+userAnalytics?.querySelectorAll('[data-user-analytics-close]').forEach((el) => {
+  el.addEventListener('click', closeUserAnalytics);
+});
 
 confirmYes.addEventListener('click', confirmPaymentSuccess);
 confirmNo.addEventListener('click', cancelPendingPayment);
@@ -2845,7 +3158,9 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    if (giftReward && !giftReward.hidden) closeGiftReward();
+    if (healthWarning && !healthWarning.hidden) closeHealthWarning();
+    else if (userAnalytics && !userAnalytics.hidden) closeUserAnalytics();
+    else if (giftReward && !giftReward.hidden) closeGiftReward();
     else if (thanks && !thanks.hidden) closeThanks();
     else if (menuEditor && !menuEditor.hidden) closeMenuEditor();
     else if (statsGate && !statsGate.hidden) closeStatsGate();
@@ -2925,6 +3240,7 @@ async function bootApp() {
   try {
     await initMenu();
     await loadFreeCoffeeBalance();
+    await loadUserCoffeeStats();
   } catch {
     // show menu with cached data or empty state
     renderFreeCoffeeStamps();

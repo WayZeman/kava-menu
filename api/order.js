@@ -3,6 +3,7 @@ import {
   claimFreeCoffee,
   getFullMenuFromDb,
   insertIncome,
+  logDeviceCoffee,
   saveFullMenuToDb,
 } from './db.js';
 
@@ -203,6 +204,18 @@ export default async function handler(req, res) {
         });
       } catch {
         freeCoffee = null;
+      }
+
+      try {
+        const forSelf = req.body?.forSelf !== false && req.body?.forSelf !== 'false';
+        await logDeviceCoffee({
+          deviceId,
+          orderId: saved.id,
+          drinkQty: drinkCount,
+          forSelf,
+        });
+      } catch {
+        // personal stats are optional
       }
     }
   }

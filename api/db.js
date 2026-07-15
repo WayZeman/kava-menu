@@ -642,3 +642,108 @@ export async function claimFreeCoffee({ deviceId, orderId, drinkQty, qty }) {
     celebrated: claimed > 0,
   };
 }
+
+let deviceCoffeeLogReady = false;
+
+async function ensureDeviceCoffeeLogTable(sql) {
+  if (deviceCoffeeLogReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS device_coffee_log (
+      id TEXT PRIMARY KEY,
+      device_id TEXT NOT NULL,
+      order_id TEXT,
+      drink_qty INTEGER NOT NULL DEFAULT 0,
+      for_self BOOLEAN NOT NULL DEFAULT TRUE,
+      day_key TEXT NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS device_coffee_log_device_day_idx
+    ON device_coffee_log (device_id, day_key)
+  `;
+
+  deviceCoffeeLogReady = true;
+}
+
+function kyivDayKey(value = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Kyiv',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(value instanceof Date ? value : new Date(value));
+}
+
+export async function logDeviceCoffee({ deviceId, orderId, drinkQty, forSelf = true }) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(deviceId || '').trim();
+  const drinks = Math.max(0, Math.round(Number(drinkQty) || 0));
+  if (!id || id.length > 120 || drinks <= 0) return null;
+
+  await ensureDeviceCoffeeLogTable(sql);
+
+  const order = String(orderId || '').trim() || null;
+  if (order) {
+    const existing = await sql`
+      SELECT id FROM device_coffee_log WHERE order_id = ${order} LIMIT 1
+    `;
+    if (existing[0]) return { ok: true, alreadyLogged: true };
+  }
+
+  const logId = makeId('coffee-log');
+  const dayKey = kyivDayKey();
+  const self = forSelf !== false;
+
+  await sql`
+    INSERT INTO device_coffee_log (id, device_id, order_id, drink_qty, for_self, day_key)
+    VALUES (${logId}, ${id}, ${order}, ${drinks}, ${self}, ${dayKey})
+  `;
+
+  return { ok: true, dayKey, drinkQty: drinks, forSelf: self };
+}
+
+export async function getDeviceCoffeeStats(deviceId) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(deviceId || '').trim();
+  if (!id || id.length > 120) return null;
+
+  await ensureDeviceCoffeeLogTable(sql);
+
+  const rows = await sql`
+    SELECT day_key, for_self, SUM(drink_qty)::int AS cups
+    FROM device_coffee_log
+    WHERE device_id = ${id}
+    GROUP BY day_key, for_self
+    ORDER BY day_key DESC
+    LIMIT 120
+  `;
+
+  const byDay = new Map();
+  for (const row of rows) {
+    const day = String(row.day_key);
+    const entry = byDay.get(day) || { day, cups: 0, otherCups: 0 };
+    const cups = Number(row.cups) || 0;
+    if (row.for_self) entry.cups += cups;
+    else entry.otherCups += cups;
+    byDay.set(day, entry);
+  }
+
+  const days = [...byDay.values()].sort((a, b) => String(b.day).localeCompare(String(a.day)));
+  const todayKey = kyivDayKey();
+  const todayEntry = byDay.get(todayKey);
+
+  return {
+    deviceId: id,
+    today: todayEntry?.cups || 0,
+    todayOther: todayEntry?.otherCups || 0,
+    days,
+    healthLimit: 5,
+  };
+}
