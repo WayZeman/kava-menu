@@ -162,7 +162,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '120';
+const APP_VERSION = '121';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
