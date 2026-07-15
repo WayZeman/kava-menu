@@ -4348,14 +4348,180 @@ body {
   min-height: 42px;
 }
 
+.extras-upsell {
+  position: fixed;
+  inset: 0;
+  z-index: 272;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(28, 18, 10, 0.55);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  animation: thanks-overlay-in 0.25s ease;
+}
+
+.extras-upsell[hidden] {
+  display: none;
+}
+
+.extras-upsell-backdrop {
+  position: absolute;
+  inset: 0;
+}
+
+.extras-upsell-card {
+  position: relative;
+  z-index: 1;
+  width: min(420px, 100%);
+  max-height: min(88vh, 640px);
+  overflow: auto;
+  padding: 22px 20px 16px;
+  border-radius: 28px 28px 24px 24px;
+  background:
+    linear-gradient(165deg, rgba(255, 248, 232, 0.98), rgba(255, 255, 255, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.9);
+  box-shadow: 0 28px 60px rgba(30, 18, 8, 0.35);
+  animation: gift-card-pop 0.55s cubic-bezier(0.22, 1.2, 0.36, 1);
+}
+
+.extras-upsell-eyebrow {
+  margin: 0;
+  font-size: 0.7rem;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #9a7338;
+}
+
+.extras-upsell-title {
+  margin: 6px 0 0;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: #2a2118;
+}
+
+.extras-upsell-text {
+  margin: 8px 0 0;
+  font-size: 0.9rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(53, 40, 28, 0.72);
+}
+
+.extras-upsell-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.extras-upsell-item {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: center;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.86);
+  border: 1px solid rgba(114, 86, 52, 0.1);
+  box-shadow: 0 10px 22px rgba(114, 86, 52, 0.06);
+}
+
+.extras-upsell-icon {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 14px;
+  background: rgba(255, 236, 196, 0.7);
+  color: #5c3a28;
+}
+
+.extras-upsell-icon svg {
+  width: 28px;
+  height: 28px;
+  display: block;
+}
+
+.extras-upsell-info {
+  min-width: 0;
+}
+
+.extras-upsell-name {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 750;
+  color: #2f2418;
+}
+
+.extras-upsell-price {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #9a7338;
+  font-variant-numeric: tabular-nums;
+}
+
+.extras-upsell-add {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: #4a2c18;
+  color: #fff8ee;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 750;
+  cursor: pointer;
+  white-space: nowrap;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.extras-upsell-add:active {
+  transform: scale(0.97);
+}
+
+.extras-upsell-add.is-added {
+  background: rgba(95, 122, 46, 0.16);
+  color: #3f6a1e;
+}
+
+.extras-upsell-skip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 48px;
+  margin-top: 14px;
+  border: 1px solid rgba(114, 86, 52, 0.14);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.72);
+  color: #6a5640;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 750;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.extras-upsell-skip:active {
+  transform: scale(0.985);
+}
+
 @media (min-width: 520px) {
   .user-analytics,
-  .health-warning {
+  .health-warning,
+  .extras-upsell {
     align-items: center;
   }
 
   .user-analytics-card,
-  .health-warning-card {
+  .health-warning-card,
+  .extras-upsell-card {
     border-radius: 28px;
   }
 }

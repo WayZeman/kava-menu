@@ -45,6 +45,8 @@ const healthWarning = document.getElementById('health-warning');
 const healthWarningText = document.getElementById('health-warning-text');
 const healthRefuse = document.getElementById('health-refuse');
 const healthNotForMe = document.getElementById('health-not-for-me');
+const extrasUpsell = document.getElementById('extras-upsell');
+const extrasUpsellList = document.getElementById('extras-upsell-list');
 const extrasMenu = document.getElementById('extras-menu');
 const extrasMenuList = document.getElementById('extras-menu-list');
 const servicesMenu = document.getElementById('services-menu');
@@ -161,7 +163,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '114';
+const APP_VERSION = '115';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1852,6 +1854,114 @@ function showHealthWarning({ today, cartQty }) {
   });
 }
 
+function getUpsellExtras() {
+  if (categoryVisibility.extras === false) return [];
+  return (menuExtras || []).filter((extra) => {
+    if (!extra?.id) return false;
+    const stock = getExtraStock(extra.id);
+    return Number.isFinite(stock) ? stock > 0 : true;
+  });
+}
+
+function addExtraFromUpsell(extra) {
+  if (!extra?.id) return false;
+  const stock = getExtraStock(extra.id);
+  const current = cartItems.get(extra.id)?.qty || 0;
+  if (Number.isFinite(stock) && current >= stock) {
+    showStockLimitNotice();
+    return false;
+  }
+
+  const row = document.querySelector(`.menu--extras .row[data-id="${extra.id}"]`);
+  if (row && !row.classList.contains('row--out-of-stock')) {
+    changeQty(row, 1, null);
+    return true;
+  }
+
+  const next = current + 1;
+  cartItems.set(extra.id, {
+    id: extra.id,
+    name: extra.name,
+    amount: Number(extra.amount) || 0,
+    qty: next,
+    category: 'extra',
+  });
+  updateCart();
+  return true;
+}
+
+let extrasUpsellResolver = null;
+
+function closeExtrasUpsell() {
+  if (!extrasUpsell) return;
+  extrasUpsell.hidden = true;
+  document.body.classList.remove('extras-upsell-open');
+  if (extrasUpsellResolver) {
+    const resolve = extrasUpsellResolver;
+    extrasUpsellResolver = null;
+    resolve('skip');
+  }
+}
+
+function showExtrasUpsell() {
+  return new Promise((resolve) => {
+    const offers = getUpsellExtras();
+    if (!extrasUpsell || !extrasUpsellList || !offers.length) {
+      resolve('skip');
+      return;
+    }
+
+    extrasUpsellResolver = resolve;
+    extrasUpsellList.replaceChildren();
+    offers.forEach((extra) => {
+      const item = document.createElement('article');
+      item.className = 'extras-upsell-item';
+      item.setAttribute('role', 'listitem');
+
+      const icon = document.createElement('span');
+      icon.className = 'extras-upsell-icon';
+      icon.setAttribute('aria-hidden', 'true');
+      icon.innerHTML = `<svg viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">${EXTRA_ICONS[extra.icon] || EXTRA_ICONS.generic}</svg>`;
+
+      const info = document.createElement('div');
+      info.className = 'extras-upsell-info';
+      const name = document.createElement('span');
+      name.className = 'extras-upsell-name';
+      name.textContent = extra.name;
+      const price = document.createElement('span');
+      price.className = 'extras-upsell-price';
+      price.textContent = `${extra.amount} грн`;
+      info.append(name, price);
+
+      const addBtn = document.createElement('button');
+      addBtn.className = 'extras-upsell-add';
+      addBtn.type = 'button';
+      addBtn.textContent = 'Додати';
+      addBtn.addEventListener('click', () => {
+        const added = addExtraFromUpsell(extra);
+        if (!added) return;
+        addBtn.textContent = 'Додано';
+        addBtn.classList.add('is-added');
+        window.setTimeout(() => {
+          if (!addBtn.isConnected) return;
+          addBtn.textContent = 'Ще +1';
+          addBtn.classList.remove('is-added');
+        }, 900);
+      });
+
+      item.append(icon, info, addBtn);
+      extrasUpsellList.appendChild(item);
+    });
+
+    extrasUpsell.querySelectorAll('[data-extras-upsell-skip]').forEach((el) => {
+      el.onclick = () => closeExtrasUpsell();
+    });
+
+    extrasUpsell.hidden = false;
+    document.body.classList.add('extras-upsell-open');
+  });
+}
+
 function trimCartDrinksToLimit(maxCups) {
   let allowed = Math.max(0, Math.round(Number(maxCups) || 0));
   const drinks = getCartSummary().items
@@ -3051,12 +3161,13 @@ async function handleCartPayTap(event) {
   if (cart.hidden || cartPayTapLock) return;
   if (giftReward && !giftReward.hidden) return;
   if (healthWarning && !healthWarning.hidden) return;
+  if (extrasUpsell && !extrasUpsell.hidden) return;
 
   cartPayTapLock = true;
   pulseClass(cartPay, 'btn-squish', 180);
 
-  const pricing = getCartPricing();
   const openCheckout = () => {
+    const pricing = getCartPricing();
     loader.hidden = false;
     loaderText.textContent = 'Формуємо чек…';
 
@@ -3068,9 +3179,15 @@ async function handleCartPayTap(event) {
     }, pricing.freeDrinks > 0 ? 350 : 550);
   };
 
-  const startCheckoutFlow = () => {
-    const latest = getCartPricing();
+  const startCheckoutFlow = async () => {
+    let latest = getCartPricing();
     if (!latest.items.length) return;
+
+    if (latest.drinkQty > 0 && getUpsellExtras().length) {
+      await showExtrasUpsell();
+      latest = getCartPricing();
+      if (!latest.items.length) return;
+    }
 
     if (latest.freeDrinks > 0) {
       showGiftReward(latest.freeDrinks, {
@@ -3084,6 +3201,7 @@ async function handleCartPayTap(event) {
 
   try {
     await loadUserCoffeeStats();
+    const pricing = getCartPricing();
     const today = userCoffeeToday;
     const cartDrinks = Number(pricing.drinkQty || 0);
     const projected = today + cartDrinks;
@@ -3094,22 +3212,19 @@ async function handleCartPayTap(event) {
       if (choice === 'refuse') {
         trimCartDrinksToLimit(HEALTH_CUP_LIMIT - today);
         const after = getCartPricing();
-        if (!after.items.length || after.drinkQty + today > HEALTH_CUP_LIMIT) {
-          // if still over because today alone >= limit and cart has only drinks removed, allow continue only if remaining items exist
-          if (!after.items.length) return;
-        }
+        if (!after.items.length) return;
         checkoutForSelf = true;
-        startCheckoutFlow();
+        await startCheckoutFlow();
         return;
       }
       if (choice === 'not-for-me') {
         checkoutForSelf = false;
-        startCheckoutFlow();
+        await startCheckoutFlow();
         return;
       }
     }
 
-    startCheckoutFlow();
+    await startCheckoutFlow();
   } finally {
     setTimeout(() => {
       cartPayTapLock = false;
@@ -3159,6 +3274,7 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
     if (healthWarning && !healthWarning.hidden) closeHealthWarning();
+    else if (extrasUpsell && !extrasUpsell.hidden) closeExtrasUpsell();
     else if (userAnalytics && !userAnalytics.hidden) closeUserAnalytics();
     else if (giftReward && !giftReward.hidden) closeGiftReward();
     else if (thanks && !thanks.hidden) closeThanks();

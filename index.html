@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=114">
+  <link rel="stylesheet" href="styles.css?v=115">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -299,6 +299,17 @@
         <button id="health-not-for-me" class="health-warning-btn" type="button">Не для мене · продовжити</button>
         <button id="health-close" class="health-warning-btn health-warning-btn--ghost" type="button" data-health-close>Закрити</button>
       </div>
+    </div>
+  </div>
+
+  <div id="extras-upsell" class="extras-upsell" hidden>
+    <div class="extras-upsell-backdrop" data-extras-upsell-skip></div>
+    <div class="extras-upsell-card" role="dialog" aria-modal="true" aria-labelledby="extras-upsell-title">
+      <p class="extras-upsell-eyebrow">Ще смачніше</p>
+      <h2 id="extras-upsell-title" class="extras-upsell-title">Додати щось до кави?</h2>
+      <p class="extras-upsell-text">Оберіть смаколик або продовжіть без доповнень.</p>
+      <div id="extras-upsell-list" class="extras-upsell-list" role="list"></div>
+      <button id="extras-upsell-skip" class="extras-upsell-skip" type="button" data-extras-upsell-skip>Скасувати</button>
     </div>
   </div>
 
@@ -660,6 +671,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=114" defer></script>
+  <script src="script.js?v=115" defer></script>
 </body>
 </html>
