@@ -4129,7 +4129,7 @@ body {
   inset: 0;
   z-index: 270;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 16px;
   background: rgba(28, 18, 10, 0.55);
@@ -4155,7 +4155,7 @@ body {
   z-index: 1;
   width: min(420px, 100%);
   padding: 22px 20px 18px;
-  border-radius: 28px 28px 24px 24px;
+  border-radius: 28px;
   background:
     linear-gradient(165deg, rgba(255, 250, 240, 0.98), rgba(255, 255, 255, 0.96));
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -4353,7 +4353,7 @@ body {
   inset: 0;
   z-index: 272;
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: center;
   padding: 16px;
   background: rgba(28, 18, 10, 0.55);
@@ -4378,7 +4378,7 @@ body {
   max-height: min(88vh, 640px);
   overflow: auto;
   padding: 22px 20px 16px;
-  border-radius: 28px 28px 24px 24px;
+  border-radius: 28px;
   background:
     linear-gradient(165deg, rgba(255, 248, 232, 0.98), rgba(255, 255, 255, 0.96));
   border: 1px solid rgba(255, 255, 255, 0.9);
@@ -4513,12 +4513,6 @@ body {
 }
 
 @media (min-width: 520px) {
-  .user-analytics,
-  .health-warning,
-  .extras-upsell {
-    align-items: center;
-  }
-
   .user-analytics-card,
   .health-warning-card,
   .extras-upsell-card {
