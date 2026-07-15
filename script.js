@@ -162,7 +162,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '117';
+const APP_VERSION = '118';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1469,23 +1469,17 @@ async function initMenu() {
   renderAllMenus();
 }
 
-async function applyOrderStockChanges(order) {
-  if (!order?.items?.length) return false;
-
-  let changed = false;
-  order.items.forEach((item) => {
-    const extra = menuExtras.find((entry) => entry.id === item.id);
-    if (!extra) return;
-    extra.stock = Math.max(0, (extra.stock ?? 0) - item.qty);
-    changed = true;
-  });
-
-  if (changed) {
-    await saveFullMenu();
-    renderExtrasMenu();
+async function refreshMenuAfterOrder() {
+  try {
+    const menu = await loadFullMenu();
+    menuDrinks = menu.drinks;
+    menuExtras = menu.extras;
+    menuServices = menu.services;
+    categoryVisibility = normalizeVisibility(menu.visibility || categoryVisibility);
+    renderAllMenus();
+  } catch {
+    // keep current menu if refresh fails
   }
-
-  return changed;
 }
 
 function isMobile() {
@@ -2715,6 +2709,9 @@ function notifyOrder(order, provider, orderId) {
     try {
       const data = await response.json();
       if (data?.freeCoffee) applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
+      // Stock is deducted on the server when the order is created
+      // (bank tap / card copy). Refresh local menu so it stays in sync.
+      if (data?.ok) await refreshMenuAfterOrder();
     } catch {
       // ignore parse errors
     }
@@ -2722,15 +2719,9 @@ function notifyOrder(order, provider, orderId) {
     // payment flow should continue even if notification fails
   });
 
-  // Fetch when we need free-coffee response or user stays on the page
+  // Prefer fetch so stock can sync before leaving / while staying on page
   if (provider === 'other' || provider === 'free' || Number(order.freeDrinks || 0) > 0) {
     postOrder();
-    return;
-  }
-
-  if (navigator.sendBeacon) {
-    const blob = new Blob([payload], { type: 'application/json' });
-    navigator.sendBeacon('/api/order', blob);
     return;
   }
 
@@ -3015,9 +3006,11 @@ async function revokePendingOrderIncome() {
       body: JSON.stringify({
         type: 'delete',
         id: orderId,
+        restoreStock: true,
       }),
       keepalive: true,
     });
+    await refreshMenuAfterOrder();
   } catch {
     // ignore delete failures
   }
@@ -3034,7 +3027,7 @@ async function finishOtherPayment() {
   payActions.forEach((action) => {
     action.disabled = false;
   });
-  if (order) await applyOrderStockChanges(order);
+  // Extra stock already deducted in /api/order when card number was copied
   if (order?.drinkQty > 0) {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }
@@ -3050,7 +3043,7 @@ async function confirmPaymentSuccess() {
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
-  if (order) await applyOrderStockChanges(order);
+  // Extra stock already deducted in /api/order when bank was pressed
   if (order?.drinkQty > 0) {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }

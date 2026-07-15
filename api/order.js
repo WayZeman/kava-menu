@@ -1,10 +1,9 @@
 import {
+  applyOrderedExtraStock,
   buildOrderLabel,
   claimFreeCoffee,
-  getFullMenuFromDb,
   insertIncome,
   logDeviceCoffee,
-  saveFullMenuToDb,
 } from './db.js';
 
 function formatOrderDate() {
@@ -81,38 +80,6 @@ async function sendTelegramMessage(token, chatId, text) {
 
   const data = await telegramResponse.json();
   return Boolean(data.ok);
-}
-
-async function applyOrderedExtraStock(items) {
-  if (!Array.isArray(items) || !items.length) return;
-
-  const menu = await getFullMenuFromDb();
-  if (!menu?.drinks?.length) return;
-
-  const extras = Array.isArray(menu.extras)
-    ? menu.extras.map((item) => ({ ...item }))
-    : [];
-
-  let changed = false;
-  for (const item of items) {
-    const id = String(item?.id || '').trim();
-    const qty = Number(item?.qty);
-    if (!id || !Number.isFinite(qty) || qty <= 0) continue;
-
-    const extra = extras.find((entry) => entry.id === id);
-    if (!extra) continue;
-
-    extra.stock = Math.max(0, Number(extra.stock || 0) - qty);
-    changed = true;
-  }
-
-  if (!changed) return;
-
-  await saveFullMenuToDb({
-    drinks: menu.drinks,
-    extras,
-    services: menu.services,
-  });
 }
 
 export default async function handler(req, res) {

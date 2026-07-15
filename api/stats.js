@@ -3,6 +3,7 @@ import {
   insertExpense,
   insertIncome,
   listTransactions,
+  restoreOrderedExtraStock,
   updateTransaction,
 } from './db.js';
 
@@ -195,6 +196,21 @@ export default async function handler(req, res) {
     if (!removed) {
       res.status(404).json({ ok: false, error: 'not_found' });
       return;
+    }
+
+    // Only restore extras when the client cancelled unpaid checkout
+    // (stock was already taken at bank tap / card copy).
+    if (
+      req.body?.restoreStock === true
+      && removed.kind === 'income'
+      && Array.isArray(removed.items)
+      && removed.items.length
+    ) {
+      try {
+        await restoreOrderedExtraStock(removed.items);
+      } catch {
+        // do not fail delete if stock restore fails
+      }
     }
 
     res.status(200).json({ ok: true });

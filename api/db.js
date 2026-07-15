@@ -171,15 +171,16 @@ export async function updateTransaction({ id, label, amount }) {
 
 export async function deleteTransaction(id) {
   const sql = getSql();
-  if (!sql) return false;
+  if (!sql) return null;
 
   const rows = await sql`
     DELETE FROM transactions
     WHERE id = ${id}
-    RETURNING id
+    RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
   `;
 
-  return rows.length > 0;
+  if (!rows.length) return null;
+  return mapRow(rows[0]);
 }
 
 export async function upsertTransaction({
@@ -468,6 +469,50 @@ export async function saveFullMenuToDb({ drinks, extras, services, visibility })
     visibility: normalizeMenuVisibility(value.visibility),
     updatedAt: rows[0].updated_at,
   };
+}
+
+async function applyExtraStockDelta(items, direction = -1) {
+  if (!Array.isArray(items) || !items.length) return;
+  if (direction !== 1 && direction !== -1) return;
+
+  const menu = await getFullMenuFromDb();
+  if (!menu) return;
+
+  const extras = Array.isArray(menu.extras)
+    ? menu.extras.map((item) => ({ ...item }))
+    : [];
+  if (!extras.length) return;
+
+  let changed = false;
+  for (const item of items) {
+    const id = String(item?.id || '').trim();
+    const qty = Number(item?.qty);
+    if (!id || !Number.isFinite(qty) || qty <= 0) continue;
+
+    const extra = extras.find((entry) => entry.id === id);
+    if (!extra) continue;
+
+    const next = Number(extra.stock || 0) + direction * qty;
+    extra.stock = Math.max(0, Math.round(next));
+    changed = true;
+  }
+
+  if (!changed) return;
+
+  await saveFullMenuToDb({
+    drinks: menu.drinks,
+    extras,
+    services: menu.services,
+    visibility: menu.visibility,
+  });
+}
+
+export async function applyOrderedExtraStock(items) {
+  await applyExtraStockDelta(items, -1);
+}
+
+export async function restoreOrderedExtraStock(items) {
+  await applyExtraStockDelta(items, 1);
 }
 
 const LOYALTY_CYCLE = 10;
