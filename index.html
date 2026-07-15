@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=116">
+  <link rel="stylesheet" href="styles.css?v=117">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -279,26 +279,17 @@
         <button class="user-analytics-x" type="button" data-user-analytics-close aria-label="Закрити">✕</button>
       </header>
       <p id="user-analytics-summary" class="user-analytics-summary">Сьогодні: 0 чашок</p>
+      <div id="user-analytics-risk" class="user-analytics-risk" hidden>
+        <div class="user-analytics-risk-head">
+          <span class="user-analytics-risk-label">Рівень ризику</span>
+          <strong id="user-analytics-risk-value" class="user-analytics-risk-value">Низький</strong>
+        </div>
+        <p id="user-analytics-risk-text" class="user-analytics-risk-text"></p>
+      </div>
       <div id="user-analytics-chart" class="user-analytics-chart" role="img" aria-label="Чашки по днях"></div>
       <ul id="user-analytics-list" class="user-analytics-list"></ul>
       <p class="user-analytics-note">Рахуємо лише напої «для себе» на цьому пристрої.</p>
       <button class="user-analytics-done" type="button" data-user-analytics-close>Зрозуміло</button>
-    </div>
-  </div>
-
-  <div id="health-warning" class="health-warning" hidden>
-    <div class="health-warning-backdrop" data-health-close></div>
-    <div class="health-warning-card" role="dialog" aria-modal="true" aria-labelledby="health-warning-title">
-      <p class="health-warning-eyebrow">Турбота про вас</p>
-      <h2 id="health-warning-title" class="health-warning-title">Ми вдячні за підтримку</h2>
-      <p id="health-warning-text" class="health-warning-text">
-        Проте хвилюємось за ваше здоров’я: сьогодні вже багато кави. Можливо, варто зменшити кількість напоїв?
-      </p>
-      <div class="health-warning-actions">
-        <button id="health-refuse" class="health-warning-btn health-warning-btn--primary" type="button">Відмовитись від зайвих</button>
-        <button id="health-not-for-me" class="health-warning-btn" type="button">Не для мене · продовжити</button>
-        <button id="health-close" class="health-warning-btn health-warning-btn--ghost" type="button" data-health-close>Закрити</button>
-      </div>
     </div>
   </div>
 
@@ -671,6 +662,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=116" defer></script>
+  <script src="script.js?v=117" defer></script>
 </body>
 </html>

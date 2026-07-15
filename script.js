@@ -41,10 +41,9 @@ const userAnalytics = document.getElementById('user-analytics');
 const userAnalyticsSummary = document.getElementById('user-analytics-summary');
 const userAnalyticsChart = document.getElementById('user-analytics-chart');
 const userAnalyticsList = document.getElementById('user-analytics-list');
-const healthWarning = document.getElementById('health-warning');
-const healthWarningText = document.getElementById('health-warning-text');
-const healthRefuse = document.getElementById('health-refuse');
-const healthNotForMe = document.getElementById('health-not-for-me');
+const userAnalyticsRisk = document.getElementById('user-analytics-risk');
+const userAnalyticsRiskValue = document.getElementById('user-analytics-risk-value');
+const userAnalyticsRiskText = document.getElementById('user-analytics-risk-text');
 const extrasUpsell = document.getElementById('extras-upsell');
 const extrasUpsellList = document.getElementById('extras-upsell-list');
 const extrasMenu = document.getElementById('extras-menu');
@@ -163,7 +162,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '116';
+const APP_VERSION = '117';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -263,7 +262,6 @@ let freeCoffeeStampsCount = 0;
 let freeCoffeeCycle = LOYALTY_CYCLE;
 let freeCoffeePendingUnits = [];
 let freeCoffeeCelebrate = false;
-let checkoutForSelf = true;
 let userCoffeeDays = [];
 let userCoffeeToday = 0;
 let scrollLockY = 0;
@@ -1738,12 +1736,43 @@ function formatCupWord(count) {
   return `${n} чашок`;
 }
 
+function getCoffeeRiskLevel(cups) {
+  const n = Math.max(0, Math.round(Number(cups) || 0));
+  if (n > 8) {
+    return {
+      key: 'high',
+      label: 'Високий',
+      text: 'Ми вдячні за підтримку, але хвилюємось за ваше здоров’я. Сьогодні вже дуже багато кави — краще зменшити кількість.',
+    };
+  }
+  if (n > HEALTH_CUP_LIMIT) {
+    return {
+      key: 'medium',
+      label: 'Середній',
+      text: 'Ми вдячні за підтримку. Рекомендуємо не перевищувати 5 порцій кави на день для комфорту й здоров’я.',
+    };
+  }
+  return {
+    key: 'low',
+    label: 'Низький',
+    text: 'Сьогодні в межах комфортної норми.',
+  };
+}
+
 function renderUserAnalyticsView() {
   const today = userCoffeeToday;
   if (userAnalyticsSummary) {
-    userAnalyticsSummary.textContent = today > HEALTH_CUP_LIMIT
-      ? `Сьогодні: ${formatCupWord(today)} · рекомендуємо не перевищувати ${HEALTH_CUP_LIMIT}`
-      : `Сьогодні: ${formatCupWord(today)}`;
+    userAnalyticsSummary.textContent = `Сьогодні: ${formatCupWord(today)}`;
+  }
+
+  const risk = getCoffeeRiskLevel(today);
+  if (userAnalyticsRisk) {
+    const showRisk = today > HEALTH_CUP_LIMIT;
+    userAnalyticsRisk.hidden = !showRisk;
+    userAnalyticsRisk.classList.toggle('is-medium', risk.key === 'medium');
+    userAnalyticsRisk.classList.toggle('is-high', risk.key === 'high');
+    if (userAnalyticsRiskValue) userAnalyticsRiskValue.textContent = risk.label;
+    if (userAnalyticsRiskText) userAnalyticsRiskText.textContent = risk.text;
   }
 
   const chartDays = [...userCoffeeDays]
@@ -1791,7 +1820,12 @@ function renderUserAnalyticsView() {
       const left = document.createElement('span');
       left.textContent = formatUserCoffeeDayLabel(row.day);
       const right = document.createElement('strong');
-      right.textContent = formatCupWord(row.cups);
+      if (row.cups > HEALTH_CUP_LIMIT) {
+        right.textContent = `${formatCupWord(row.cups)} · ризик`;
+        right.classList.add('is-risk');
+      } else {
+        right.textContent = formatCupWord(row.cups);
+      }
       li.append(left, right);
       userAnalyticsList.appendChild(li);
     });
@@ -1810,48 +1844,6 @@ async function openUserAnalytics() {
   renderUserAnalyticsView();
   userAnalytics.hidden = false;
   document.body.classList.add('user-analytics-open');
-}
-
-function closeHealthWarning() {
-  if (!healthWarning) return;
-  healthWarning.hidden = true;
-  document.body.classList.remove('health-warning-open');
-}
-
-function showHealthWarning({ today, cartQty }) {
-  return new Promise((resolve) => {
-    if (!healthWarning) {
-      resolve('continue');
-      return;
-    }
-
-    if (healthWarningText) {
-      healthWarningText.textContent = `Сьогодні вже ${formatCupWord(today)}, а в кошику ще ${formatCupWord(cartQty)}. Ми вдячні за підтримку, але хвилюємось за ваше здоров’я. Можна зменшити кількість, або продовжити, якщо напої не для вас.`;
-    }
-
-    const finish = (result) => {
-      healthRefuse?.removeEventListener('click', onRefuse);
-      healthNotForMe?.removeEventListener('click', onNotForMe);
-      healthWarning?.querySelectorAll('[data-health-close]').forEach((el) => {
-        el.removeEventListener('click', onClose);
-      });
-      closeHealthWarning();
-      resolve(result);
-    };
-
-    const onClose = () => finish('close');
-    const onRefuse = () => finish('refuse');
-    const onNotForMe = () => finish('not-for-me');
-
-    healthRefuse?.addEventListener('click', onRefuse);
-    healthNotForMe?.addEventListener('click', onNotForMe);
-    healthWarning.querySelectorAll('[data-health-close]').forEach((el) => {
-      el.addEventListener('click', onClose);
-    });
-
-    healthWarning.hidden = false;
-    document.body.classList.add('health-warning-open');
-  });
 }
 
 function getUpsellExtras() {
@@ -1960,23 +1952,6 @@ function showExtrasUpsell() {
     extrasUpsell.hidden = false;
     document.body.classList.add('extras-upsell-open');
   });
-}
-
-function trimCartDrinksToLimit(maxCups) {
-  let allowed = Math.max(0, Math.round(Number(maxCups) || 0));
-  const drinks = getCartSummary().items
-    .filter((item) => isDrinkCartItem(item))
-    .sort((a, b) => Number(b.qty) - Number(a.qty));
-
-  drinks.forEach((item) => {
-    const row = document.querySelector(`.row[data-id="${item.id}"]`);
-    if (!row) return;
-    const next = Math.min(item.qty, allowed);
-    allowed -= next;
-    setRowQty(row, next);
-  });
-
-  updateCart();
 }
 
 function getLoyaltyUntilFree(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
@@ -2624,7 +2599,6 @@ function closeSheet() {
     document.body.classList.remove('sheet-open');
   }
   paymentTotal = 0;
-  if (!awaitingPayment) checkoutForSelf = true;
   syncScrollLock();
 }
 
@@ -2712,7 +2686,7 @@ function snapshotOrder() {
     freeValue: pricing.freeValue,
     subtotal: pricing.subtotal,
     drinkQty: pricing.drinkQty,
-    forSelf: checkoutForSelf !== false,
+    forSelf: true,
   };
 }
 
@@ -2799,7 +2773,6 @@ function goToPayment(provider) {
       recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
     }
     clearCart();
-    checkoutForSelf = true;
     completeOrderCelebration();
     window.setTimeout(() => {
       loadFreeCoffeeBalance();
@@ -3025,7 +2998,6 @@ function resetPendingPayment() {
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
-  checkoutForSelf = true;
   payActions.forEach((action) => {
     action.disabled = false;
   });
@@ -3067,7 +3039,6 @@ async function finishOtherPayment() {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }
   clearCart();
-  checkoutForSelf = true;
   completeOrderCelebration();
   loadUserCoffeeStats();
 }
@@ -3084,7 +3055,6 @@ async function confirmPaymentSuccess() {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }
   clearCart();
-  checkoutForSelf = true;
   completeOrderCelebration();
   loadUserCoffeeStats();
 }
@@ -3095,7 +3065,6 @@ function cancelPendingPayment() {
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
-  checkoutForSelf = true;
   closeConfirmSheet();
   payActions.forEach((action) => {
     action.disabled = false;
@@ -3160,7 +3129,6 @@ async function handleCartPayTap(event) {
   if (event.cancelable) event.preventDefault();
   if (cart.hidden || cartPayTapLock) return;
   if (giftReward && !giftReward.hidden) return;
-  if (healthWarning && !healthWarning.hidden) return;
   if (extrasUpsell && !extrasUpsell.hidden) return;
 
   cartPayTapLock = true;
@@ -3179,7 +3147,7 @@ async function handleCartPayTap(event) {
     }, pricing.freeDrinks > 0 ? 350 : 550);
   };
 
-  const startCheckoutFlow = async () => {
+  try {
     let latest = getCartPricing();
     if (!latest.items.length) return;
 
@@ -3197,34 +3165,6 @@ async function handleCartPayTap(event) {
     } else {
       openCheckout();
     }
-  };
-
-  try {
-    await loadUserCoffeeStats();
-    const pricing = getCartPricing();
-    const today = userCoffeeToday;
-    const cartDrinks = Number(pricing.drinkQty || 0);
-    const projected = today + cartDrinks;
-
-    if (checkoutForSelf && cartDrinks > 0 && projected > HEALTH_CUP_LIMIT) {
-      const choice = await showHealthWarning({ today, cartQty: cartDrinks });
-      if (choice === 'close') return;
-      if (choice === 'refuse') {
-        trimCartDrinksToLimit(HEALTH_CUP_LIMIT - today);
-        const after = getCartPricing();
-        if (!after.items.length) return;
-        checkoutForSelf = true;
-        await startCheckoutFlow();
-        return;
-      }
-      if (choice === 'not-for-me') {
-        checkoutForSelf = false;
-        await startCheckoutFlow();
-        return;
-      }
-    }
-
-    await startCheckoutFlow();
   } finally {
     setTimeout(() => {
       cartPayTapLock = false;
@@ -3273,8 +3213,7 @@ confirmSheet.querySelector('[data-confirm-close]')?.addEventListener('click', ca
 
 document.addEventListener('keydown', (event) => {
   if (event.key === 'Escape') {
-    if (healthWarning && !healthWarning.hidden) closeHealthWarning();
-    else if (extrasUpsell && !extrasUpsell.hidden) closeExtrasUpsell();
+    if (extrasUpsell && !extrasUpsell.hidden) closeExtrasUpsell();
     else if (userAnalytics && !userAnalytics.hidden) closeUserAnalytics();
     else if (giftReward && !giftReward.hidden) closeGiftReward();
     else if (thanks && !thanks.hidden) closeThanks();
