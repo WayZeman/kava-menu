@@ -40,7 +40,6 @@ const userAnalyticsOpen = document.getElementById('user-analytics-open');
 const userAnalytics = document.getElementById('user-analytics');
 const userAnalyticsSummary = document.getElementById('user-analytics-summary');
 const userAnalyticsChart = document.getElementById('user-analytics-chart');
-const userAnalyticsList = document.getElementById('user-analytics-list');
 const userAnalyticsRisk = document.getElementById('user-analytics-risk');
 const userAnalyticsRiskValue = document.getElementById('user-analytics-risk-value');
 const userAnalyticsRiskText = document.getElementById('user-analytics-risk-text');
@@ -162,7 +161,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '121';
+const APP_VERSION = '122';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1803,26 +1802,6 @@ function renderUserAnalyticsView() {
         userAnalyticsChart.appendChild(wrap);
       });
     }
-  }
-
-  if (userAnalyticsList) {
-    userAnalyticsList.replaceChildren();
-    const listDays = userCoffeeDays.slice(0, 21);
-    if (!listDays.length) return;
-    listDays.forEach((row) => {
-      const li = document.createElement('li');
-      const left = document.createElement('span');
-      left.textContent = formatUserCoffeeDayLabel(row.day);
-      const right = document.createElement('strong');
-      if (row.cups > HEALTH_CUP_LIMIT) {
-        right.textContent = `${formatCupWord(row.cups)} · ризик`;
-        right.classList.add('is-risk');
-      } else {
-        right.textContent = formatCupWord(row.cups);
-      }
-      li.append(left, right);
-      userAnalyticsList.appendChild(li);
-    });
   }
 }
 
