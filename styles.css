@@ -166,8 +166,17 @@ body.is-splash-active {
 }
 
 .app-splash-tagline.is-welcome {
-  color: #3d5a40;
-  font-weight: 700;
+  color: #7a5a3a;
+  font-weight: 600;
+}
+
+.app-splash-tagline.is-auth {
+  color: rgba(44, 40, 36, 0.58);
+  font-weight: 600;
+}
+
+.app-splash-title.is-welcome {
+  font-size: clamp(1.45rem, 5.5vw, 1.85rem);
 }
 
 .app-splash-auth {
@@ -182,15 +191,6 @@ body.is-splash-active {
 
 .app-splash-auth[hidden] {
   display: none;
-}
-
-.app-splash-auth-hint {
-  margin: 0;
-  max-width: 16rem;
-  font-size: 0.86rem;
-  font-weight: 600;
-  line-height: 1.4;
-  color: rgba(44, 40, 36, 0.58);
 }
 
 .app-splash-google {
@@ -244,58 +244,44 @@ body.is-splash-active {
   display: none;
 }
 
-.user-account {
+.hero-logout {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  margin-top: 14px;
-  padding: 6px 10px 6px 6px;
-  border-radius: 999px;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
   background: rgba(255, 255, 255, 0.55);
   border: 1px solid rgba(90, 70, 45, 0.12);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
-}
-
-.user-account[hidden] {
-  display: none;
-}
-
-.user-account-avatar {
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  object-fit: cover;
-  background: rgba(120, 100, 80, 0.12);
-}
-
-.user-account-avatar[hidden] {
-  display: none;
-}
-
-.user-account-name {
-  font-size: 0.86rem;
-  font-weight: 700;
-  color: #2c2824;
-  max-width: 10rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.user-account-logout {
-  appearance: none;
-  border: 0;
-  background: transparent;
-  color: rgba(44, 40, 36, 0.5);
-  font: inherit;
-  font-size: 0.75rem;
-  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.75);
+  color: rgba(44, 40, 36, 0.62);
   cursor: pointer;
-  padding: 4px 2px;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
-.user-account-logout:active {
+.hero-logout[hidden] {
+  display: none;
+}
+
+.hero-logout svg {
+  width: 18px;
+  height: 18px;
+}
+
+.hero-logout:active {
+  transform: scale(0.94);
   color: #2c2824;
+}
+
+.lead[hidden] {
+  display: none;
 }
 
 .app-splash-loader-bar {
@@ -4289,6 +4275,15 @@ body {
   letter-spacing: -0.03em;
   text-transform: none;
   color: #22201d;
+}
+
+.hero h1.is-user {
+  font-size: clamp(1.35rem, 5.2vw, 1.75rem);
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  max-width: 16ch;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .lead {

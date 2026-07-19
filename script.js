@@ -19,16 +19,16 @@ const cartPay = document.getElementById('cart-pay');
 const fxLayer = document.getElementById('fx-layer');
 const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
+const appSplashTitle = document.getElementById('app-splash-title');
 const appSplashLoyalty = document.getElementById('app-splash-loyalty');
 const appSplashAuth = document.getElementById('app-splash-auth');
 const appSplashLoader = document.getElementById('app-splash-loader');
 const appSplashSkip = document.getElementById('app-splash-skip');
 const appSplashAuthError = document.getElementById('app-splash-auth-error');
 const googleSignInBtn = document.getElementById('google-signin-btn');
-const userAccount = document.getElementById('user-account');
-const userAccountAvatar = document.getElementById('user-account-avatar');
-const userAccountName = document.getElementById('user-account-name');
 const userAccountLogout = document.getElementById('user-account-logout');
+const heroTitle = document.getElementById('hero-title');
+const heroLead = document.getElementById('hero-lead');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -1722,7 +1722,11 @@ function setCurrentUser(user) {
     // ignore
   }
   renderUserAccount();
-  if (currentUser) updateSplashWelcomeMessage(currentUser);
+  if (currentUser) {
+    updateSplashWelcomeMessage(currentUser);
+  } else {
+    resetSplashBrand();
+  }
 }
 
 function readCachedUser() {
@@ -1744,23 +1748,23 @@ function readCachedUser() {
 }
 
 function renderUserAccount() {
-  if (!userAccount) return;
-  if (!currentUser) {
-    userAccount.hidden = true;
-    return;
+  if (userAccountLogout) {
+    userAccountLogout.hidden = !currentUser;
   }
 
-  userAccount.hidden = false;
-  if (userAccountName) {
-    userAccountName.textContent = firstNameFromUser(currentUser);
-  }
-  if (userAccountAvatar) {
-    if (currentUser.picture) {
-      userAccountAvatar.src = currentUser.picture;
-      userAccountAvatar.hidden = false;
-    } else {
-      userAccountAvatar.removeAttribute('src');
-      userAccountAvatar.hidden = true;
+  if (!heroTitle) return;
+
+  if (currentUser) {
+    const name = firstNameFromUser(currentUser);
+    heroTitle.textContent = `${name}, що бажаєте сьогодні?`;
+    heroTitle.classList.add('is-user');
+    if (heroLead) heroLead.hidden = true;
+  } else {
+    heroTitle.textContent = 'Кавове меню';
+    heroTitle.classList.remove('is-user');
+    if (heroLead) {
+      heroLead.hidden = false;
+      heroLead.textContent = 'Що бажаєте сьогодні?';
     }
   }
 }
@@ -2207,20 +2211,63 @@ function getLoyaltyUntilFree(stamps = freeCoffeeStampsCount, cycle = freeCoffeeC
   return Math.max(1, size - progress);
 }
 
+function formatDrinkWord(count) {
+  const n = Math.abs(Math.round(Number(count) || 0));
+  const mod10 = n % 10;
+  const mod100 = n % 100;
+  if (mod10 === 1 && mod100 !== 11) return 'напій';
+  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return 'напої';
+  return 'напоїв';
+}
+
 function formatLoyaltySplashText(untilFree) {
   const left = Math.max(1, Math.round(Number(untilFree) || LOYALTY_CYCLE));
-  return `До безкоштовної кави залишилось ${left}`;
+  return `У вас залишилось ${left} ${formatDrinkWord(left)} до безкоштовної кави`;
 }
 
 function formatWelcomeSplashText(user) {
   return `Вітаємо, ${firstNameFromUser(user)}`;
 }
 
-function updateSplashWelcomeMessage(user = currentUser) {
-  if (!appSplashLoyalty || !user) return;
-  appSplashLoyalty.textContent = formatWelcomeSplashText(user);
-  appSplashLoyalty.classList.remove('is-loyalty');
-  appSplashLoyalty.classList.add('is-welcome');
+function resetSplashBrand() {
+  if (appSplashTitle) {
+    appSplashTitle.textContent = 'Кавове меню';
+    appSplashTitle.classList.remove('is-welcome');
+  }
+  if (appSplashLoyalty) {
+    appSplashLoyalty.classList.remove('is-welcome', 'is-loyalty', 'is-auth');
+  }
+}
+
+function updateSplashWelcomeMessage(
+  user = currentUser,
+  stamps = freeCoffeeStampsCount,
+  cycle = freeCoffeeCycle,
+) {
+  if (!user) return;
+
+  if (appSplashTitle) {
+    appSplashTitle.textContent = formatWelcomeSplashText(user);
+    appSplashTitle.classList.add('is-welcome');
+  }
+
+  if (appSplashLoyalty) {
+    appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
+    appSplashLoyalty.classList.remove('is-auth');
+    appSplashLoyalty.classList.add('is-loyalty', 'is-welcome');
+  }
+}
+
+function showSplashAuthPrompt() {
+  if (appSplashTitle) {
+    appSplashTitle.textContent = 'Кавове меню';
+    appSplashTitle.classList.remove('is-welcome');
+  }
+  if (appSplashLoyalty) {
+    appSplashLoyalty.textContent = 'Для бонусів потрібна авторизація';
+    appSplashLoyalty.classList.remove('is-loyalty', 'is-welcome');
+    appSplashLoyalty.classList.add('is-auth');
+  }
 }
 
 function cacheLoyaltyProgress(stamps, cycle) {
@@ -2248,13 +2295,17 @@ function readCachedLoyaltyProgress() {
 }
 
 function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
-  if (!appSplashLoyalty) return;
   if (currentUser) {
-    updateSplashWelcomeMessage(currentUser);
+    updateSplashWelcomeMessage(currentUser, stamps, cycle);
     return;
   }
+  if (!appSplashLoyalty) return;
+  if (appSplashTitle) {
+    appSplashTitle.textContent = 'Кавове меню';
+    appSplashTitle.classList.remove('is-welcome');
+  }
   appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
-  appSplashLoyalty.classList.remove('is-welcome');
+  appSplashLoyalty.classList.remove('is-welcome', 'is-auth');
   appSplashLoyalty.classList.add('is-loyalty');
 }
 
@@ -3572,10 +3623,7 @@ async function bootApp() {
       updateSplashWelcomeMessage(user);
       setSplashAuthVisible(false);
     } else if (googleClientId) {
-      if (appSplashLoyalty) {
-        appSplashLoyalty.textContent = 'Увійдіть, щоб зберегти свої чашки';
-        appSplashLoyalty.classList.remove('is-loyalty', 'is-welcome');
-      }
+      showSplashAuthPrompt();
       setSplashAuthVisible(true);
       window.clearTimeout(maxTimer);
       const rendered = await renderGoogleSignInButton();
@@ -3597,7 +3645,10 @@ async function bootApp() {
     renderFreeCoffeeStamps();
   }
 
-  if (currentUser) updateSplashWelcomeMessage(currentUser);
+  if (currentUser) {
+    updateSplashWelcomeMessage(currentUser);
+    renderUserAccount();
+  }
 
   const wait = Math.max(0, minSplashMs - (Date.now() - started));
   window.setTimeout(() => {

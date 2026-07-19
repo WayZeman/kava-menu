@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '124';
+      var version = '125';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=124">
+  <link rel="stylesheet" href="styles.css?v=125">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
@@ -57,12 +57,11 @@
         <span class="app-splash-steam app-splash-steam--2"></span>
         <span class="app-splash-steam app-splash-steam--3"></span>
       </div>
-      <h1 class="app-splash-title">Кавове меню</h1>
+      <h1 id="app-splash-title" class="app-splash-title">Кавове меню</h1>
       <p id="app-splash-loyalty" class="app-splash-tagline">Готуємо для вас…</p>
       <div id="app-splash-auth" class="app-splash-auth" hidden>
-        <p class="app-splash-auth-hint">Увійдіть через Google — так ми збережемо ваші чашки</p>
         <div id="google-signin-btn" class="app-splash-google"></div>
-        <button id="app-splash-skip" class="app-splash-skip" type="button">Продовжити без входу</button>
+        <button id="app-splash-skip" class="app-splash-skip" type="button">Без входу</button>
         <p id="app-splash-auth-error" class="app-splash-auth-error" hidden></p>
       </div>
       <div id="app-splash-loader" class="app-splash-loader" aria-hidden="true">
@@ -78,6 +77,12 @@
   </div>
   <main class="page">
     <header class="hero">
+      <button id="user-account-logout" class="hero-logout" type="button" aria-label="Вийти" hidden>
+        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
+          <path d="M10 7V5a2 2 0 0 1 2-2h7a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-7a2 2 0 0 1-2-2v-2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+          <path d="M15 12H3m0 0 3.5-3.5M3 12l3.5 3.5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
       <button class="hero-icon" type="button" aria-label="Статистика окупності">
         <svg class="hero-cup" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 28h32v18c0 4.4-3.6 8-8 8H20c-4.4 0-8-3.6-8-8V28z" stroke="currentColor" stroke-width="3"/>
@@ -87,13 +92,8 @@
         <span class="steam steam-2"></span>
         <span class="steam steam-3"></span>
       </button>
-      <h1>Кавове меню</h1>
-      <p class="lead">Що бажаєте сьогодні?</p>
-      <div id="user-account" class="user-account" hidden>
-        <img id="user-account-avatar" class="user-account-avatar" alt="" width="28" height="28" hidden>
-        <span id="user-account-name" class="user-account-name"></span>
-        <button id="user-account-logout" class="user-account-logout" type="button">Вийти</button>
-      </div>
+      <h1 id="hero-title">Кавове меню</h1>
+      <p id="hero-lead" class="lead">Що бажаєте сьогодні?</p>
     </header>
 
     <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв">
@@ -672,6 +672,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=124" defer></script>
+  <script src="script.js?v=125" defer></script>
 </body>
 </html>
