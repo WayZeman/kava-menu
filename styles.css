@@ -5063,9 +5063,11 @@ body {
   align-items: center;
   justify-content: center;
   padding: 16px;
-  background: rgba(28, 18, 10, 0.55);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  background:
+    radial-gradient(circle at 50% 24%, rgba(255, 196, 92, 0.18), transparent 42%),
+    rgba(14, 10, 8, 0.78);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   animation: thanks-overlay-in 0.25s ease;
 }
 
@@ -5088,15 +5090,13 @@ body {
   padding: 22px 20px 16px;
   border-radius: 28px;
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.5) 0%, transparent 40%),
-    radial-gradient(circle at top right, rgba(255, 220, 130, 0.26), transparent 36%),
-    var(--glass-bg-strong);
-  border: 1px solid var(--glass-border);
+    radial-gradient(circle at 50% 0%, rgba(255, 196, 92, 0.16), transparent 42%),
+    linear-gradient(165deg, rgba(42, 28, 18, 0.98) 0%, rgba(22, 16, 12, 0.98) 55%, rgba(28, 18, 12, 0.98) 100%);
+  border: 1px solid rgba(255, 220, 160, 0.28);
   box-shadow:
-    var(--glass-shadow-lg),
-    inset 0 1px 0 var(--glass-highlight);
-  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
-  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    0 28px 56px rgba(0, 0, 0, 0.45),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  color: #fff8ec;
   animation: gift-card-pop 0.55s cubic-bezier(0.22, 1.2, 0.36, 1);
 }
 
@@ -5106,7 +5106,7 @@ body {
   font-weight: 800;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9a7338;
+  color: rgba(255, 196, 92, 0.92);
 }
 
 .extras-upsell-title {
@@ -5114,7 +5114,7 @@ body {
   font-size: 1.28rem;
   font-weight: 800;
   letter-spacing: -0.02em;
-  color: #2a2118;
+  color: #fff8ec;
 }
 
 .extras-upsell-text {
@@ -5122,7 +5122,7 @@ body {
   font-size: 0.9rem;
   font-weight: 600;
   line-height: 1.4;
-  color: rgba(53, 40, 28, 0.72);
+  color: rgba(255, 236, 210, 0.78);
 }
 
 .extras-upsell-list {
@@ -5139,13 +5139,9 @@ body {
   align-items: center;
   padding: 12px;
   border-radius: 18px;
-  background: rgba(255, 252, 246, 0.45);
-  border: 1px solid var(--glass-border);
-  box-shadow:
-    0 10px 22px rgba(114, 86, 52, 0.06),
-    inset 0 1px 0 rgba(255, 255, 255, 0.65);
-  backdrop-filter: blur(14px) saturate(1.35);
-  -webkit-backdrop-filter: blur(14px) saturate(1.35);
+  background: rgba(10, 8, 6, 0.55);
+  border: 1px solid rgba(255, 220, 160, 0.18);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 .extras-upsell-icon {
@@ -5154,8 +5150,9 @@ body {
   display: grid;
   place-items: center;
   border-radius: 14px;
-  background: rgba(255, 236, 196, 0.7);
-  color: #5c3a28;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 220, 160, 0.22);
+  color: #ffe2a4;
 }
 
 .extras-upsell-icon svg {
@@ -5172,7 +5169,7 @@ body {
   display: block;
   font-size: 0.95rem;
   font-weight: 750;
-  color: #2f2418;
+  color: #fff8ec;
 }
 
 .extras-upsell-price {
@@ -5180,7 +5177,7 @@ body {
   margin-top: 2px;
   font-size: 0.82rem;
   font-weight: 700;
-  color: #9a7338;
+  color: rgba(255, 226, 164, 0.9);
   font-variant-numeric: tabular-nums;
 }
 
@@ -5189,8 +5186,8 @@ body {
   padding: 0 14px;
   border: 0;
   border-radius: 999px;
-  background: #4a2c18;
-  color: #fff8ee;
+  background: linear-gradient(160deg, #ffe2a4 0%, #d4a04a 100%);
+  color: #2b1b10;
   font: inherit;
   font-size: 0.86rem;
   font-weight: 750;
@@ -5204,8 +5201,8 @@ body {
 }
 
 .extras-upsell-add.is-added {
-  background: rgba(95, 122, 46, 0.16);
-  color: #3f6a1e;
+  background: rgba(142, 224, 154, 0.2);
+  color: #8ee09a;
 }
 
 .extras-upsell-skip {
@@ -5215,17 +5212,14 @@ body {
   width: 100%;
   min-height: 48px;
   margin-top: 14px;
-  border: 1px solid var(--glass-border);
+  border: 1px solid rgba(255, 220, 160, 0.28);
   border-radius: 999px;
-  background: rgba(255, 252, 246, 0.48);
-  color: #6a5640;
+  background: rgba(255, 255, 255, 0.08);
+  color: rgba(255, 236, 210, 0.88);
   font: inherit;
   font-size: 0.95rem;
   font-weight: 750;
   cursor: pointer;
-  box-shadow: inset 0 1px 0 var(--glass-highlight);
-  backdrop-filter: blur(12px) saturate(1.3);
-  -webkit-backdrop-filter: blur(12px) saturate(1.3);
   -webkit-tap-highlight-color: transparent;
 }
 
@@ -6593,24 +6587,45 @@ body {
 
 .extras-upsell-card {
   background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.12) 0%, transparent 40%),
-    radial-gradient(circle at top right, rgba(255, 196, 92, 0.18), transparent 36%),
-    rgba(28, 20, 14, 0.92) !important;
+    radial-gradient(circle at 50% 0%, rgba(255, 196, 92, 0.16), transparent 42%),
+    linear-gradient(165deg, rgba(42, 28, 18, 0.98) 0%, rgba(22, 16, 12, 0.98) 55%, rgba(28, 18, 12, 0.98) 100%) !important;
   border-color: rgba(255, 220, 160, 0.28) !important;
-  color: var(--text) !important;
+  color: #fff8ec !important;
 }
 
 .extras-upsell-title,
-.extras-upsell-eyebrow,
-.extras-upsell-text,
-.extras-upsell-name,
-.extras-upsell-price {
-  color: var(--text) !important;
+.extras-upsell-name {
+  color: #fff8ec !important;
 }
 
-.extras-upsell-text,
-.extras-upsell-eyebrow {
-  color: var(--text-muted) !important;
+.extras-upsell-eyebrow,
+.extras-upsell-price {
+  color: rgba(255, 196, 92, 0.92) !important;
+}
+
+.extras-upsell-text {
+  color: rgba(255, 236, 210, 0.78) !important;
+}
+
+.extras-upsell-item {
+  background: rgba(10, 8, 6, 0.55) !important;
+  border-color: rgba(255, 220, 160, 0.18) !important;
+}
+
+.extras-upsell-add {
+  background: linear-gradient(160deg, #ffe2a4 0%, #d4a04a 100%) !important;
+  color: #2b1b10 !important;
+}
+
+.extras-upsell-add.is-added {
+  background: rgba(142, 224, 154, 0.2) !important;
+  color: #8ee09a !important;
+}
+
+.extras-upsell-skip {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 220, 160, 0.28) !important;
+  color: rgba(255, 236, 210, 0.88) !important;
 }
 
 .sheet-header,

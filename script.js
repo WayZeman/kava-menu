@@ -940,16 +940,17 @@ function renderExtrasMenu() {
   const prevQty = captureRowQuantities(extrasMenuList);
   extrasMenuList.innerHTML = '';
 
-  if (!menuExtras.length) {
+  const availableExtras = (menuExtras || []).filter((extra) => getExtraStock(extra.id) > 0);
+  if (!availableExtras.length || categoryVisibility.extras === false) {
     extrasMenu.hidden = true;
     return;
   }
 
   extrasMenu.hidden = false;
-  menuExtras.forEach((extra) => {
+  availableExtras.forEach((extra) => {
     const row = createExtraRow(extra);
     extrasMenuList.appendChild(row);
-    if (extra.stock > 0) bindMenuRow(row);
+    bindMenuRow(row);
   });
   restoreRowQuantities(extrasMenuList, prevQty);
 }
@@ -995,7 +996,8 @@ function applyCategoryVisibility() {
   }
 
   if (extrasMenu) {
-    extrasMenu.hidden = !categoryVisibility.extras || !menuExtras.length;
+    const hasAvailableExtras = (menuExtras || []).some((extra) => getExtraStock(extra.id) > 0);
+    extrasMenu.hidden = !categoryVisibility.extras || !hasAvailableExtras;
   }
 
   if (servicesMenu) {
@@ -2124,8 +2126,7 @@ function getUpsellExtras() {
   if (categoryVisibility.extras === false) return [];
   return (menuExtras || []).filter((extra) => {
     if (!extra?.id) return false;
-    const stock = getExtraStock(extra.id);
-    return Number.isFinite(stock) ? stock > 0 : true;
+    return getExtraStock(extra.id) > 0;
   });
 }
 
