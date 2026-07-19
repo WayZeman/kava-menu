@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '123';
+      var version = '124';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,8 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=123">
+  <link rel="stylesheet" href="styles.css?v=124">
+  <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -58,7 +59,13 @@
       </div>
       <h1 class="app-splash-title">Кавове меню</h1>
       <p id="app-splash-loyalty" class="app-splash-tagline">Готуємо для вас…</p>
-      <div class="app-splash-loader" aria-hidden="true">
+      <div id="app-splash-auth" class="app-splash-auth" hidden>
+        <p class="app-splash-auth-hint">Увійдіть через Google — так ми збережемо ваші чашки</p>
+        <div id="google-signin-btn" class="app-splash-google"></div>
+        <button id="app-splash-skip" class="app-splash-skip" type="button">Продовжити без входу</button>
+        <p id="app-splash-auth-error" class="app-splash-auth-error" hidden></p>
+      </div>
+      <div id="app-splash-loader" class="app-splash-loader" aria-hidden="true">
         <span class="app-splash-loader-bar"></span>
       </div>
     </div>
@@ -82,6 +89,11 @@
       </button>
       <h1>Кавове меню</h1>
       <p class="lead">Що бажаєте сьогодні?</p>
+      <div id="user-account" class="user-account" hidden>
+        <img id="user-account-avatar" class="user-account-avatar" alt="" width="28" height="28" hidden>
+        <span id="user-account-name" class="user-account-name"></span>
+        <button id="user-account-logout" class="user-account-logout" type="button">Вийти</button>
+      </div>
     </header>
 
     <section id="drinks-menu" class="menu menu--drinks" aria-label="Меню напоїв">
@@ -660,6 +672,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=122" defer></script>
+  <script src="script.js?v=124" defer></script>
 </body>
 </html>

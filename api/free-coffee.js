@@ -1,3 +1,4 @@
+import { getSessionUser, userIdentityKey } from './auth-lib.js';
 import { getFreeCoffeeBalance } from './db.js';
 
 export default async function handler(req, res) {
@@ -15,7 +16,10 @@ export default async function handler(req, res) {
     return;
   }
 
-  const deviceId = String(req.query?.deviceId || '').trim();
+  const session = await getSessionUser(req);
+  const queryDeviceId = String(req.query?.deviceId || '').trim();
+  const deviceId = session ? userIdentityKey(session.id) : queryDeviceId;
+
   if (!deviceId || deviceId.length > 120) {
     res.status(400).json({ ok: false, error: 'invalid_device' });
     return;

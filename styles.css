@@ -165,6 +165,70 @@ body.is-splash-active {
   color: #7a5a3a;
 }
 
+.app-splash-tagline.is-welcome {
+  color: #3d5a40;
+  font-weight: 700;
+}
+
+.app-splash-auth {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  margin-top: 22px;
+  animation: splash-in 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.app-splash-auth[hidden] {
+  display: none;
+}
+
+.app-splash-auth-hint {
+  margin: 0;
+  max-width: 16rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  line-height: 1.4;
+  color: rgba(44, 40, 36, 0.58);
+}
+
+.app-splash-google {
+  display: flex;
+  justify-content: center;
+  min-height: 44px;
+  width: 100%;
+}
+
+.app-splash-skip {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(44, 40, 36, 0.48);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+  padding: 6px 8px;
+}
+
+.app-splash-skip:active {
+  color: rgba(44, 40, 36, 0.72);
+}
+
+.app-splash-auth-error {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #a33b2d;
+}
+
+.app-splash-auth-error[hidden] {
+  display: none;
+}
+
 .app-splash-loader {
   width: min(220px, 62vw);
   height: 12px;
@@ -174,6 +238,64 @@ body.is-splash-active {
   background: rgba(63, 92, 122, 0.09);
   box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.86);
   overflow: hidden;
+}
+
+.app-splash-loader[hidden] {
+  display: none;
+}
+
+.user-account {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 6px 10px 6px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.55);
+  border: 1px solid rgba(90, 70, 45, 0.12);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.7);
+}
+
+.user-account[hidden] {
+  display: none;
+}
+
+.user-account-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  background: rgba(120, 100, 80, 0.12);
+}
+
+.user-account-avatar[hidden] {
+  display: none;
+}
+
+.user-account-name {
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #2c2824;
+  max-width: 10rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-account-logout {
+  appearance: none;
+  border: 0;
+  background: transparent;
+  color: rgba(44, 40, 36, 0.5);
+  font: inherit;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  padding: 4px 2px;
+}
+
+.user-account-logout:active {
+  color: #2c2824;
 }
 
 .app-splash-loader-bar {

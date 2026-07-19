@@ -1,3 +1,4 @@
+import { getSessionUser, userIdentityKey } from './auth-lib.js';
 import {
   applyOrderedExtraStock,
   buildOrderLabel,
@@ -126,7 +127,9 @@ export default async function handler(req, res) {
   const freeDrinks = Number.isFinite(freeDrinksRaw) && freeDrinksRaw > 0
     ? Math.round(freeDrinksRaw)
     : 0;
-  const deviceId = String(req.body?.deviceId || '').trim();
+  const session = await getSessionUser(req);
+  const bodyDeviceId = String(req.body?.deviceId || '').trim();
+  const deviceId = session ? userIdentityKey(session.id) : bodyDeviceId;
 
   const providerRaw = String(req.body?.provider || '').trim() || 'bank';
   const provider = providerLabel(providerRaw);

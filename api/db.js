@@ -792,3 +792,154 @@ export async function getDeviceCoffeeStats(deviceId) {
     healthLimit: 5,
   };
 }
+
+let usersTableReady = false;
+
+async function ensureUsersTable(sql) {
+  if (usersTableReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS users (
+      id TEXT PRIMARY KEY,
+      google_sub TEXT NOT NULL UNIQUE,
+      email TEXT,
+      name TEXT,
+      picture TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS users_google_sub_idx ON users (google_sub)
+  `;
+
+  usersTableReady = true;
+}
+
+function mapUser(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    googleSub: row.google_sub,
+    email: row.email || null,
+    name: row.name || null,
+    picture: row.picture || null,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+export async function upsertGoogleUser({ googleSub, email, name, picture }) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const sub = String(googleSub || '').trim();
+  if (!sub || sub.length > 120) return null;
+
+  await ensureUsersTable(sql);
+
+  const safeEmail = String(email || '').trim().slice(0, 320) || null;
+  const safeName = String(name || '').trim().slice(0, 200) || null;
+  const safePicture = String(picture || '').trim().slice(0, 500) || null;
+
+  const existing = await sql`
+    SELECT id, google_sub, email, name, picture, created_at, updated_at
+    FROM users
+    WHERE google_sub = ${sub}
+    LIMIT 1
+  `;
+
+  if (existing[0]) {
+    const rows = await sql`
+      UPDATE users
+      SET
+        email = COALESCE(${safeEmail}, email),
+        name = COALESCE(${safeName}, name),
+        picture = COALESCE(${safePicture}, picture),
+        updated_at = NOW()
+      WHERE google_sub = ${sub}
+      RETURNING id, google_sub, email, name, picture, created_at, updated_at
+    `;
+    return mapUser(rows[0]);
+  }
+
+  const id = makeId('user');
+  const rows = await sql`
+    INSERT INTO users (id, google_sub, email, name, picture)
+    VALUES (${id}, ${sub}, ${safeEmail}, ${safeName}, ${safePicture})
+    RETURNING id, google_sub, email, name, picture, created_at, updated_at
+  `;
+
+  return mapUser(rows[0]);
+}
+
+export async function getUserById(userId) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(userId || '').trim();
+  if (!id || id.length > 120) return null;
+
+  await ensureUsersTable(sql);
+
+  const rows = await sql`
+    SELECT id, google_sub, email, name, picture, created_at, updated_at
+    FROM users
+    WHERE id = ${id}
+    LIMIT 1
+  `;
+
+  return mapUser(rows[0]);
+}
+
+/** Move anonymous device loyalty + coffee logs onto a stable Google user identity. */
+export async function mergeDeviceIntoUser(deviceId, userId) {
+  const sql = getSql();
+  if (!sql) return { ok: false };
+
+  const fromId = String(deviceId || '').trim();
+  const toId = `user:${String(userId || '').trim()}`;
+  if (!fromId || fromId.length > 120 || toId.length > 120) return { ok: false };
+  if (fromId === toId || fromId.startsWith('user:')) return { ok: true, skipped: true };
+
+  await ensureFreeCoffeeTable(sql);
+  await ensureDeviceCoffeeLogTable(sql);
+
+  const [fromRows, toRows] = await Promise.all([
+    sql`SELECT device_id, used, limit_count FROM free_coffee WHERE device_id = ${fromId} LIMIT 1`,
+    sql`SELECT device_id, used, limit_count FROM free_coffee WHERE device_id = ${toId} LIMIT 1`,
+  ]);
+
+  const fromStamps = Number(fromRows[0]?.used || 0);
+  const toStamps = Number(toRows[0]?.used || 0);
+  const mergedStamps = Math.max(0, Math.min(LOYALTY_CYCLE - 1, Math.max(fromStamps, toStamps)));
+
+  if (fromRows[0] || toRows[0]) {
+    await sql`
+      INSERT INTO free_coffee (device_id, used, limit_count, updated_at)
+      VALUES (${toId}, ${mergedStamps}, ${LOYALTY_CYCLE}, NOW())
+      ON CONFLICT (device_id) DO UPDATE SET
+        used = ${mergedStamps},
+        updated_at = NOW()
+    `;
+
+    if (fromRows[0]) {
+      await sql`DELETE FROM free_coffee WHERE device_id = ${fromId}`;
+    }
+  }
+
+  await sql`
+    UPDATE free_coffee_claims
+    SET device_id = ${toId}
+    WHERE device_id = ${fromId}
+  `;
+
+  await sql`
+    UPDATE device_coffee_log
+    SET device_id = ${toId}
+    WHERE device_id = ${fromId}
+  `;
+
+  return { ok: true, identity: toId, stamps: mergedStamps };
+}

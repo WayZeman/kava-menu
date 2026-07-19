@@ -20,6 +20,15 @@ const fxLayer = document.getElementById('fx-layer');
 const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
 const appSplashLoyalty = document.getElementById('app-splash-loyalty');
+const appSplashAuth = document.getElementById('app-splash-auth');
+const appSplashLoader = document.getElementById('app-splash-loader');
+const appSplashSkip = document.getElementById('app-splash-skip');
+const appSplashAuthError = document.getElementById('app-splash-auth-error');
+const googleSignInBtn = document.getElementById('google-signin-btn');
+const userAccount = document.getElementById('user-account');
+const userAccountAvatar = document.getElementById('user-account-avatar');
+const userAccountName = document.getElementById('user-account-name');
+const userAccountLogout = document.getElementById('user-account-logout');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -157,6 +166,7 @@ const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
+const USER_CACHE_KEY = 'kava-user-cache';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
@@ -261,6 +271,10 @@ let freeCoffeeStampsCount = 0;
 let freeCoffeeCycle = LOYALTY_CYCLE;
 let freeCoffeePendingUnits = [];
 let freeCoffeeCelebrate = false;
+let currentUser = null;
+let googleClientId = null;
+let googleSdkReady = null;
+let authLoginResolver = null;
 let userCoffeeDays = [];
 let userCoffeeToday = 0;
 let scrollLockY = 0;
@@ -1625,6 +1639,265 @@ function getDeviceId() {
   }
 }
 
+function getIdentityId() {
+  if (currentUser?.id) return `user:${currentUser.id}`;
+  return getDeviceId();
+}
+
+function firstNameFromUser(user) {
+  const name = String(user?.firstName || user?.name || '').trim();
+  if (name) return name.split(/\s+/)[0];
+  const email = String(user?.email || '').trim();
+  if (email.includes('@')) return email.split('@')[0];
+  return 'гостю';
+}
+
+function waitForGoogleSdk(timeoutMs = 8000) {
+  if (window.google?.accounts?.id) return Promise.resolve(true);
+  if (googleSdkReady) return googleSdkReady;
+
+  googleSdkReady = new Promise((resolve) => {
+    const started = Date.now();
+    const timer = window.setInterval(() => {
+      if (window.google?.accounts?.id) {
+        window.clearInterval(timer);
+        resolve(true);
+        return;
+      }
+      if (Date.now() - started > timeoutMs) {
+        window.clearInterval(timer);
+        resolve(false);
+      }
+    }, 80);
+  });
+
+  return googleSdkReady;
+}
+
+async function loadAuthConfig() {
+  try {
+    const response = await fetch('/api/auth/config', { cache: 'no-store' });
+    const data = await response.json();
+    googleClientId = data?.clientId || null;
+    return Boolean(googleClientId);
+  } catch {
+    googleClientId = null;
+    return false;
+  }
+}
+
+async function loadCurrentUser() {
+  try {
+    const response = await fetch('/api/auth/me', {
+      cache: 'no-store',
+      credentials: 'include',
+    });
+    const data = await response.json();
+    if (data?.ok && data.user) {
+      setCurrentUser(data.user);
+      return data.user;
+    }
+  } catch {
+    // anonymous
+  }
+  setCurrentUser(null);
+  return null;
+}
+
+function setCurrentUser(user) {
+  currentUser = user || null;
+  try {
+    if (currentUser) {
+      localStorage.setItem(USER_CACHE_KEY, JSON.stringify({
+        id: currentUser.id,
+        name: currentUser.name,
+        firstName: currentUser.firstName || firstNameFromUser(currentUser),
+        email: currentUser.email,
+        picture: currentUser.picture,
+      }));
+    } else {
+      localStorage.removeItem(USER_CACHE_KEY);
+    }
+  } catch {
+    // ignore
+  }
+  renderUserAccount();
+  if (currentUser) updateSplashWelcomeMessage(currentUser);
+}
+
+function readCachedUser() {
+  try {
+    const raw = localStorage.getItem(USER_CACHE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data?.id) return null;
+    return {
+      id: String(data.id),
+      name: data.name || null,
+      firstName: data.firstName || firstNameFromUser(data),
+      email: data.email || null,
+      picture: data.picture || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function renderUserAccount() {
+  if (!userAccount) return;
+  if (!currentUser) {
+    userAccount.hidden = true;
+    return;
+  }
+
+  userAccount.hidden = false;
+  if (userAccountName) {
+    userAccountName.textContent = firstNameFromUser(currentUser);
+  }
+  if (userAccountAvatar) {
+    if (currentUser.picture) {
+      userAccountAvatar.src = currentUser.picture;
+      userAccountAvatar.hidden = false;
+    } else {
+      userAccountAvatar.removeAttribute('src');
+      userAccountAvatar.hidden = true;
+    }
+  }
+}
+
+function showSplashAuthError(message) {
+  if (!appSplashAuthError) return;
+  if (!message) {
+    appSplashAuthError.hidden = true;
+    appSplashAuthError.textContent = '';
+    return;
+  }
+  appSplashAuthError.textContent = message;
+  appSplashAuthError.hidden = false;
+}
+
+function setSplashAuthVisible(visible) {
+  if (appSplashAuth) appSplashAuth.hidden = !visible;
+  if (appSplashLoader) appSplashLoader.hidden = visible;
+  if (!visible) showSplashAuthError('');
+}
+
+async function completeGoogleSignIn(credential) {
+  const response = await fetch('/api/auth/google', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      credential,
+      deviceId: getDeviceId(),
+    }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data?.ok || !data.user) {
+    throw new Error(data?.error || 'auth_failed');
+  }
+
+  setCurrentUser(data.user);
+
+  if (data.freeCoffee) {
+    setFreeCoffeeBalance({
+      stamps: data.freeCoffee.stamps,
+      used: data.freeCoffee.used,
+      cycle: data.freeCoffee.cycle || data.freeCoffee.limit,
+      limit: data.freeCoffee.limit,
+      celebrated: false,
+    }, { animate: false });
+  }
+
+  await loadUserCoffeeStats();
+  return data.user;
+}
+
+async function handleGoogleCredential(response) {
+  try {
+    showSplashAuthError('');
+    await completeGoogleSignIn(response?.credential);
+    setSplashAuthVisible(false);
+    if (authLoginResolver) {
+      const resolve = authLoginResolver;
+      authLoginResolver = null;
+      resolve(true);
+    }
+  } catch {
+    showSplashAuthError('Не вдалося увійти. Спробуйте ще раз.');
+  }
+}
+
+async function renderGoogleSignInButton() {
+  if (!googleClientId || !googleSignInBtn) return false;
+  const ready = await waitForGoogleSdk();
+  if (!ready || !window.google?.accounts?.id) return false;
+
+  window.google.accounts.id.initialize({
+    client_id: googleClientId,
+    callback: handleGoogleCredential,
+    auto_select: true,
+    cancel_on_tap_outside: false,
+    context: 'signin',
+    ux_mode: 'popup',
+  });
+
+  googleSignInBtn.replaceChildren();
+  window.google.accounts.id.renderButton(googleSignInBtn, {
+    type: 'standard',
+    theme: 'outline',
+    size: 'large',
+    text: 'signin_with',
+    shape: 'pill',
+    logo_alignment: 'left',
+    width: 280,
+  });
+
+  try {
+    window.google.accounts.id.prompt();
+  } catch {
+    // One Tap is optional
+  }
+
+  return true;
+}
+
+function waitForSplashLogin() {
+  return new Promise((resolve) => {
+    authLoginResolver = resolve;
+    if (appSplashSkip) {
+      appSplashSkip.onclick = () => {
+        if (authLoginResolver) {
+          const done = authLoginResolver;
+          authLoginResolver = null;
+          done(false);
+        }
+        setSplashAuthVisible(false);
+      };
+    }
+  });
+}
+
+async function logoutCurrentUser() {
+  try {
+    await fetch('/api/auth/logout', {
+      method: 'POST',
+      credentials: 'include',
+    });
+  } catch {
+    // ignore
+  }
+  setCurrentUser(null);
+  await loadFreeCoffeeBalance();
+  await loadUserCoffeeStats();
+}
+
+if (userAccountLogout) {
+  userAccountLogout.addEventListener('click', () => {
+    logoutCurrentUser();
+  });
+}
+
 function getKyivDayKey(value = new Date()) {
   return new Intl.DateTimeFormat('en-CA', {
     timeZone: 'Europe/Kyiv',
@@ -1702,10 +1975,11 @@ function recordLocalUserCoffee(drinkQty, forSelf = true) {
 
 async function loadUserCoffeeStats() {
   applyUserCoffeeStats(readLocalUserCoffee());
-  const deviceId = getDeviceId();
+  const deviceId = getIdentityId();
   try {
     const response = await fetch(`/api/my-coffee?deviceId=${encodeURIComponent(deviceId)}`, {
       cache: 'no-store',
+      credentials: 'include',
     });
     const data = await response.json();
     if (data?.ok) applyUserCoffeeStats(data);
@@ -1938,6 +2212,17 @@ function formatLoyaltySplashText(untilFree) {
   return `До безкоштовної кави залишилось ${left}`;
 }
 
+function formatWelcomeSplashText(user) {
+  return `Вітаємо, ${firstNameFromUser(user)}`;
+}
+
+function updateSplashWelcomeMessage(user = currentUser) {
+  if (!appSplashLoyalty || !user) return;
+  appSplashLoyalty.textContent = formatWelcomeSplashText(user);
+  appSplashLoyalty.classList.remove('is-loyalty');
+  appSplashLoyalty.classList.add('is-welcome');
+}
+
 function cacheLoyaltyProgress(stamps, cycle) {
   try {
     localStorage.setItem(LOYALTY_CACHE_KEY, JSON.stringify({
@@ -1964,7 +2249,12 @@ function readCachedLoyaltyProgress() {
 
 function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
   if (!appSplashLoyalty) return;
+  if (currentUser) {
+    updateSplashWelcomeMessage(currentUser);
+    return;
+  }
   appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
+  appSplashLoyalty.classList.remove('is-welcome');
   appSplashLoyalty.classList.add('is-loyalty');
 }
 
@@ -2131,10 +2421,11 @@ function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = fals
 }
 
 async function loadFreeCoffeeBalance() {
-  const deviceId = getDeviceId();
+  const deviceId = getIdentityId();
   try {
     const response = await fetch(`/api/free-coffee?deviceId=${encodeURIComponent(deviceId)}`, {
       cache: 'no-store',
+      credentials: 'include',
     });
     const data = await response.json();
     if (!data?.ok) return;
@@ -2673,7 +2964,7 @@ function notifyOrder(order, provider, orderId) {
     items: order.items,
     total: order.total,
     provider,
-    deviceId: getDeviceId(),
+    deviceId: getIdentityId(),
     freeDrinks: Number(order.freeDrinks || 0),
     drinkQty: Number(order.drinkQty || 0),
     forSelf: order.forSelf !== false,
@@ -2684,6 +2975,7 @@ function notifyOrder(order, provider, orderId) {
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
+    credentials: 'include',
   }).then(async (response) => {
     try {
       const data = await response.json();
@@ -3251,27 +3543,61 @@ async function bootApp() {
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
   const minSplashMs = reducedMotion ? 0 : coarsePointer ? 1100 : 1400;
   const started = Date.now();
-  const maxTimer = window.setTimeout(dismissSplash, 6000);
+  let maxTimer = window.setTimeout(dismissSplash, 12000);
 
-  const cachedLoyalty = readCachedLoyaltyProgress();
-  if (cachedLoyalty) {
-    freeCoffeeStampsCount = cachedLoyalty.stamps;
-    freeCoffeeCycle = cachedLoyalty.cycle;
-    updateSplashLoyaltyMessage(cachedLoyalty.stamps, cachedLoyalty.cycle);
+  const cachedUser = readCachedUser();
+  if (cachedUser) {
+    currentUser = cachedUser;
+    updateSplashWelcomeMessage(cachedUser);
+    renderUserAccount();
   } else {
-    updateSplashLoyaltyMessage(0, LOYALTY_CYCLE);
+    const cachedLoyalty = readCachedLoyaltyProgress();
+    if (cachedLoyalty) {
+      freeCoffeeStampsCount = cachedLoyalty.stamps;
+      freeCoffeeCycle = cachedLoyalty.cycle;
+      updateSplashLoyaltyMessage(cachedLoyalty.stamps, cachedLoyalty.cycle);
+    }
   }
 
   initMenuDelegation();
 
   try {
-    await initMenu();
+    const [, user] = await Promise.all([
+      loadAuthConfig(),
+      loadCurrentUser(),
+      initMenu(),
+    ]);
+
+    if (user) {
+      updateSplashWelcomeMessage(user);
+      setSplashAuthVisible(false);
+    } else if (googleClientId) {
+      if (appSplashLoyalty) {
+        appSplashLoyalty.textContent = 'Увійдіть, щоб зберегти свої чашки';
+        appSplashLoyalty.classList.remove('is-loyalty', 'is-welcome');
+      }
+      setSplashAuthVisible(true);
+      window.clearTimeout(maxTimer);
+      const rendered = await renderGoogleSignInButton();
+      if (rendered) {
+        await waitForSplashLogin();
+      } else {
+        setSplashAuthVisible(false);
+        updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
+      }
+      maxTimer = window.setTimeout(dismissSplash, 8000);
+    } else if (!currentUser) {
+      updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
+    }
+
     await loadFreeCoffeeBalance();
     await loadUserCoffeeStats();
   } catch {
     // show menu with cached data or empty state
     renderFreeCoffeeStamps();
   }
+
+  if (currentUser) updateSplashWelcomeMessage(currentUser);
 
   const wait = Math.max(0, minSplashMs - (Date.now() - started));
   window.setTimeout(() => {
