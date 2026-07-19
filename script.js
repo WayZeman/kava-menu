@@ -1811,6 +1811,22 @@ function setSplashAuthVisible(visible) {
   if (!visible) showSplashAuthError('');
 }
 
+function isSplashAuthMode() {
+  return Boolean(appSplash?.classList.contains('is-auth-mode') || (appSplashAuth && !appSplashAuth.hidden));
+}
+
+function showSplashLoadingMessage(text = 'Готуємо для вас…') {
+  if (appSplashTitle) {
+    appSplashTitle.textContent = 'Кавове меню';
+    appSplashTitle.classList.remove('is-welcome');
+  }
+  if (appSplashLoyalty) {
+    appSplashLoyalty.hidden = false;
+    appSplashLoyalty.textContent = text;
+    appSplashLoyalty.classList.remove('is-welcome', 'is-loyalty', 'is-auth');
+  }
+}
+
 async function completeGoogleSignIn(credential) {
   const response = await fetch('/api/auth?action=google', {
     method: 'POST',
@@ -2323,6 +2339,8 @@ function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = free
     updateSplashWelcomeMessage(currentUser);
     return;
   }
+  // Don't flash loyalty copy over auth / loading transitions.
+  if (splashAwaitingLogin || isSplashAuthMode() || splashDismissed) return;
   if (!appSplashLoyalty) return;
   if (appSplashTitle) {
     appSplashTitle.textContent = 'Кавове меню';
@@ -3630,10 +3648,12 @@ function initStandaloneMode() {
 }
 
 let splashDismissed = false;
+let splashAwaitingLogin = false;
 
 function dismissSplash() {
   if (splashDismissed || !appSplash) return;
   splashDismissed = true;
+  splashAwaitingLogin = false;
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const exitMs = reducedMotion ? 0 : 720;
@@ -3656,6 +3676,7 @@ async function bootApp() {
   const minSplashMs = reducedMotion ? 0 : coarsePointer ? 1100 : 1400;
   const started = Date.now();
   let maxTimer = window.setTimeout(dismissSplash, 12000);
+  let waitedForLogin = false;
 
   const cachedUser = readCachedUser();
   if (cachedUser) {
@@ -3663,11 +3684,12 @@ async function bootApp() {
     updateSplashWelcomeMessage(cachedUser);
     renderUserAccount();
   } else {
+    // Keep a stable loading line until we know auth vs loyalty state.
+    showSplashLoadingMessage('Готуємо для вас…');
     const cachedLoyalty = readCachedLoyaltyProgress();
     if (cachedLoyalty) {
       freeCoffeeStampsCount = cachedLoyalty.stamps;
       freeCoffeeCycle = cachedLoyalty.cycle;
-      updateSplashLoyaltyMessage(cachedLoyalty.stamps, cachedLoyalty.cycle);
     }
   }
 
@@ -3684,13 +3706,16 @@ async function bootApp() {
       updateSplashWelcomeMessage(user);
       setSplashAuthVisible(false);
     } else if (googleClientId) {
+      splashAwaitingLogin = true;
       showSplashAuthPrompt();
       setSplashAuthVisible(true);
       window.clearTimeout(maxTimer);
       const rendered = await renderGoogleSignInButton();
       if (rendered) {
+        waitedForLogin = true;
         await waitForSplashLogin();
       } else {
+        splashAwaitingLogin = false;
         setSplashAuthVisible(false);
         updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
       }
@@ -3709,9 +3734,14 @@ async function bootApp() {
   if (currentUser) {
     updateSplashWelcomeMessage(currentUser);
     renderUserAccount();
+  } else if (!waitedForLogin && !isSplashAuthMode()) {
+    updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
   }
 
-  const wait = Math.max(0, minSplashMs - (Date.now() - started));
+  // After Google login/skip the splash already waited — dismiss without another flash.
+  const wait = waitedForLogin
+    ? 0
+    : Math.max(0, minSplashMs - (Date.now() - started));
   window.setTimeout(() => {
     window.clearTimeout(maxTimer);
     dismissSplash();
