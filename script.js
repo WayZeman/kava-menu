@@ -21,6 +21,7 @@ const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
 const appSplashTitle = document.getElementById('app-splash-title');
 const appSplashLoyalty = document.getElementById('app-splash-loyalty');
+const appSplashLevel = document.getElementById('app-splash-level');
 const appSplashAuth = document.getElementById('app-splash-auth');
 const appSplashLoader = document.getElementById('app-splash-loader');
 const appSplashSkip = document.getElementById('app-splash-skip');
@@ -47,6 +48,8 @@ const drinksMenuList = document.getElementById('drinks-menu-list');
 const freeCoffeeSection = document.getElementById('free-coffee');
 const freeCoffeeStamps = document.getElementById('free-coffee-stamps');
 const freeCoffeeMeta = document.getElementById('free-coffee-meta');
+const freeCoffeeHint = document.getElementById('free-coffee-hint');
+const freeCoffeeProgress = document.getElementById('free-coffee-progress');
 const userAnalyticsOpen = document.getElementById('user-analytics-open');
 const userAnalytics = document.getElementById('user-analytics');
 const userAnalyticsSummary = document.getElementById('user-analytics-summary');
@@ -1801,8 +1804,10 @@ function showSplashAuthError(message) {
 }
 
 function setSplashAuthVisible(visible) {
+  if (appSplash) appSplash.classList.toggle('is-auth-mode', visible);
   if (appSplashAuth) appSplashAuth.hidden = !visible;
   if (appSplashLoader) appSplashLoader.hidden = visible;
+  if (appSplashLevel) appSplashLevel.hidden = !visible;
   if (!visible) showSplashAuthError('');
 }
 
@@ -2263,6 +2268,9 @@ function resetSplashBrand() {
 function updateSplashWelcomeMessage(user = currentUser) {
   if (!user) return;
 
+  if (appSplash) appSplash.classList.remove('is-auth-mode');
+  if (appSplashLevel) appSplashLevel.hidden = true;
+
   if (appSplashTitle) {
     appSplashTitle.textContent = formatWelcomeSplashText(user);
     appSplashTitle.classList.add('is-welcome');
@@ -2390,6 +2398,8 @@ function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrate
   if (!freeCoffeeStamps) return;
 
   const readyForGift = freeCoffeeStampsCount >= freeCoffeeCycle - 1;
+  const untilFree = getLoyaltyUntilFree(freeCoffeeStampsCount, freeCoffeeCycle);
+  const progressRatio = Math.max(0, Math.min(1, freeCoffeeStampsCount / Math.max(1, freeCoffeeCycle - 1)));
 
   if (freeCoffeeMeta) {
     if (celebrated || freeCoffeeCelebrate) {
@@ -2399,6 +2409,20 @@ function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrate
     } else {
       freeCoffeeMeta.textContent = `${freeCoffeeStampsCount}/${freeCoffeeCycle}`;
     }
+  }
+
+  if (freeCoffeeHint) {
+    if (celebrated || freeCoffeeCelebrate) {
+      freeCoffeeHint.textContent = 'Вітаємо! Подарунок активовано';
+    } else if (readyForGift) {
+      freeCoffeeHint.textContent = 'Наступна кава — у подарунок';
+    } else {
+      freeCoffeeHint.textContent = `Ще ${untilFree} ${formatDrinkWord(untilFree)} до безкоштовної`;
+    }
+  }
+
+  if (freeCoffeeProgress) {
+    freeCoffeeProgress.style.width = `${Math.round(progressRatio * 100)}%`;
   }
 
   if (freeCoffeeSection) {

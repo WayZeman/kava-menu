@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '127';
+      var version = '128';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,13 +42,22 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=127">
+  <link rel="stylesheet" href="styles.css?v=128">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
+    <div class="app-splash-fx" aria-hidden="true">
+      <span class="app-splash-orb app-splash-orb--1"></span>
+      <span class="app-splash-orb app-splash-orb--2"></span>
+      <span class="app-splash-orb app-splash-orb--3"></span>
+      <span class="app-splash-ring app-splash-ring--1"></span>
+      <span class="app-splash-ring app-splash-ring--2"></span>
+      <span class="app-splash-ring app-splash-ring--3"></span>
+    </div>
     <div class="app-splash-content">
       <div class="app-splash-icon" aria-hidden="true">
+        <span class="app-splash-icon-pulse"></span>
         <svg class="app-splash-cup" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M12 28h32v18c0 4.4-3.6 8-8 8H20c-4.4 0-8-3.6-8-8V28z" stroke="currentColor" stroke-width="3"/>
           <path d="M44 34h6c3.3 0 6 2.7 6 6s-2.7 6-6 6h-6" stroke="currentColor" stroke-width="3"/>
@@ -57,6 +66,7 @@
         <span class="app-splash-steam app-splash-steam--2"></span>
         <span class="app-splash-steam app-splash-steam--3"></span>
       </div>
+      <p id="app-splash-level" class="app-splash-level" hidden>Бонусний рівень</p>
       <h1 id="app-splash-title" class="app-splash-title">Кавове меню</h1>
       <p id="app-splash-loyalty" class="app-splash-tagline">Готуємо для вас…</p>
       <div id="app-splash-auth" class="app-splash-auth" hidden>
@@ -105,12 +115,22 @@
     </section>
 
     <section id="free-coffee" class="loyalty-card" aria-label="10-та кава в подарунок" hidden>
+      <div class="loyalty-card-glow" aria-hidden="true"></div>
       <div class="loyalty-card-head">
-        <h2 class="loyalty-card-title">10-та кава в подарунок</h2>
-        <p id="free-coffee-meta" class="loyalty-card-meta">0/10</p>
+        <div class="loyalty-card-copy">
+          <p class="loyalty-card-eyebrow">Прогрес бонусу</p>
+          <h2 class="loyalty-card-title">10-та кава в подарунок</h2>
+          <p id="free-coffee-hint" class="loyalty-card-hint">Збирай печатки — десята кава безкоштовно</p>
+        </div>
+        <div class="loyalty-card-score" aria-hidden="true">
+          <span id="free-coffee-meta" class="loyalty-card-meta">0/10</span>
+        </div>
+      </div>
+      <div class="loyalty-progress" aria-hidden="true">
+        <span id="free-coffee-progress" class="loyalty-progress-bar"></span>
       </div>
       <div id="free-coffee-stamps" class="loyalty-stamps" role="list" aria-label="Прогрес"></div>
-      <button id="user-analytics-open" class="user-analytics-btn" type="button">Аналітика</button>
+      <button id="user-analytics-open" class="user-analytics-btn" type="button">Моя аналітика</button>
     </section>
 
     <section id="extras-menu" class="menu menu--extras" aria-label="До кави" hidden>
@@ -675,6 +695,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=127" defer></script>
+  <script src="script.js?v=128" defer></script>
 </body>
 </html>
