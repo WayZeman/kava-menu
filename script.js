@@ -1,6 +1,5 @@
 const MONO_JAR = 'https://send.monobank.ua/jar/4znkD4kdM5';
 const PRIVAT_ENVELOPE = 'https://www.privat24.ua/send/jzbnv';
-const MONO_ANDROID = 'com.ftband.mono';
 const OTHER_BANK_CARD = '4874100025126965';
 const PAYMENT_KEY = 'kava-pending-payment';
 const RELOAD_KEY = 'kava-payment-reload';
@@ -1501,32 +1500,37 @@ async function refreshMenuAfterOrder() {
   }
 }
 
-function isMobile() {
-  return /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-}
-
-function isAndroid() {
-  return /Android/i.test(navigator.userAgent);
-}
-
 function monoUrl(amount) {
-  return `${MONO_JAR}?a=${amount}`;
-}
-
-function androidIntent(httpsUrl, packageName) {
-  const path = httpsUrl.replace(/^https:\/\//, '');
-  return `intent://${path}#Intent;scheme=https;package=${packageName};end`;
+  const value = Math.max(0, Math.round(Number(amount) || 0));
+  return value > 0 ? `${MONO_JAR}?a=${value}` : MONO_JAR;
 }
 
 function getPaymentUrl(provider, amount) {
-  if (provider === 'mono') {
-    const url = monoUrl(amount);
-    if (isMobile() && isAndroid()) {
-      return androidIntent(url, MONO_ANDROID);
+  if (provider === 'mono') return monoUrl(amount);
+  if (provider === 'privat') return PRIVAT_ENVELOPE;
+  return '';
+}
+
+function syncBankPayLinks(amount) {
+  payActions.forEach((action) => {
+    const provider = action.dataset.provider;
+    if ((provider === 'mono' || provider === 'privat') && action.tagName === 'A') {
+      action.href = getPaymentUrl(provider, amount) || action.href;
     }
-    return url;
-  }
-  return PRIVAT_ENVELOPE;
+  });
+}
+
+function setPayActionsDisabled(disabled) {
+  payActions.forEach((action) => {
+    if (action.tagName === 'A') {
+      action.classList.toggle('is-disabled', disabled);
+      action.setAttribute('aria-disabled', disabled ? 'true' : 'false');
+      if (disabled) action.setAttribute('tabindex', '-1');
+      else action.removeAttribute('tabindex');
+      return;
+    }
+    action.disabled = disabled;
+  });
 }
 
 function formatQtyLabel(qty) {
@@ -3057,9 +3061,7 @@ function dismissOverlays() {
     recoverTimer = null;
   }
 
-  payActions.forEach((action) => {
-    action.disabled = false;
-  });
+  setPayActionsDisabled(false);
 }
 
 function openSheet() {
@@ -3068,6 +3070,7 @@ function openSheet() {
 
   const pricing = getCartPricing(items);
   paymentTotal = pricing.paidTotal;
+  syncBankPayLinks(pricing.paidTotal);
   sheetTitle.textContent = pricing.paidTotal > 0 ? `${pricing.paidTotal} грн` : 'Безкоштовно';
   if (receiptDate) receiptDate.textContent = formatReceiptDate();
   renderReceiptLines(pricing.items);
@@ -3146,13 +3149,22 @@ function closeConfirmSheet() {
 }
 
 function openPaymentUrl(url) {
-  const link = document.createElement('a');
-  link.href = url;
-  link.rel = 'noopener noreferrer';
-  link.style.display = 'none';
-  document.body.appendChild(link);
-  link.click();
-  link.remove();
+  const target = String(url || '').trim();
+  if (!target) return false;
+
+  // Same-tab navigation is the most reliable way to open bank/envelope links
+  // on iOS Safari, Android Chrome, and installed PWAs.
+  try {
+    window.location.assign(target);
+    return true;
+  } catch {
+    try {
+      window.location.href = target;
+      return true;
+    } catch {
+      return false;
+    }
+  }
 }
 
 function snapshotOrder() {
@@ -3230,9 +3242,7 @@ function goToPayment(provider) {
   awaitingPayment = true;
   savePendingPayment(order, orderId);
 
-  payActions.forEach((action) => {
-    action.disabled = true;
-  });
+  setPayActionsDisabled(true);
 
   if (order.total === 0) {
     if (currentUser?.id && (order.drinkQty > 0 || order.freeDrinks > 0)) {
@@ -3274,14 +3284,18 @@ function goToPayment(provider) {
   notifyOrder(order, provider, orderId);
 
   const url = getPaymentUrl(provider, order.total);
+  syncBankPayLinks(order.total);
 
-  closeSheet();
   loader.hidden = false;
   loaderText.textContent = provider === 'privat'
     ? `Відкриваємо конверт… Введіть ${order.total} грн`
-    : 'Відкриваємо Monobank…';
+    : 'Відкриваємо банку Monobank…';
 
+  // Navigate first — do not hide the sheet before opening, or mobile browsers
+  // may cancel the navigation after the pay control becomes display:none.
   openPaymentUrl(url);
+
+  closeSheet();
 
   recoverTimer = setTimeout(() => {
     loader.hidden = true;
@@ -3481,9 +3495,7 @@ function resetPendingPayment() {
   clearPendingPayment();
   pendingOrder = null;
   awaitingPayment = false;
-  payActions.forEach((action) => {
-    action.disabled = false;
-  });
+  setPayActionsDisabled(false);
 }
 
 async function revokePendingOrderIncome() {
@@ -3516,9 +3528,7 @@ async function finishOtherPayment() {
   pendingOrder = null;
   awaitingPayment = false;
   closeCardPaySheet();
-  payActions.forEach((action) => {
-    action.disabled = false;
-  });
+  setPayActionsDisabled(false);
   // Extra stock already deducted in /api/order when card number was copied
   if (order?.drinkQty > 0 && currentUser?.id) {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
@@ -3551,9 +3561,7 @@ function cancelPendingPayment() {
   pendingOrder = null;
   awaitingPayment = false;
   closeConfirmSheet();
-  payActions.forEach((action) => {
-    action.disabled = false;
-  });
+  setPayActionsDisabled(false);
   clearCart();
 }
 
@@ -3660,8 +3668,14 @@ async function handleCartPayTap(event) {
 cartPay.addEventListener('pointerup', handleCartPayTap);
 
 payActions.forEach((action) => {
-  action.addEventListener('click', () => {
-    goToPayment(action.dataset.provider);
+  action.addEventListener('click', (event) => {
+    const provider = action.dataset.provider;
+    if (action.tagName === 'A') {
+      // We open the exact jar/envelope URL ourselves so amount is always correct.
+      event.preventDefault();
+    }
+    if (action.classList.contains('is-disabled') || action.disabled) return;
+    goToPayment(provider);
   });
 });
 

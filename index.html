@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '132';
+      var version = '133';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=142">
+  <link rel="stylesheet" href="styles.css?v=143">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
@@ -190,12 +190,12 @@
         <div class="receipt-rule receipt-rule--light" aria-hidden="true"></div>
 
         <div class="receipt-pay">
-          <button class="receipt-pay-icon" type="button" data-provider="mono" aria-label="Monobank">
+          <a class="receipt-pay-icon" data-provider="mono" href="https://send.monobank.ua/jar/4znkD4kdM5" rel="noopener noreferrer" aria-label="Monobank">
             <img src="logos/mono.png" width="52" height="52" alt="" loading="lazy" decoding="async">
-          </button>
-          <button class="receipt-pay-icon" type="button" data-provider="privat" aria-label="Приват24">
+          </a>
+          <a class="receipt-pay-icon" data-provider="privat" href="https://www.privat24.ua/send/jzbnv" rel="noopener noreferrer" aria-label="Приват24">
             <img src="logos/privat.png" width="52" height="52" alt="" loading="lazy" decoding="async">
-          </button>
+          </a>
           <button class="receipt-pay-other" type="button" data-provider="other">Інші банки</button>
         </div>
 
@@ -714,6 +714,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=142" defer></script>
+  <script src="script.js?v=143" defer></script>
 </body>
 </html>
