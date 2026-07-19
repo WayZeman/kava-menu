@@ -3634,13 +3634,20 @@ let splashDismissed = false;
 function dismissSplash() {
   if (splashDismissed || !appSplash) return;
   splashDismissed = true;
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const exitMs = reducedMotion ? 0 : 720;
+
   document.body.classList.remove('is-splash-active');
+  document.body.classList.add('is-app-ready');
   appSplash.classList.add('is-exiting');
   appSplash.setAttribute('aria-hidden', 'true');
   appSplash.setAttribute('aria-busy', 'false');
+
   window.setTimeout(() => {
     appSplash.hidden = true;
-  }, 520);
+    appSplash.classList.remove('is-exiting');
+  }, exitMs);
 }
 
 async function bootApp() {
