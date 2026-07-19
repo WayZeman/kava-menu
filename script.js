@@ -3218,7 +3218,7 @@ function buildGiftConfetti() {
   if (!giftRewardConfetti) return;
   giftRewardConfetti.replaceChildren();
 
-  const colors = ['#ff4d4f', '#ff8a1f', '#ffd45c', '#ff6b3d', '#fff1c2', '#d4a24c', '#ffb347'];
+  const colors = ['#ff5a1f', '#ff8a1f', '#ffd84d', '#ffe566', '#ff4d4f', '#efc57d', '#fff8ec'];
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const count = reduced ? 12 : 42;
 

@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=134">
+  <link rel="stylesheet" href="styles.css?v=135">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
@@ -287,15 +287,22 @@
         <div class="gift-reward-rays"></div>
         <div class="gift-reward-glow"></div>
         <div class="gift-reward-icon">
-          <svg class="gift-reward-cup" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M12 28h32v18c0 4.4-3.6 8-8 8H20c-4.4 0-8-3.6-8-8V28z" stroke="currentColor" stroke-width="3"/>
-            <path d="M44 34h6c3.3 0 6 2.7 6 6s-2.7 6-6 6h-6" stroke="currentColor" stroke-width="3"/>
-            <ellipse cx="28" cy="28" rx="12" ry="3.5" fill="currentColor" opacity="0.18"/>
+          <svg class="gift-reward-box" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <ellipse cx="32" cy="56" rx="16" ry="3.2" fill="rgba(0,0,0,0.28)"/>
+            <rect x="12" y="30" width="40" height="24" rx="5" fill="#ff5a1f"/>
+            <rect x="12" y="40" width="40" height="14" rx="3" fill="#e8430f"/>
+            <rect x="10" y="22" width="44" height="11" rx="4" fill="#ff7a2f"/>
+            <rect x="29" y="22" width="6.5" height="32" rx="2" fill="#ffd84d"/>
+            <rect x="10" y="25" width="44" height="5.5" rx="2" fill="#ffe566"/>
+            <path d="M32 22c-4.6-6.4-12.4-5.6-12.4-.8 0 3.5 4.3 5.6 12.4 7Z" fill="#ffd84d"/>
+            <path d="M32 22c4.6-6.4 12.4-5.6 12.4-.8 0 3.5-4.3 5.6-12.4 7Z" fill="#ffe566"/>
+            <circle cx="32" cy="24" r="3.2" fill="#ffbf1f"/>
+            <rect x="16" y="34" width="8" height="4.5" rx="1.5" fill="rgba(255,255,255,0.28)"/>
           </svg>
           <span class="gift-reward-badge">FREE</span>
         </div>
       </div>
-      <p class="gift-reward-eyebrow">Лояльність</p>
+      <p class="gift-reward-eyebrow">Прогрес бонусу</p>
       <h2 id="gift-reward-title" class="gift-reward-title">Вітаємо!</h2>
       <p id="gift-reward-text" class="gift-reward-text">Ваша 10-та кава — у подарунок</p>
       <button id="gift-reward-close" class="gift-reward-btn" type="button">Чудово!</button>
@@ -694,6 +701,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=134" defer></script>
+  <script src="script.js?v=135" defer></script>
 </body>
 </html>
