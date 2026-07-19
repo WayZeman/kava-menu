@@ -8,13 +8,12 @@ export default async function handler(req, res) {
   }
 
   const session = await getSessionUser(req);
-  const queryDeviceId = String(req.query?.deviceId || '').trim();
-  const deviceId = session ? userIdentityKey(session.id) : queryDeviceId;
-
-  if (!deviceId || deviceId.length > 120) {
-    res.status(400).json({ ok: false, error: 'invalid_device' });
+  if (!session) {
+    res.status(401).json({ ok: false, error: 'auth_required' });
     return;
   }
+
+  const deviceId = userIdentityKey(session.id);
 
   try {
     const stats = await getDeviceCoffeeStats(deviceId);

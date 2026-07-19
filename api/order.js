@@ -159,7 +159,7 @@ export default async function handler(req, res) {
   }
 
   let freeCoffee = null;
-  if (isNewOrder && deviceId) {
+  if (isNewOrder && session && deviceId) {
     const drinkCount = items.reduce((sum, item) => {
       if (String(item?.category || '').trim() !== 'drink') return sum;
       return sum + (Number(item?.qty) || 0);

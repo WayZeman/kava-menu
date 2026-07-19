@@ -992,7 +992,7 @@ function applyCategoryVisibility() {
   }
 
   if (freeCoffeeSection) {
-    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
+    freeCoffeeSection.hidden = !currentUser || Boolean(drinksMenu?.hidden);
   }
 
   if (extrasMenu) {
@@ -1587,7 +1587,17 @@ function getCartPricing(items = getCartSummary().items) {
   const list = (items || []).filter((item) => item.qty > 0);
   const subtotal = list.reduce((sum, item) => sum + item.amount * item.qty, 0);
   const drinkQty = countDrinkQty(list);
-  const simulation = simulateLoyaltyCycle(freeCoffeeStampsCount, drinkQty);
+  const loyaltyEnabled = Boolean(currentUser?.id);
+  const simulation = loyaltyEnabled
+    ? simulateLoyaltyCycle(freeCoffeeStampsCount, drinkQty)
+    : {
+      stamps: 0,
+      freeDrinks: 0,
+      paidDrinks: drinkQty,
+      units: Array.from({ length: drinkQty }, () => 'paid'),
+      cycle: freeCoffeeCycle,
+      untilFree: freeCoffeeCycle,
+    };
 
   let unitIndex = 0;
   let freeValue = 0;
@@ -1723,11 +1733,16 @@ function setCurrentUser(user) {
       }));
     } else {
       localStorage.removeItem(USER_CACHE_KEY);
+      freeCoffeeStampsCount = 0;
+      freeCoffeePendingUnits = [];
+      freeCoffeeCelebrate = false;
     }
   } catch {
     // ignore
   }
   renderUserAccount();
+  renderFreeCoffeeStamps();
+  updateCart();
   if (currentUser) {
     updateSplashWelcomeMessage(currentUser);
   } else {
@@ -2001,6 +2016,7 @@ function applyUserCoffeeStats(payload = {}) {
 }
 
 function recordLocalUserCoffee(drinkQty, forSelf = true) {
+  if (!currentUser?.id) return;
   const cups = Math.max(0, Math.round(Number(drinkQty) || 0));
   if (cups <= 0) return;
 
@@ -2019,6 +2035,11 @@ function recordLocalUserCoffee(drinkQty, forSelf = true) {
 }
 
 async function loadUserCoffeeStats() {
+  if (!currentUser?.id) {
+    applyUserCoffeeStats({ days: [], today: 0 });
+    return;
+  }
+
   applyUserCoffeeStats(readLocalUserCoffee());
   const deviceId = getIdentityId();
   try {
@@ -2339,17 +2360,8 @@ function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = free
     updateSplashWelcomeMessage(currentUser);
     return;
   }
-  // Don't flash loyalty copy over auth / loading transitions.
-  if (splashAwaitingLogin || isSplashAuthMode() || splashDismissed) return;
-  if (!appSplashLoyalty) return;
-  if (appSplashTitle) {
-    appSplashTitle.textContent = 'Кавове меню';
-    appSplashTitle.classList.remove('is-welcome');
-  }
-  appSplashLoyalty.hidden = false;
-  appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
-  appSplashLoyalty.classList.remove('is-welcome', 'is-auth');
-  appSplashLoyalty.classList.add('is-loyalty');
+  // Loyalty progress is only for signed-in users.
+  return;
 }
 
 function loyaltyCupMarkup() {
@@ -2426,6 +2438,15 @@ function getLoyaltyPreviewSlots(stamps, pendingUnits = []) {
 function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrated = false } = {}) {
   if (!freeCoffeeStamps) return;
 
+  if (freeCoffeeSection) {
+    freeCoffeeSection.hidden = !currentUser || Boolean(drinksMenu?.hidden);
+  }
+
+  if (!currentUser) {
+    freeCoffeeStamps.replaceChildren();
+    return;
+  }
+
   const readyForGift = freeCoffeeStampsCount >= freeCoffeeCycle - 1;
   const untilFree = getLoyaltyUntilFree(freeCoffeeStampsCount, freeCoffeeCycle);
   const progressRatio = Math.max(0, Math.min(1, freeCoffeeStampsCount / Math.max(1, freeCoffeeCycle - 1)));
@@ -2455,7 +2476,6 @@ function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrate
   }
 
   if (freeCoffeeSection) {
-    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
     freeCoffeeSection.classList.toggle('is-ready', readyForGift);
     freeCoffeeSection.classList.toggle('is-celebrating', Boolean(celebrated || freeCoffeeCelebrate));
   }
@@ -2512,6 +2532,14 @@ function burstLoyaltyCelebration() {
 }
 
 function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = false } = {}) {
+  if (!currentUser?.id) {
+    freeCoffeeStampsCount = 0;
+    freeCoffeePendingUnits = [];
+    freeCoffeeCelebrate = false;
+    renderFreeCoffeeStamps();
+    return;
+  }
+
   const prevStamps = freeCoffeeStampsCount;
   const nextCycle = Number(payload.cycle ?? payload.limit);
   if (Number.isFinite(nextCycle) && nextCycle > 1) {
@@ -2544,6 +2572,15 @@ function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = fals
 }
 
 async function loadFreeCoffeeBalance() {
+  if (!currentUser?.id) {
+    freeCoffeeStampsCount = 0;
+    freeCoffeePendingUnits = [];
+    freeCoffeeCelebrate = false;
+    renderFreeCoffeeStamps();
+    updateCart();
+    return;
+  }
+
   const deviceId = getIdentityId();
   try {
     const response = await fetch(`/api/free-coffee?deviceId=${encodeURIComponent(deviceId)}`, {
@@ -2563,7 +2600,7 @@ async function loadFreeCoffeeBalance() {
 }
 
 function applyFreeCoffeeClaim(claim, { animate = true } = {}) {
-  if (!claim) return;
+  if (!claim || !currentUser?.id) return;
   const claimed = Number(claim.claimed || claim.freeDrinks || 0);
   const celebrated = Boolean(claim.celebrated || claimed > 0);
   setFreeCoffeeBalance(
@@ -3137,7 +3174,7 @@ function goToPayment(provider) {
   });
 
   if (order.total === 0) {
-    if (order.drinkQty > 0 || order.freeDrinks > 0) {
+    if (currentUser?.id && (order.drinkQty > 0 || order.freeDrinks > 0)) {
       const simulation = simulateLoyaltyCycle(freeCoffeeStampsCount, order.drinkQty || 0);
       setFreeCoffeeBalance(
         {
@@ -3154,7 +3191,7 @@ function goToPayment(provider) {
     clearPendingPayment();
     pendingOrder = null;
     pendingOrderId = null;
-    if (order.drinkQty > 0) {
+    if (currentUser?.id && order.drinkQty > 0) {
       recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
     }
     clearCart();
@@ -3422,7 +3459,7 @@ async function finishOtherPayment() {
     action.disabled = false;
   });
   // Extra stock already deducted in /api/order when card number was copied
-  if (order?.drinkQty > 0) {
+  if (order?.drinkQty > 0 && currentUser?.id) {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }
   clearCart();
@@ -3438,7 +3475,7 @@ async function confirmPaymentSuccess() {
   awaitingPayment = false;
   closeConfirmSheet();
   // Extra stock already deducted in /api/order when bank was pressed
-  if (order?.drinkQty > 0) {
+  if (order?.drinkQty > 0 && currentUser?.id) {
     recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
   }
   clearCart();
@@ -3686,11 +3723,6 @@ async function bootApp() {
   } else {
     // Keep a stable loading line until we know auth vs loyalty state.
     showSplashLoadingMessage('Готуємо для вас…');
-    const cachedLoyalty = readCachedLoyaltyProgress();
-    if (cachedLoyalty) {
-      freeCoffeeStampsCount = cachedLoyalty.stamps;
-      freeCoffeeCycle = cachedLoyalty.cycle;
-    }
   }
 
   initMenuDelegation();
