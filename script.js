@@ -2255,15 +2255,12 @@ function resetSplashBrand() {
     appSplashTitle.classList.remove('is-welcome');
   }
   if (appSplashLoyalty) {
+    appSplashLoyalty.hidden = false;
     appSplashLoyalty.classList.remove('is-welcome', 'is-loyalty', 'is-auth');
   }
 }
 
-function updateSplashWelcomeMessage(
-  user = currentUser,
-  stamps = freeCoffeeStampsCount,
-  cycle = freeCoffeeCycle,
-) {
+function updateSplashWelcomeMessage(user = currentUser) {
   if (!user) return;
 
   if (appSplashTitle) {
@@ -2272,9 +2269,9 @@ function updateSplashWelcomeMessage(
   }
 
   if (appSplashLoyalty) {
-    appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
-    appSplashLoyalty.classList.remove('is-auth');
-    appSplashLoyalty.classList.add('is-loyalty', 'is-welcome');
+    appSplashLoyalty.textContent = '';
+    appSplashLoyalty.hidden = true;
+    appSplashLoyalty.classList.remove('is-auth', 'is-loyalty', 'is-welcome');
   }
 }
 
@@ -2284,6 +2281,7 @@ function showSplashAuthPrompt() {
     appSplashTitle.classList.remove('is-welcome');
   }
   if (appSplashLoyalty) {
+    appSplashLoyalty.hidden = false;
     appSplashLoyalty.textContent = 'Для бонусів потрібна авторизація';
     appSplashLoyalty.classList.remove('is-loyalty', 'is-welcome');
     appSplashLoyalty.classList.add('is-auth');
@@ -2316,7 +2314,7 @@ function readCachedLoyaltyProgress() {
 
 function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
   if (currentUser) {
-    updateSplashWelcomeMessage(currentUser, stamps, cycle);
+    updateSplashWelcomeMessage(currentUser);
     return;
   }
   if (!appSplashLoyalty) return;
@@ -2324,6 +2322,7 @@ function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = free
     appSplashTitle.textContent = 'Кавове меню';
     appSplashTitle.classList.remove('is-welcome');
   }
+  appSplashLoyalty.hidden = false;
   appSplashLoyalty.textContent = formatLoyaltySplashText(getLoyaltyUntilFree(stamps, cycle));
   appSplashLoyalty.classList.remove('is-welcome', 'is-auth');
   appSplashLoyalty.classList.add('is-loyalty');
