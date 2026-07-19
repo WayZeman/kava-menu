@@ -1768,28 +1768,89 @@ function readCachedUser() {
   }
 }
 
+function normalizeAvatarUrl(url) {
+  const raw = String(url || '').trim();
+  if (!raw) return '';
+  try {
+    const parsed = new URL(raw);
+    if (!/^https?:$/i.test(parsed.protocol)) return '';
+    // Google profile photos often fail when Referer is sent; use a crisp size for the hero circle.
+    if (parsed.hostname.endsWith('googleusercontent.com')) {
+      parsed.search = '';
+      parsed.hash = '';
+      let path = parsed.pathname.replace(/=s\d+(-c)?$/i, '');
+      parsed.pathname = `${path}=s128-c`;
+      return parsed.toString();
+    }
+    return parsed.toString();
+  } catch {
+    return '';
+  }
+}
+
+function resetHeroAvatar() {
+  if (!heroAvatar) return;
+  heroAvatar.onload = null;
+  heroAvatar.onerror = null;
+  heroAvatar.removeAttribute('src');
+  heroAvatar.alt = '';
+  heroAvatar.hidden = true;
+  if (heroCupWrap) heroCupWrap.hidden = false;
+  if (heroIcon) heroIcon.classList.remove('has-avatar');
+}
+
+function applyHeroAvatar(picture, alt) {
+  if (!heroAvatar) return;
+
+  const url = normalizeAvatarUrl(picture);
+  if (!url) {
+    resetHeroAvatar();
+    return;
+  }
+
+  const reveal = () => {
+    heroAvatar.hidden = false;
+    if (heroCupWrap) heroCupWrap.hidden = true;
+    if (heroIcon) heroIcon.classList.add('has-avatar');
+  };
+
+  heroAvatar.referrerPolicy = 'no-referrer';
+  heroAvatar.alt = alt || '';
+  heroAvatar.onload = reveal;
+  heroAvatar.onerror = () => {
+    resetHeroAvatar();
+  };
+
+  // Keep the cup visible until the image actually loads (avoids an empty circle).
+  if (heroCupWrap) heroCupWrap.hidden = false;
+  heroAvatar.hidden = true;
+  if (heroIcon) heroIcon.classList.remove('has-avatar');
+
+  if (heroAvatar.getAttribute('src') === url) {
+    if (heroAvatar.complete && heroAvatar.naturalWidth > 0) {
+      reveal();
+    } else {
+      // Force a reload attempt for a previously failed URL.
+      heroAvatar.removeAttribute('src');
+      heroAvatar.src = url;
+    }
+    return;
+  }
+
+  heroAvatar.src = url;
+}
+
 function renderUserAccount() {
   if (userAccountLogout) {
     userAccountLogout.hidden = !currentUser;
   }
 
   const picture = String(currentUser?.picture || '').trim();
-  const showAvatar = Boolean(currentUser && picture);
-
-  if (heroAvatar) {
-    if (showAvatar) {
-      heroAvatar.src = picture;
-      heroAvatar.alt = firstNameFromUser(currentUser);
-      heroAvatar.hidden = false;
-    } else {
-      heroAvatar.removeAttribute('src');
-      heroAvatar.alt = '';
-      heroAvatar.hidden = true;
-    }
+  if (currentUser && picture) {
+    applyHeroAvatar(picture, firstNameFromUser(currentUser));
+  } else {
+    resetHeroAvatar();
   }
-
-  if (heroCupWrap) heroCupWrap.hidden = showAvatar;
-  if (heroIcon) heroIcon.classList.toggle('has-avatar', showAvatar);
 
   if (!heroTitle) return;
 
