@@ -374,30 +374,95 @@ body.is-splash-active {
   display: none;
 }
 
-.app-splash-google {
+.app-splash-google-wrap {
+  position: relative;
+  width: min(100%, 300px);
+  min-height: 52px;
+}
+
+.app-splash-google-btn {
   display: flex;
+  align-items: center;
   justify-content: center;
-  min-height: 44px;
+  gap: 12px;
   width: 100%;
-  filter: drop-shadow(0 12px 24px rgba(0, 0, 0, 0.18));
+  min-height: 52px;
+  padding: 0 20px;
+  border: 1px solid rgba(255, 220, 160, 0.28);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.1) 0%, transparent 48%),
+    rgba(22, 16, 12, 0.92);
+  color: #fff8ec;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 14px 28px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  pointer-events: none;
+}
+
+.app-splash-google-logo {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.18);
+  flex-shrink: 0;
+}
+
+.app-splash-google-logo svg {
+  display: block;
+}
+
+.app-splash-google-label {
+  white-space: nowrap;
+}
+
+.app-splash-google {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: flex;
+  align-items: stretch;
+  justify-content: stretch;
+  overflow: hidden;
+  border-radius: 999px;
+  opacity: 0.02;
+  cursor: pointer;
+}
+
+.app-splash-google > div,
+.app-splash-google iframe {
+  width: 100% !important;
+  height: 100% !important;
+  min-width: 100% !important;
+  max-width: none !important;
 }
 
 .app-splash-skip {
   appearance: none;
-  border: 0;
-  background: transparent;
-  color: rgba(44, 40, 36, 0.48);
+  border: 1px solid rgba(255, 220, 160, 0.22);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 236, 210, 0.78);
   font: inherit;
-  font-size: 0.82rem;
-  font-weight: 600;
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  font-size: 0.86rem;
+  font-weight: 650;
+  text-decoration: none;
   cursor: pointer;
-  padding: 6px 8px;
+  padding: 10px 18px;
+  margin-top: 2px;
 }
 
 .app-splash-skip:active {
-  color: rgba(44, 40, 36, 0.72);
+  transform: scale(0.98);
+  color: #fff8ec;
+  background: rgba(255, 255, 255, 0.1);
 }
 
 .app-splash-auth-error {

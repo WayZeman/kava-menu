@@ -1874,12 +1874,12 @@ async function renderGoogleSignInButton() {
   googleSignInBtn.replaceChildren();
   window.google.accounts.id.renderButton(googleSignInBtn, {
     type: 'standard',
-    theme: 'outline',
+    theme: 'filled_black',
     size: 'large',
     text: 'signin_with',
     shape: 'pill',
     logo_alignment: 'left',
-    width: 280,
+    width: Math.max(280, Math.round(googleSignInBtn.getBoundingClientRect().width) || 280),
   });
 
   try {
