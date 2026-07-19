@@ -2345,10 +2345,23 @@ function loyaltyCupMarkup() {
 
 function loyaltyGiftMarkup() {
   return `
-    <svg viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <path d="M4 10h16v10H4V10z" stroke="currentColor" stroke-width="1.8"/>
-      <path d="M3 10h18M12 10v10M12 10c-2.2 0-4-1.3-4-3s2.5-2.2 4-.6c1.5-1.6 4-.9 4 .6s-1.8 3-4 3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
-    </svg>
+    <span class="loyalty-gift" aria-hidden="true">
+      <span class="loyalty-gift-spark loyalty-gift-spark--a"></span>
+      <span class="loyalty-gift-spark loyalty-gift-spark--b"></span>
+      <span class="loyalty-gift-spark loyalty-gift-spark--c"></span>
+      <svg class="loyalty-gift-box" viewBox="0 0 48 48" fill="none">
+        <ellipse class="loyalty-gift-shadow" cx="24" cy="42.5" rx="12" ry="2.4" fill="rgba(40,16,0,0.22)"/>
+        <rect class="loyalty-gift-body" x="9" y="22" width="30" height="18" rx="3.5" fill="#ff5a1f"/>
+        <rect class="loyalty-gift-body-shade" x="9" y="30" width="30" height="10" rx="2" fill="#e8430f"/>
+        <rect class="loyalty-gift-lid" x="7.5" y="16.5" width="33" height="8" rx="2.8" fill="#ff7a2f"/>
+        <rect class="loyalty-gift-ribbon-v" x="21.5" y="16.5" width="5" height="23.5" rx="1.4" fill="#ffd84d"/>
+        <rect class="loyalty-gift-ribbon-h" x="7.5" y="18.5" width="33" height="4.2" rx="1.4" fill="#ffe566"/>
+        <path class="loyalty-gift-bow-l" d="M24 16.8c-3.4-4.8-9.2-4.2-9.2-.6 0 2.6 3.2 4.2 9.2 5.2Z" fill="#ffd84d"/>
+        <path class="loyalty-gift-bow-r" d="M24 16.8c3.4-4.8 9.2-4.2 9.2-.6 0 2.6-3.2 4.2-9.2 5.2Z" fill="#ffe566"/>
+        <circle class="loyalty-gift-knot" cx="24" cy="18.2" r="2.4" fill="#ffbf1f"/>
+        <rect class="loyalty-gift-shine" x="12" y="25.5" width="5.5" height="3.2" rx="1" fill="rgba(255,255,255,0.28)"/>
+      </svg>
+    </span>
   `;
 }
 

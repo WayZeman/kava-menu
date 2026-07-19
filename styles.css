@@ -5270,9 +5270,68 @@ body {
 }
 
 .loyalty-stamp--gift {
-  border-color: rgba(154, 106, 52, 0.28);
-  background: rgba(255, 248, 236, 0.92);
-  color: rgba(154, 106, 52, 0.48);
+  border-color: rgba(255, 120, 40, 0.45);
+  background:
+    radial-gradient(circle at 50% 30%, rgba(255, 220, 120, 0.35), transparent 55%),
+    linear-gradient(160deg, #2a1a10 0%, #1a120c 100%);
+  color: #ffd84d;
+  overflow: visible;
+  box-shadow:
+    0 0 0 1px rgba(255, 140, 50, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+}
+
+.loyalty-stamp--gift .loyalty-gift {
+  position: relative;
+  width: 72%;
+  height: 72%;
+  display: grid;
+  place-items: center;
+  transform-origin: 50% 70%;
+  animation: loyalty-temu-float 1.8s ease-in-out infinite;
+}
+
+.loyalty-stamp--gift .loyalty-gift-box {
+  width: 100%;
+  height: 100%;
+  display: block;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.28));
+  animation: loyalty-temu-wiggle 2.4s ease-in-out infinite;
+}
+
+.loyalty-stamp--gift .loyalty-gift-spark {
+  position: absolute;
+  width: 5px;
+  height: 5px;
+  border-radius: 1px;
+  background: #ffe566;
+  box-shadow: 0 0 6px rgba(255, 229, 102, 0.9);
+  transform: rotate(45deg);
+  animation: loyalty-temu-spark 1.4s ease-in-out infinite;
+}
+
+.loyalty-stamp--gift .loyalty-gift-spark--a {
+  top: 4%;
+  right: 10%;
+  animation-delay: 0s;
+}
+
+.loyalty-stamp--gift .loyalty-gift-spark--b {
+  top: 18%;
+  left: 6%;
+  width: 4px;
+  height: 4px;
+  background: #fff;
+  animation-delay: 0.35s;
+}
+
+.loyalty-stamp--gift .loyalty-gift-spark--c {
+  bottom: 16%;
+  right: 4%;
+  width: 3px;
+  height: 3px;
+  background: #ff9a4d;
+  animation-delay: 0.7s;
 }
 
 .loyalty-stamp.is-filled {
@@ -5284,16 +5343,32 @@ body {
 
 .loyalty-stamp.is-pending {
   border-color: rgba(154, 106, 52, 0.42);
-  background: rgba(255, 255, 255, 0.95);
-  color: rgba(154, 106, 52, 0.7);
+  background: rgba(255, 255, 255, 0.12);
+  color: rgba(255, 220, 160, 0.7);
   animation: loyalty-stamp-breathe 1.3s ease-in-out infinite;
 }
 
-.loyalty-stamp.is-ready {
-  border-color: #c9973f;
-  color: #9a6a34;
-  box-shadow: 0 0 0 3px rgba(240, 197, 122, 0.22);
-  animation: loyalty-gift-ready 1.6s ease-in-out infinite;
+.loyalty-stamp--gift.is-ready {
+  border-color: rgba(255, 180, 60, 0.85);
+  background:
+    radial-gradient(circle at 50% 28%, rgba(255, 214, 92, 0.5), transparent 52%),
+    linear-gradient(160deg, #3a2212 0%, #1c120c 100%);
+  box-shadow:
+    0 0 0 3px rgba(255, 140, 40, 0.28),
+    0 8px 18px rgba(255, 90, 20, 0.28);
+  animation: loyalty-temu-ready-ring 1.4s ease-in-out infinite;
+}
+
+.loyalty-stamp--gift.is-ready .loyalty-gift {
+  animation: loyalty-temu-bounce 0.9s cubic-bezier(0.34, 1.45, 0.64, 1) infinite;
+}
+
+.loyalty-stamp--gift.is-ready .loyalty-gift-box {
+  animation: loyalty-temu-wiggle 0.85s ease-in-out infinite;
+}
+
+.loyalty-stamp--gift.is-ready .loyalty-gift-spark {
+  animation-duration: 0.85s;
 }
 
 .loyalty-stamp.is-reward,
@@ -5307,6 +5382,20 @@ body {
   background: linear-gradient(150deg, #ffe3a4 0%, #d4a04a 100%);
   color: #3d2314;
   box-shadow: 0 8px 18px rgba(154, 106, 52, 0.22);
+}
+
+.loyalty-stamp--gift.is-reward,
+.loyalty-stamp--gift.is-filled {
+  background:
+    radial-gradient(circle at 50% 25%, rgba(255, 255, 255, 0.35), transparent 45%),
+    linear-gradient(150deg, #ff8a1f 0%, #ff4d4f 55%, #ff6b3d 100%);
+  border-color: transparent;
+  box-shadow: 0 8px 18px rgba(255, 77, 79, 0.35);
+}
+
+.loyalty-stamp--gift.is-reward .loyalty-gift,
+.loyalty-stamp--gift.is-filled .loyalty-gift {
+  animation: loyalty-temu-bounce 0.75s cubic-bezier(0.34, 1.45, 0.64, 1) infinite;
 }
 
 .loyalty-burst {
@@ -5352,9 +5441,41 @@ body {
   50% { transform: scale(1.035); }
 }
 
-@keyframes loyalty-gift-ready {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+@keyframes loyalty-temu-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-2px); }
+}
+
+@keyframes loyalty-temu-wiggle {
+  0%, 100% { transform: rotate(-4deg); }
+  50% { transform: rotate(4deg); }
+}
+
+@keyframes loyalty-temu-bounce {
+  0%, 100% { transform: translateY(0) scale(1); }
+  35% { transform: translateY(-5px) scale(1.08); }
+  55% { transform: translateY(1px) scale(0.96); }
+  75% { transform: translateY(-2px) scale(1.03); }
+}
+
+@keyframes loyalty-temu-spark {
+  0%, 100% { opacity: 0.25; transform: rotate(45deg) scale(0.7); }
+  50% { opacity: 1; transform: rotate(45deg) scale(1.25); }
+}
+
+@keyframes loyalty-temu-ready-ring {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow:
+      0 0 0 3px rgba(255, 140, 40, 0.28),
+      0 8px 18px rgba(255, 90, 20, 0.28);
+  }
+  50% {
+    transform: scale(1.06);
+    box-shadow:
+      0 0 0 5px rgba(255, 180, 60, 0.38),
+      0 10px 22px rgba(255, 90, 20, 0.38);
+  }
 }
 
 @keyframes loyalty-spark {
@@ -5368,6 +5489,10 @@ body {
   .loyalty-stamp.is-ready,
   .loyalty-stamp.is-reward,
   .loyalty-stamp.is-just-filled,
+  .loyalty-stamp--gift .loyalty-gift,
+  .loyalty-stamp--gift .loyalty-gift-box,
+  .loyalty-stamp--gift .loyalty-gift-spark,
+  .loyalty-stamp--gift.is-ready,
   .loyalty-spark {
     animation: none !important;
   }
