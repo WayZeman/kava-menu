@@ -29,6 +29,8 @@ const googleSignInBtn = document.getElementById('google-signin-btn');
 const userAccountLogout = document.getElementById('user-account-logout');
 const heroTitle = document.getElementById('hero-title');
 const heroLead = document.getElementById('hero-lead');
+const heroAvatar = document.getElementById('hero-avatar');
+const heroCupWrap = document.getElementById('hero-cup-wrap');
 const receiptDate = document.getElementById('receipt-date');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
@@ -1751,6 +1753,24 @@ function renderUserAccount() {
   if (userAccountLogout) {
     userAccountLogout.hidden = !currentUser;
   }
+
+  const picture = String(currentUser?.picture || '').trim();
+  const showAvatar = Boolean(currentUser && picture);
+
+  if (heroAvatar) {
+    if (showAvatar) {
+      heroAvatar.src = picture;
+      heroAvatar.alt = firstNameFromUser(currentUser);
+      heroAvatar.hidden = false;
+    } else {
+      heroAvatar.removeAttribute('src');
+      heroAvatar.alt = '';
+      heroAvatar.hidden = true;
+    }
+  }
+
+  if (heroCupWrap) heroCupWrap.hidden = showAvatar;
+  if (heroIcon) heroIcon.classList.toggle('has-avatar', showAvatar);
 
   if (!heroTitle) return;
 
