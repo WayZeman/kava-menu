@@ -21,7 +21,6 @@ const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
 const appSplashTitle = document.getElementById('app-splash-title');
 const appSplashLoyalty = document.getElementById('app-splash-loyalty');
-const appSplashLevel = document.getElementById('app-splash-level');
 const appSplashAuth = document.getElementById('app-splash-auth');
 const appSplashLoader = document.getElementById('app-splash-loader');
 const appSplashSkip = document.getElementById('app-splash-skip');
@@ -1807,7 +1806,6 @@ function setSplashAuthVisible(visible) {
   if (appSplash) appSplash.classList.toggle('is-auth-mode', visible);
   if (appSplashAuth) appSplashAuth.hidden = !visible;
   if (appSplashLoader) appSplashLoader.hidden = visible;
-  if (appSplashLevel) appSplashLevel.hidden = !visible;
   if (!visible) showSplashAuthError('');
 }
 
@@ -2269,7 +2267,6 @@ function updateSplashWelcomeMessage(user = currentUser) {
   if (!user) return;
 
   if (appSplash) appSplash.classList.remove('is-auth-mode');
-  if (appSplashLevel) appSplashLevel.hidden = true;
 
   if (appSplashTitle) {
     appSplashTitle.textContent = formatWelcomeSplashText(user);

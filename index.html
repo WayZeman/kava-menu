@@ -6,16 +6,16 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Кава">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="theme-color" content="#f5f0e8">
-  <meta name="color-scheme" content="light">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="theme-color" content="#1c1612">
+  <meta name="color-scheme" content="dark">
   <meta name="format-detection" content="telephone=no">
   <link rel="manifest" href="/manifest.webmanifest">
   <link rel="icon" href="/icons/favicon-32.png" sizes="32x32" type="image/png">
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '128';
+      var version = '129';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=128">
+  <link rel="stylesheet" href="styles.css?v=129">
   <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body class="is-splash-active">
@@ -66,7 +66,6 @@
         <span class="app-splash-steam app-splash-steam--2"></span>
         <span class="app-splash-steam app-splash-steam--3"></span>
       </div>
-      <p id="app-splash-level" class="app-splash-level" hidden>Бонусний рівень</p>
       <h1 id="app-splash-title" class="app-splash-title">Кавове меню</h1>
       <p id="app-splash-loyalty" class="app-splash-tagline">Готуємо для вас…</p>
       <div id="app-splash-auth" class="app-splash-auth" hidden>
@@ -695,6 +694,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=128" defer></script>
+  <script src="script.js?v=129" defer></script>
 </body>
 </html>
