@@ -5,7 +5,7 @@ import {
   listTransactions,
   restoreOrderedExtraStock,
   updateTransaction,
-} from './db.js';
+} from './_lib/db.js';
 
 function normalizeIncome(body) {
   const label = String(body?.label || '').trim();

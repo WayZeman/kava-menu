@@ -1,5 +1,5 @@
-import { getSessionUser, userIdentityKey } from './auth-lib.js';
-import { getFreeCoffeeBalance } from './db.js';
+import { getSessionUser, userIdentityKey } from './_lib/auth.js';
+import { getFreeCoffeeBalance } from './_lib/db.js';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');

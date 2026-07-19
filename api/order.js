@@ -1,11 +1,11 @@
-import { getSessionUser, userIdentityKey } from './auth-lib.js';
+import { getSessionUser, userIdentityKey } from './_lib/auth.js';
 import {
   applyOrderedExtraStock,
   buildOrderLabel,
   claimFreeCoffee,
   insertIncome,
   logDeviceCoffee,
-} from './db.js';
+} from './_lib/db.js';
 
 function formatOrderDate() {
   return new Intl.DateTimeFormat('uk-UA', {

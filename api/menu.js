@@ -1,4 +1,4 @@
-import { getFullMenuFromDb, saveFullMenuToDb } from './db.js';
+import { getFullMenuFromDb, saveFullMenuToDb } from './_lib/db.js';
 
 const DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },

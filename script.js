@@ -1676,7 +1676,7 @@ function waitForGoogleSdk(timeoutMs = 8000) {
 
 async function loadAuthConfig() {
   try {
-    const response = await fetch('/api/auth/config', { cache: 'no-store' });
+    const response = await fetch('/api/auth?action=config', { cache: 'no-store' });
     const data = await response.json();
     googleClientId = data?.clientId || null;
     return Boolean(googleClientId);
@@ -1688,7 +1688,7 @@ async function loadAuthConfig() {
 
 async function loadCurrentUser() {
   try {
-    const response = await fetch('/api/auth/me', {
+    const response = await fetch('/api/auth?action=me', {
       cache: 'no-store',
       credentials: 'include',
     });
@@ -1783,7 +1783,7 @@ function setSplashAuthVisible(visible) {
 }
 
 async function completeGoogleSignIn(credential) {
-  const response = await fetch('/api/auth/google', {
+  const response = await fetch('/api/auth?action=google', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     credentials: 'include',
@@ -1880,7 +1880,7 @@ function waitForSplashLogin() {
 
 async function logoutCurrentUser() {
   try {
-    await fetch('/api/auth/logout', {
+    await fetch('/api/auth?action=logout', {
       method: 'POST',
       credentials: 'include',
     });
