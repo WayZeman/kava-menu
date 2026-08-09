@@ -31,6 +31,9 @@ const heroLead = document.getElementById('hero-lead');
 const heroAvatar = document.getElementById('hero-avatar');
 const heroCupWrap = document.getElementById('hero-cup-wrap');
 const receiptDate = document.getElementById('receipt-date');
+const receiptNote = document.getElementById('receipt-note');
+const receiptPay = document.getElementById('receipt-pay');
+const receiptFreeClaim = document.getElementById('receipt-free-claim');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
 const thanksSend = document.getElementById('thanks-send');
@@ -1531,6 +1534,31 @@ function setPayActionsDisabled(disabled) {
     }
     action.disabled = disabled;
   });
+  if (receiptFreeClaim) receiptFreeClaim.disabled = disabled;
+}
+
+/** Single free 10th-coffee cart: one drink, nothing to pay. */
+function isSingleFreeCoffeeClaim(pricing = getCartPricing()) {
+  const totalQty = (pricing.items || []).reduce((sum, item) => sum + Number(item.qty || 0), 0);
+  return Boolean(
+    pricing.freeDrinks > 0
+    && pricing.paidTotal === 0
+    && pricing.drinkQty === 1
+    && totalQty === 1,
+  );
+}
+
+function setReceiptCheckoutMode(pricing) {
+  const freeClaim = isSingleFreeCoffeeClaim(pricing);
+
+  if (receiptNote) {
+    receiptNote.textContent = freeClaim
+      ? 'Ваша 10-та кава — у подарунок'
+      : 'Monobank, Приват24 або переказ на картку';
+  }
+
+  if (receiptPay) receiptPay.hidden = freeClaim;
+  if (receiptFreeClaim) receiptFreeClaim.hidden = !freeClaim;
 }
 
 function formatQtyLabel(qty) {
@@ -3019,7 +3047,11 @@ function updateCart() {
   document.body.classList.add('has-cart');
 
   const cupLabel = formatQtyLabel(totalQty);
-  if (pricing.freeDrinks > 0 && pricing.paidTotal === 0) {
+  if (isSingleFreeCoffeeClaim(pricing)) {
+    cartCount.textContent = `${cupLabel} · подарунок`;
+    cartTotal.textContent = '0 грн';
+    cartPay.textContent = 'Отримати безкоштовно';
+  } else if (pricing.freeDrinks > 0 && pricing.paidTotal === 0) {
     cartCount.textContent = `${cupLabel} · подарунок`;
     cartTotal.textContent = '0 грн';
     cartPay.textContent = 'Отримати';
@@ -3071,6 +3103,7 @@ function openSheet() {
   const pricing = getCartPricing(items);
   paymentTotal = pricing.paidTotal;
   syncBankPayLinks(pricing.paidTotal);
+  setReceiptCheckoutMode(pricing);
   sheetTitle.textContent = pricing.paidTotal > 0 ? `${pricing.paidTotal} грн` : 'Безкоштовно';
   if (receiptDate) receiptDate.textContent = formatReceiptDate();
   renderReceiptLines(pricing.items);
@@ -3677,6 +3710,11 @@ payActions.forEach((action) => {
     if (action.classList.contains('is-disabled') || action.disabled) return;
     goToPayment(provider);
   });
+});
+
+receiptFreeClaim?.addEventListener('click', () => {
+  if (receiptFreeClaim.disabled || receiptFreeClaim.hidden) return;
+  goToPayment('free');
 });
 
 cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
