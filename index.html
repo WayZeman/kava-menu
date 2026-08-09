@@ -185,11 +185,11 @@
           <span id="sheet-title" class="receipt-total-sum"></span>
         </div>
 
-        <p class="receipt-note">Monobank, Приват24 або переказ на картку</p>
+        <p id="receipt-note" class="receipt-note">Monobank, Приват24 або переказ на картку</p>
 
         <div class="receipt-rule receipt-rule--light" aria-hidden="true"></div>
 
-        <div class="receipt-pay">
+        <div id="receipt-pay" class="receipt-pay">
           <a class="receipt-pay-icon" data-provider="mono" href="https://send.monobank.ua/jar/4znkD4kdM5" rel="noopener noreferrer" aria-label="Monobank">
             <img src="logos/mono.png" width="52" height="52" alt="" loading="lazy" decoding="async">
           </a>
@@ -198,6 +198,10 @@
           </a>
           <button class="receipt-pay-other" type="button" data-provider="other">Інші банки</button>
         </div>
+
+        <button id="receipt-free-claim" class="receipt-free-claim" type="button" hidden>
+          Отримати безкоштовно
+        </button>
 
         <div class="receipt-edge" aria-hidden="true"></div>
       </article>
