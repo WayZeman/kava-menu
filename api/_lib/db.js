@@ -216,6 +216,69 @@ export async function deleteTransaction(id) {
   return mapRow(rows[0]);
 }
 
+export async function cancelPendingOrder({ orderId, deviceId }) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const id = String(orderId || '').trim();
+  const device = String(deviceId || '').trim();
+  if (!id || !device || id.length > 120 || device.length > 120) return null;
+
+  await ensureTransactionsTable(sql);
+
+  const rows = await sql`
+    SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+    FROM transactions
+    WHERE id = ${id}
+      AND kind = 'income'
+      AND source = 'order'
+      AND created_at > NOW() - INTERVAL '30 minutes'
+    LIMIT 1
+  `;
+
+  if (!rows[0]) return null;
+
+  await ensureDeviceCoffeeLogTable(sql);
+  await ensureFreeCoffeeTable(sql);
+
+  const coffeeLog = await sql`
+    SELECT device_id
+    FROM device_coffee_log
+    WHERE order_id = ${id}
+    LIMIT 1
+  `;
+
+  const claim = await sql`
+    SELECT device_id
+    FROM free_coffee_claims
+    WHERE order_id = ${id}
+    LIMIT 1
+  `;
+
+  const owner = coffeeLog[0]?.device_id || claim[0]?.device_id;
+  if (owner && owner !== device) return null;
+
+  const removed = await deleteTransaction(id);
+  if (!removed) return null;
+
+  if (Array.isArray(removed.items) && removed.items.length) {
+    try {
+      await restoreOrderedExtraStock(removed.items);
+    } catch {
+      // ignore stock restore failures
+    }
+  }
+
+  try {
+    await sql`DELETE FROM free_coffee_claims WHERE order_id = ${id} AND device_id = ${device}`;
+    await sql`DELETE FROM device_coffee_log WHERE order_id = ${id} AND device_id = ${device}`;
+  } catch {
+    // optional cleanup
+  }
+
+  return removed;
+}
+
 export async function upsertTransaction({
   id,
   kind,

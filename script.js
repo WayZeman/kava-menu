@@ -168,7 +168,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '145';
+const APP_VERSION = '146';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -2695,6 +2695,13 @@ function closeCardPaySheet() {
 }
 
 async function copyCardNumber() {
+  if (!pendingOrder || !pendingOrderId) return;
+
+  if (!otherPaymentRecorded) {
+    void notifyOrder(pendingOrder, 'other', pendingOrderId);
+    otherPaymentRecorded = true;
+  }
+
   try {
     await navigator.clipboard.writeText(OTHER_BANK_CARD);
     if (cardPayCopy) {
@@ -2704,6 +2711,7 @@ async function copyCardNumber() {
         cardPayCopy.textContent = original;
       }, 1500);
     }
+    finishOtherPayment();
   } catch {
     if (cardPayCopy) cardPayCopy.textContent = 'Не вдалося скопіювати';
   }
@@ -2840,6 +2848,8 @@ async function goToPayment(provider) {
     openCardPaySheet(order.total);
     return;
   }
+
+  void notifyOrder(order, provider, orderId);
 
   const url = getPaymentUrl(provider, order.total);
   syncBankPayLinks(order.total);
@@ -3056,48 +3066,67 @@ function resetPendingPayment() {
   setPayActionsDisabled(false);
 }
 
-async function finishOtherPayment() {
-  closeCardPaySheet();
-  openConfirmSheet();
-}
-async function confirmPaymentSuccess() {
-  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
+async function revokePendingOrderIncome() {
   const orderId = pendingOrderId;
-  if (!order || !orderId) {
-    closeConfirmSheet();
-    return;
-  }
-
-  closeConfirmSheet();
-  loader.hidden = false;
-  loaderText.textContent = 'Підтверджуємо замовлення…';
+  if (!orderId) return;
 
   try {
-    const provider = sessionStorage.getItem('kava-last-provider') || 'bank';
-    const result = await notifyOrder(order, provider, orderId);
-    if (!result?.ok) throw new Error('order_failed');
-    if (order.drinkQty > 0) recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
-    pendingOrderId = null;
-    otherPaymentRecorded = false;
-    clearPendingPayment();
-    pendingOrder = null;
-    awaitingPayment = false;
-    setPayActionsDisabled(false);
-    clearCart();
-    completeOrderCelebration();
-    await loadFreeCoffeeBalance();
-    await loadUserCoffeeStats();
+    await fetch('/api/order-cancel', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: orderId,
+        deviceId: getIdentityId(),
+      }),
+      keepalive: true,
+    });
+    await refreshMenuAfterOrder();
   } catch {
-    if (stockToast) {
-      stockToast.textContent = 'Не вдалося зберегти замовлення. Спробуйте ще.';
-      stockToast.hidden = false;
-    }
-  } finally {
-    loader.hidden = true;
+    // ignore delete failures
   }
+}
+
+async function finishOtherPayment() {
+  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
+
+  pendingOrderId = null;
+  otherPaymentRecorded = false;
+  clearPendingPayment();
+  pendingOrder = null;
+  awaitingPayment = false;
+  closeCardPaySheet();
+  setPayActionsDisabled(false);
+
+  if (order?.drinkQty > 0) {
+    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+  }
+  clearCart();
+  completeOrderCelebration();
+  void loadFreeCoffeeBalance();
+  void loadUserCoffeeStats();
+}
+
+async function confirmPaymentSuccess() {
+  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
+  pendingOrderId = null;
+  otherPaymentRecorded = false;
+  clearPendingPayment();
+  pendingOrder = null;
+  awaitingPayment = false;
+  closeConfirmSheet();
+  setPayActionsDisabled(false);
+
+  if (order?.drinkQty > 0) {
+    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+  }
+  clearCart();
+  completeOrderCelebration();
+  void loadFreeCoffeeBalance();
+  void loadUserCoffeeStats();
 }
 
 function cancelPendingPayment() {
+  void revokePendingOrderIncome();
   otherPaymentRecorded = false;
   clearPendingPayment();
   pendingOrder = null;
@@ -3236,8 +3265,6 @@ cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
 });
 
 cardPayCopy?.addEventListener('click', copyCardNumber);
-const cardPayConfirm = document.getElementById('card-pay-confirm');
-cardPayConfirm?.addEventListener('click', () => finishOtherPayment());
 
 sheet.querySelectorAll('[data-close]').forEach((el) => {
   el.addEventListener('click', closeSheet);
