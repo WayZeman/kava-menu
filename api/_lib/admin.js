@@ -4,13 +4,16 @@ const ADMIN_COOKIE = 'kava_admin';
 const ADMIN_HOURS = 12;
 
 function getAdminSecret() {
-  const secret = process.env.STATS_PASSWORD || process.env.AUTH_SECRET || process.env.SESSION_SECRET;
+  const secret = process.env.STATS_PASSWORD
+    || process.env.AUTH_SECRET
+    || process.env.SESSION_SECRET
+    || '1111';
   if (!secret) return null;
   return new TextEncoder().encode(secret);
 }
 
 export function getStatsPassword() {
-  return String(process.env.STATS_PASSWORD || '').trim() || null;
+  return String(process.env.STATS_PASSWORD || '1111').trim() || '1111';
 }
 
 export function verifyStatsPassword(password) {

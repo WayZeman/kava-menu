@@ -156,6 +156,7 @@ const statsTotalExpenses = document.getElementById('stats-total-expenses');
 const statsBalanceTotal = document.getElementById('stats-balance-total');
 
 const STATS_AUTH_KEY = 'kava-stats-auth';
+const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
@@ -168,7 +169,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '148';
+const APP_VERSION = '149';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -489,6 +490,16 @@ function normalizeVisibility(raw) {
   };
 }
 
+function mergeMenuVisibility(remoteVisibility) {
+  const remote = normalizeVisibility(remoteVisibility);
+  const local = loadVisibilityFromStorage();
+  return {
+    drinks: remote.drinks && local.drinks,
+    extras: remote.extras && local.extras,
+    services: remote.services && local.services,
+  };
+}
+
 function loadVisibilityFromStorage() {
   try {
     const raw = localStorage.getItem(MENU_VISIBILITY_KEY);
@@ -581,7 +592,7 @@ async function loadFullMenu() {
         drinks: Array.isArray(data.drinks) ? data.drinks.map(normalizeDrink).filter(Boolean) : null,
         extras: Array.isArray(data.extras) ? data.extras.map(normalizeExtra).filter(Boolean) : [],
         services: Array.isArray(data.services) ? data.services.map(normalizeService).filter(Boolean) : null,
-        visibility: normalizeVisibility(data.visibility),
+        visibility: mergeMenuVisibility(data.visibility),
       };
       remoteUpdatedAt = data.updatedAt || null;
     }
@@ -602,7 +613,7 @@ async function loadFullMenu() {
       services: remote.services?.length
         ? remote.services
         : DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: remote.visibility || normalizeVisibility(),
+      visibility: remote.visibility || mergeMenuVisibility(),
     };
     saveFullMenuLocalFrom(menu);
     if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
@@ -614,7 +625,7 @@ async function loadFullMenu() {
       drinks: localDrinks,
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: loadVisibilityFromStorage(),
+      visibility: mergeMenuVisibility(),
     };
   }
 
@@ -622,7 +633,7 @@ async function loadFullMenu() {
     drinks: DEFAULT_DRINKS.map((item) => ({ ...item })),
     extras: [],
     services: DEFAULT_SERVICES.map((item) => ({ ...item })),
-    visibility: normalizeVisibility(),
+    visibility: mergeMenuVisibility(),
   };
   saveFullMenuLocalFrom(menu);
   return menu;
@@ -632,7 +643,7 @@ function saveFullMenuLocalFrom(menu) {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
-  if (menu.visibility) categoryVisibility = normalizeVisibility(menu.visibility);
+  categoryVisibility = mergeMenuVisibility(menu.visibility);
   saveFullMenuLocal();
 }
 
@@ -651,6 +662,7 @@ async function saveFullMenu() {
         extras: menuExtras,
         services: menuServices,
         visibility: categoryVisibility,
+        statsPassword: STATS_PASSWORD,
       }),
       keepalive: true,
       cache: 'no-store',
@@ -710,7 +722,20 @@ function getExtraStock(id) {
 function pruneCartItems() {
   const validIds = getAllMenuIds();
   Array.from(cartItems.keys()).forEach((id) => {
-    if (!validIds.has(id)) cartItems.delete(id);
+    const item = cartItems.get(id);
+    if (!validIds.has(id)) {
+      cartItems.delete(id);
+      return;
+    }
+    if (item?.category === 'extra' && categoryVisibility.extras === false) {
+      cartItems.delete(id);
+    }
+    if (item?.category === 'drink' && categoryVisibility.drinks === false) {
+      cartItems.delete(id);
+    }
+    if (item?.category === 'service' && categoryVisibility.services === false) {
+      cartItems.delete(id);
+    }
   });
 }
 
@@ -875,7 +900,7 @@ function renderDrinksMenu() {
   const prevQty = captureRowQuantities(drinksMenuList);
   drinksMenuList.innerHTML = '';
 
-  if (!menuDrinks.length) {
+  if (!menuDrinks.length || categoryVisibility.drinks === false) {
     drinksMenu.hidden = true;
     return;
   }
@@ -916,7 +941,7 @@ function renderServicesMenu() {
   const prevQty = captureRowQuantities(servicesMenuList);
   servicesMenuList.innerHTML = '';
 
-  if (!menuServices.length) {
+  if (!menuServices.length || categoryVisibility.services === false) {
     servicesMenu.hidden = true;
     return;
   }
@@ -968,17 +993,19 @@ async function toggleCategoryVisibility(category) {
   };
   saveFullMenuLocal();
   applyCategoryVisibility();
+  renderAllMenus();
   renderStatsHubVisibility();
   try {
     await fetch('/api/menu', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
       body: JSON.stringify({
         drinks: menuDrinks,
         extras: menuExtras,
         services: menuServices,
         visibility: categoryVisibility,
+        statsPassword: STATS_PASSWORD,
       }),
       keepalive: true,
       cache: 'no-store',
@@ -1440,7 +1467,7 @@ async function initMenu() {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
-  categoryVisibility = normalizeVisibility(menu.visibility || loadVisibilityFromStorage());
+  categoryVisibility = mergeMenuVisibility(menu.visibility);
   renderAllMenus();
 }
 
@@ -1450,7 +1477,7 @@ async function refreshMenuAfterOrder() {
     menuDrinks = menu.drinks;
     menuExtras = menu.extras;
     menuServices = menu.services;
-    categoryVisibility = normalizeVisibility(menu.visibility || categoryVisibility);
+    categoryVisibility = mergeMenuVisibility(menu.visibility);
     renderAllMenus();
   } catch {
     // keep current menu if refresh fails
@@ -3389,9 +3416,6 @@ giftRewardClose?.addEventListener('click', () => closeGiftReward());
 giftReward?.addEventListener('click', (event) => {
   if (event.target === giftReward) closeGiftReward();
 });
-userAnalyticsOpen?.addEventListener('click', () => {
-  openUserAnalytics();
-});
 userAnalytics?.querySelectorAll('[data-user-analytics-close]').forEach((el) => {
   el.addEventListener('click', closeUserAnalytics);
 });
@@ -5294,17 +5318,20 @@ function refreshStats({ immediate = false } = {}) {
 }
 
 async function loginStatsAdmin(password) {
-  const response = await fetch('/api/stats', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    credentials: 'include',
-    body: JSON.stringify({ type: 'login', password }),
-  });
-  const data = await response.json();
-  if (!response.ok || !data?.ok) return false;
-  sessionStorage.setItem(STATS_AUTH_KEY, '1');
-  return true;
+  try {
+    const response = await fetch('/api/stats', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ type: 'login', password }),
+    });
+    const data = await response.json();
+    if (!response.ok || !data?.ok) return false;
+    sessionStorage.setItem(STATS_AUTH_KEY, '1');
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 function isStatsAuthenticated() {
@@ -5483,13 +5510,16 @@ statsGate?.querySelector('[data-stats-gate-close]')?.addEventListener('click', c
 statsGateForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
   const password = statsGatePassword?.value.trim();
-  const ok = await loginStatsAdmin(password);
-  if (!ok) {
+
+  if (password !== STATS_PASSWORD) {
     statsGateError.hidden = false;
     statsGatePassword?.focus();
     statsGatePassword?.select();
     return;
   }
+
+  sessionStorage.setItem(STATS_AUTH_KEY, '1');
+  await loginStatsAdmin(password);
   closeStatsGate();
   openStats();
 });

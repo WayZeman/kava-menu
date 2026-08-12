@@ -1,4 +1,4 @@
-import { requireAdmin } from './_lib/admin.js';
+import { isAdminRequest, verifyStatsPassword } from './_lib/admin.js';
 import { getFullMenuFromDb, saveFullMenuToDb } from './_lib/db.js';
 
 const DEFAULT_DRINKS = [
@@ -117,7 +117,12 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    if (!(await requireAdmin(req, res))) return;
+    const hasAdmin = await isAdminRequest(req);
+    const hasStatsPassword = verifyStatsPassword(req.body?.statsPassword);
+    if (!hasAdmin && !hasStatsPassword) {
+      res.status(401).json({ ok: false, error: 'admin_required' });
+      return;
+    }
 
     const current = await getFullMenuFromDb();
     const drinks = req.body?.drinks !== undefined
