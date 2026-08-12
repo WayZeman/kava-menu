@@ -1046,3 +1046,52 @@ export async function mergeDeviceIntoUser(deviceId, userId) {
 
   return { ok: true, identity: toId, stamps: mergedStamps };
 }
+
+let visitNoticeTableReady = false;
+
+async function ensureVisitNoticeTable(sql) {
+  if (visitNoticeTableReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS site_visit_notices (
+      device_id TEXT PRIMARY KEY,
+      last_notified_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  visitNoticeTableReady = true;
+}
+
+export async function registerVisitNotice(deviceId, cooldownMinutes = 30) {
+  const sql = getSql();
+  if (!sql) return { shouldNotify: true, reason: 'no_db' };
+
+  const id = String(deviceId || '').trim();
+  if (!id || id.length > 120) return { shouldNotify: false, reason: 'invalid_device' };
+
+  await ensureVisitNoticeTable(sql);
+
+  const rows = await sql`
+    SELECT last_notified_at
+    FROM site_visit_notices
+    WHERE device_id = ${id}
+    LIMIT 1
+  `;
+
+  const cooldownMs = Math.max(5, cooldownMinutes) * 60 * 1000;
+  if (rows[0]?.last_notified_at) {
+    const lastAt = new Date(rows[0].last_notified_at).getTime();
+    if (Number.isFinite(lastAt) && Date.now() - lastAt < cooldownMs) {
+      return { shouldNotify: false, reason: 'cooldown' };
+    }
+  }
+
+  await sql`
+    INSERT INTO site_visit_notices (device_id, last_notified_at)
+    VALUES (${id}, NOW())
+    ON CONFLICT (device_id) DO UPDATE SET
+      last_notified_at = NOW()
+  `;
+
+  return { shouldNotify: true, reason: 'registered' };
+}

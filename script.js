@@ -167,9 +167,10 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
+const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '151';
+const APP_VERSION = '152';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3499,6 +3500,28 @@ function dismissSplash() {
   }, exitMs);
 }
 
+function notifySiteVisit() {
+  try {
+    if (sessionStorage.getItem(VISIT_NOTICE_KEY)) return;
+    sessionStorage.setItem(VISIT_NOTICE_KEY, '1');
+  } catch {
+    // continue without session guard
+  }
+
+  const standalone = window.matchMedia('(display-mode: standalone)').matches
+    || window.navigator.standalone === true;
+
+  void fetch('/api/visit', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      deviceId: getIdentityId(),
+      standalone,
+    }),
+    keepalive: true,
+  });
+}
+
 async function bootApp() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
@@ -3516,6 +3539,7 @@ async function bootApp() {
     renderFreeCoffeeStamps();
   } finally {
     window.clearTimeout(safetyTimer);
+    notifySiteVisit();
     window.setTimeout(dismissSplash, Math.max(0, minSplashMs - (Date.now() - started)));
   }
 }
