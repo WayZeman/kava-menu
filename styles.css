@@ -7082,3 +7082,25 @@ body {
 .gift-reward-eyebrow {
   color: rgba(255, 196, 92, 0.92) !important;
 }
+
+/* Stats toggles: remove whole menu windows when a category is hidden */
+#drinks-menu[hidden],
+#drinks-menu.is-category-hidden,
+#extras-menu[hidden],
+#extras-menu.is-category-hidden,
+#services-menu[hidden],
+#services-menu.is-category-hidden,
+#free-coffee[hidden],
+#free-coffee.is-category-hidden {
+  display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  min-height: 0 !important;
+  max-height: 0 !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}

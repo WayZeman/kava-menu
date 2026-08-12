@@ -169,7 +169,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '150';
+const APP_VERSION = '151';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -900,12 +900,8 @@ function renderDrinksMenu() {
   const prevQty = captureRowQuantities(drinksMenuList);
   drinksMenuList.innerHTML = '';
 
-  if (!menuDrinks.length || categoryVisibility.drinks === false) {
-    drinksMenu.hidden = true;
-    return;
-  }
+  if (categoryVisibility.drinks === false || !menuDrinks.length) return;
 
-  drinksMenu.hidden = false;
   menuDrinks.forEach((drink) => {
     const row = createDrinkRow(drink);
     drinksMenuList.appendChild(row);
@@ -920,13 +916,11 @@ function renderExtrasMenu() {
   const prevQty = captureRowQuantities(extrasMenuList);
   extrasMenuList.innerHTML = '';
 
-  const availableExtras = (menuExtras || []).filter((extra) => getExtraStock(extra.id) > 0);
-  if (!availableExtras.length || categoryVisibility.extras === false) {
-    extrasMenu.hidden = true;
-    return;
-  }
+  if (categoryVisibility.extras === false) return;
 
-  extrasMenu.hidden = false;
+  const availableExtras = (menuExtras || []).filter((extra) => getExtraStock(extra.id) > 0);
+  if (!availableExtras.length) return;
+
   availableExtras.forEach((extra) => {
     const row = createExtraRow(extra);
     extrasMenuList.appendChild(row);
@@ -941,12 +935,8 @@ function renderServicesMenu() {
   const prevQty = captureRowQuantities(servicesMenuList);
   servicesMenuList.innerHTML = '';
 
-  if (!menuServices.length || categoryVisibility.services === false) {
-    servicesMenu.hidden = true;
-    return;
-  }
+  if (categoryVisibility.services === false || !menuServices.length) return;
 
-  servicesMenu.hidden = false;
   menuServices.forEach((service) => {
     const row = createServiceRow(service);
     servicesMenuList.appendChild(row);
@@ -968,15 +958,24 @@ function renderAllMenus() {
 
 function setCategorySectionVisible(sectionEl, visible) {
   if (!sectionEl) return;
-  sectionEl.hidden = !visible;
-  sectionEl.classList.toggle('is-category-hidden', !visible);
+
+  if (visible) {
+    sectionEl.hidden = false;
+    sectionEl.classList.remove('is-category-hidden');
+    sectionEl.style.removeProperty('display');
+  } else {
+    sectionEl.hidden = true;
+    sectionEl.classList.add('is-category-hidden');
+    sectionEl.style.display = 'none';
+  }
+
   sectionEl.setAttribute('aria-hidden', visible ? 'false' : 'true');
 }
 
 function applyCategoryVisibility() {
   const drinksVisible = categoryVisibility.drinks !== false && menuDrinks.length > 0;
-  const hasAvailableExtras = (menuExtras || []).some((extra) => getExtraStock(extra.id) > 0);
-  const extrasVisible = categoryVisibility.extras !== false && hasAvailableExtras;
+  const extrasVisible = categoryVisibility.extras !== false
+    && (menuExtras || []).some((extra) => getExtraStock(extra.id) > 0);
   const servicesVisible = categoryVisibility.services !== false && menuServices.length > 0;
 
   setCategorySectionVisible(drinksMenu, drinksVisible);
@@ -995,6 +994,7 @@ async function toggleCategoryVisibility(category) {
     [category]: !categoryVisibility[category],
   };
   saveFullMenuLocal();
+  applyCategoryVisibility();
   renderAllMenus();
   renderStatsHubVisibility();
   try {
