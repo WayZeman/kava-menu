@@ -169,7 +169,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '149';
+const APP_VERSION = '150';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -490,14 +490,14 @@ function normalizeVisibility(raw) {
   };
 }
 
-function mergeMenuVisibility(remoteVisibility) {
-  const remote = normalizeVisibility(remoteVisibility);
-  const local = loadVisibilityFromStorage();
-  return {
-    drinks: remote.drinks && local.drinks,
-    extras: remote.extras && local.extras,
-    services: remote.services && local.services,
-  };
+function resolveMenuVisibility(remoteVisibility) {
+  try {
+    const raw = localStorage.getItem(MENU_VISIBILITY_KEY);
+    if (raw) return normalizeVisibility(JSON.parse(raw));
+  } catch {
+    // ignore parse errors
+  }
+  return normalizeVisibility(remoteVisibility);
 }
 
 function loadVisibilityFromStorage() {
@@ -592,7 +592,7 @@ async function loadFullMenu() {
         drinks: Array.isArray(data.drinks) ? data.drinks.map(normalizeDrink).filter(Boolean) : null,
         extras: Array.isArray(data.extras) ? data.extras.map(normalizeExtra).filter(Boolean) : [],
         services: Array.isArray(data.services) ? data.services.map(normalizeService).filter(Boolean) : null,
-        visibility: mergeMenuVisibility(data.visibility),
+        visibility: resolveMenuVisibility(data.visibility),
       };
       remoteUpdatedAt = data.updatedAt || null;
     }
@@ -613,7 +613,7 @@ async function loadFullMenu() {
       services: remote.services?.length
         ? remote.services
         : DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: remote.visibility || mergeMenuVisibility(),
+      visibility: resolveMenuVisibility(remote.visibility),
     };
     saveFullMenuLocalFrom(menu);
     if (remoteUpdatedAt) localStorage.setItem(MENU_UPDATED_KEY, remoteUpdatedAt);
@@ -625,7 +625,7 @@ async function loadFullMenu() {
       drinks: localDrinks,
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: mergeMenuVisibility(),
+      visibility: resolveMenuVisibility(),
     };
   }
 
@@ -633,7 +633,7 @@ async function loadFullMenu() {
     drinks: DEFAULT_DRINKS.map((item) => ({ ...item })),
     extras: [],
     services: DEFAULT_SERVICES.map((item) => ({ ...item })),
-    visibility: mergeMenuVisibility(),
+    visibility: resolveMenuVisibility(),
   };
   saveFullMenuLocalFrom(menu);
   return menu;
@@ -643,7 +643,7 @@ function saveFullMenuLocalFrom(menu) {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
-  categoryVisibility = mergeMenuVisibility(menu.visibility);
+  categoryVisibility = resolveMenuVisibility(menu.visibility);
   saveFullMenuLocal();
 }
 
@@ -966,23 +966,26 @@ function renderAllMenus() {
   renderStatsHubVisibility();
 }
 
+function setCategorySectionVisible(sectionEl, visible) {
+  if (!sectionEl) return;
+  sectionEl.hidden = !visible;
+  sectionEl.classList.toggle('is-category-hidden', !visible);
+  sectionEl.setAttribute('aria-hidden', visible ? 'false' : 'true');
+}
+
 function applyCategoryVisibility() {
-  if (drinksMenu) {
-    drinksMenu.hidden = !categoryVisibility.drinks || !menuDrinks.length;
-  }
+  const drinksVisible = categoryVisibility.drinks !== false && menuDrinks.length > 0;
+  const hasAvailableExtras = (menuExtras || []).some((extra) => getExtraStock(extra.id) > 0);
+  const extrasVisible = categoryVisibility.extras !== false && hasAvailableExtras;
+  const servicesVisible = categoryVisibility.services !== false && menuServices.length > 0;
 
-  if (freeCoffeeSection) {
-    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
-  }
+  setCategorySectionVisible(drinksMenu, drinksVisible);
+  setCategorySectionVisible(freeCoffeeSection, drinksVisible);
+  setCategorySectionVisible(extrasMenu, extrasVisible);
+  setCategorySectionVisible(servicesMenu, servicesVisible);
 
-  if (extrasMenu) {
-    const hasAvailableExtras = (menuExtras || []).some((extra) => getExtraStock(extra.id) > 0);
-    extrasMenu.hidden = !categoryVisibility.extras || !hasAvailableExtras;
-  }
-
-  if (servicesMenu) {
-    servicesMenu.hidden = !categoryVisibility.services || !menuServices.length;
-  }
+  if (!extrasVisible) closeExtrasUpsell();
+  if (!servicesVisible) closeCarWashSheet();
 }
 
 async function toggleCategoryVisibility(category) {
@@ -992,7 +995,6 @@ async function toggleCategoryVisibility(category) {
     [category]: !categoryVisibility[category],
   };
   saveFullMenuLocal();
-  applyCategoryVisibility();
   renderAllMenus();
   renderStatsHubVisibility();
   try {
@@ -1467,7 +1469,7 @@ async function initMenu() {
   menuDrinks = menu.drinks;
   menuExtras = menu.extras;
   menuServices = menu.services;
-  categoryVisibility = mergeMenuVisibility(menu.visibility);
+  categoryVisibility = resolveMenuVisibility(menu.visibility);
   renderAllMenus();
 }
 
@@ -1477,7 +1479,7 @@ async function refreshMenuAfterOrder() {
     menuDrinks = menu.drinks;
     menuExtras = menu.extras;
     menuServices = menu.services;
-    categoryVisibility = mergeMenuVisibility(menu.visibility);
+    categoryVisibility = resolveMenuVisibility(menu.visibility);
     renderAllMenus();
   } catch {
     // keep current menu if refresh fails

@@ -876,6 +876,14 @@ body.has-cart .page {
   gap: 10px;
 }
 
+.menu[hidden],
+#free-coffee[hidden] {
+  display: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+
 .menu--drinks {
   margin-top: 8px;
   padding-top: 28px;
