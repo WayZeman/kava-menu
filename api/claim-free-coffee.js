@@ -110,7 +110,7 @@ export default async function handler(req, res) {
 
   if (telegramConfig) {
     try {
-      const text = await buildFreeCoffeeMessage(deviceId, { lines: pricing.lines });
+      const text = buildFreeCoffeeMessage({ lines: pricing.lines });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // claim already saved

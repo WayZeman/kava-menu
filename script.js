@@ -170,7 +170,7 @@ const USER_COFFEE_KEY = 'kava-user-coffee';
 const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '154';
+const APP_VERSION = '155';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {

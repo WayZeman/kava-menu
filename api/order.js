@@ -7,7 +7,6 @@ import {
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
-  buildFreeCoffeeMessage,
   buildOrderMessage,
   getTelegramConfig,
   sendTelegramMessage,
@@ -123,7 +122,7 @@ export default async function handler(req, res) {
 
   if (isNewOrder && telegramConfig) {
     try {
-      const text = await buildOrderMessage(deviceId, {
+      const text = buildOrderMessage({
         lines: pricing.lines,
         paidTotal: pricing.paidTotal,
         provider,

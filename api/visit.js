@@ -1,5 +1,5 @@
 import { registerVisitNotice } from './_lib/db.js';
-import { buildVisitMessage, getTelegramConfig, sendTelegramMessage } from './_lib/telegram.js';
+import { getTelegramConfig, sendTelegramMessage, VISIT_MESSAGE } from './_lib/telegram.js';
 
 function normalizeDeviceId(value) {
   const id = String(value || '').trim();
@@ -39,11 +39,8 @@ export default async function handler(req, res) {
     return;
   }
 
-  const isStandalone = req.body?.standalone === true || req.body?.standalone === 'true';
-
   try {
-    const text = await buildVisitMessage(deviceId, { standalone: isStandalone });
-    const sent = await sendTelegramMessage(config.token, config.chatId, text);
+    const sent = await sendTelegramMessage(config.token, config.chatId, VISIT_MESSAGE);
     res.status(200).json({ ok: true, notified: sent, reason: sent ? 'sent' : 'telegram_error' });
   } catch {
     res.status(200).json({ ok: true, notified: false, reason: 'telegram_error' });
