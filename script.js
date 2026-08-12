@@ -168,7 +168,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '146';
+const APP_VERSION = '147';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -2601,7 +2601,7 @@ function updateCart() {
   if (isSingleFreeCoffeeClaim(pricing)) {
     cartCount.textContent = `${cupLabel} · подарунок`;
     cartTotal.textContent = '0 грн';
-    cartPay.textContent = 'Отримати безкоштовно';
+    cartPay.textContent = 'Отримати каву';
   } else if (pricing.freeDrinks > 0 && pricing.paidTotal === 0) {
     cartCount.textContent = `${cupLabel} · подарунок`;
     cartTotal.textContent = '0 грн';
@@ -2801,6 +2801,42 @@ async function notifyOrder(order, provider, orderId) {
   if (data?.freeCoffee) applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
   if (data?.ok) await refreshMenuAfterOrder();
   return { ok: Boolean(data?.ok), data };
+}
+
+async function claimFreeCoffeeDirectly() {
+  const pricing = getCartPricing();
+  if (!pricing.items.length || pricing.paidTotal !== 0 || !pricing.freeDrinks) return false;
+
+  const order = snapshotOrder();
+  const orderId = makeOrderId();
+
+  loader.hidden = false;
+  loaderText.textContent = 'Отримуємо каву…';
+  setPayActionsDisabled(true);
+
+  try {
+    const result = await notifyOrder(order, 'free', orderId);
+    if (!result?.ok) throw new Error('claim_failed');
+
+    if (order.drinkQty > 0) {
+      recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+    }
+
+    clearCart();
+    showGiftReward(pricing.freeDrinks, { thenThanks: true });
+    await loadFreeCoffeeBalance();
+    await loadUserCoffeeStats();
+    return true;
+  } catch {
+    if (stockToast) {
+      stockToast.textContent = 'Не вдалося отримати каву. Спробуйте ще.';
+      stockToast.hidden = false;
+    }
+    return false;
+  } finally {
+    loader.hidden = true;
+    setPayActionsDisabled(false);
+  }
 }
 
 async function goToPayment(provider) {
@@ -3217,10 +3253,25 @@ async function handleCartPayTap(event) {
     let latest = getCartPricing();
     if (!latest.items.length) return;
 
+    if (isSingleFreeCoffeeClaim(latest)) {
+      await claimFreeCoffeeDirectly();
+      return;
+    }
+
     if (latest.drinkQty > 0 && getUpsellExtras().length) {
       await showExtrasUpsell();
       latest = getCartPricing();
       if (!latest.items.length) return;
+
+      if (isSingleFreeCoffeeClaim(latest)) {
+        await claimFreeCoffeeDirectly();
+        return;
+      }
+    }
+
+    if (latest.freeDrinks > 0 && latest.paidTotal === 0) {
+      await claimFreeCoffeeDirectly();
+      return;
     }
 
     if (latest.freeDrinks > 0) {
@@ -3254,7 +3305,7 @@ payActions.forEach((action) => {
 
 receiptFreeClaim?.addEventListener('click', () => {
   if (receiptFreeClaim.disabled || receiptFreeClaim.hidden) return;
-  goToPayment('free');
+  void claimFreeCoffeeDirectly();
 });
 
 cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
