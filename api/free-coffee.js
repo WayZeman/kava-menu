@@ -1,28 +1,24 @@
-import { getSessionUser, userIdentityKey } from './_lib/auth.js';
 import { getFreeCoffeeBalance } from './_lib/db.js';
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+function normalizeDeviceId(value) {
+  const id = String(value || '').trim();
+  if (!id || id.length > 120) return null;
+  return id;
+}
 
-  if (req.method === 'OPTIONS') {
-    res.status(200).end();
-    return;
-  }
+export default async function handler(req, res) {
+  res.setHeader('Cache-Control', 'no-store');
 
   if (req.method !== 'GET') {
     res.status(405).send('Method not allowed');
     return;
   }
 
-  const session = await getSessionUser(req);
-  if (!session) {
-    res.status(401).json({ ok: false, error: 'auth_required' });
+  const deviceId = normalizeDeviceId(req.query?.deviceId);
+  if (!deviceId) {
+    res.status(400).json({ ok: false, error: 'invalid_device' });
     return;
   }
-
-  const deviceId = userIdentityKey(session.id);
 
   try {
     const balance = await getFreeCoffeeBalance(deviceId);

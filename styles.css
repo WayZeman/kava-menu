@@ -2984,6 +2984,11 @@ body.is-scroll-locked {
   color: var(--brown);
 }
 
+.card-pay-confirm {
+  background: var(--accent, #ff5a1f);
+  color: #fff;
+}
+
 .menu-editor {
   position: fixed;
   inset: 0;

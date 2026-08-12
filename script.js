@@ -20,16 +20,9 @@ const stockToast = document.getElementById('stock-toast');
 const appSplash = document.getElementById('app-splash');
 const appSplashTitle = document.getElementById('app-splash-title');
 const appSplashLoyalty = document.getElementById('app-splash-loyalty');
-const appSplashAuth = document.getElementById('app-splash-auth');
 const appSplashLoader = document.getElementById('app-splash-loader');
-const appSplashSkip = document.getElementById('app-splash-skip');
-const appSplashAuthError = document.getElementById('app-splash-auth-error');
-const googleSignInBtn = document.getElementById('google-signin-btn');
-const userAccountLogout = document.getElementById('user-account-logout');
 const heroTitle = document.getElementById('hero-title');
 const heroLead = document.getElementById('hero-lead');
-const heroAvatar = document.getElementById('hero-avatar');
-const heroCupWrap = document.getElementById('hero-cup-wrap');
 const receiptDate = document.getElementById('receipt-date');
 const receiptNote = document.getElementById('receipt-note');
 const receiptPay = document.getElementById('receipt-pay');
@@ -163,7 +156,6 @@ const statsTotalExpenses = document.getElementById('stats-total-expenses');
 const statsBalanceTotal = document.getElementById('stats-balance-total');
 
 const STATS_AUTH_KEY = 'kava-stats-auth';
-const STATS_PASSWORD = '1111';
 const STATS_LIST_PREVIEW = 5;
 const MENU_KEY = 'kava-menu-drinks';
 const MENU_EXTRAS_KEY = 'kava-menu-extras';
@@ -172,12 +164,11 @@ const MENU_UPDATED_KEY = 'kava-menu-updated-at';
 const MENU_VISIBILITY_KEY = 'kava-menu-visibility';
 const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
-const USER_CACHE_KEY = 'kava-user-cache';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '123';
+const APP_VERSION = '144';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -277,10 +268,6 @@ let freeCoffeeStampsCount = 0;
 let freeCoffeeCycle = LOYALTY_CYCLE;
 let freeCoffeePendingUnits = [];
 let freeCoffeeCelebrate = false;
-let currentUser = null;
-let googleClientId = null;
-let googleSdkReady = null;
-let authLoginResolver = null;
 let userCoffeeDays = [];
 let userCoffeeToday = 0;
 let scrollLockY = 0;
@@ -561,8 +548,9 @@ function isDefaultMenu(drinks) {
 async function uploadFullMenu(menu) {
   try {
     const response = await fetch('/api/menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify(menu),
       cache: 'no-store',
     });
@@ -607,41 +595,6 @@ async function loadFullMenu() {
     services: localServices,
   };
 
-  if (localDrinks?.length && remote?.drinks?.length && !menusEqual(localDrinks, remote.drinks)) {
-    const remoteTime = remoteUpdatedAt ? Date.parse(remoteUpdatedAt) : 0;
-    const localTime = localUpdatedAt ? Date.parse(localUpdatedAt) : 0;
-
-    if (localTime > remoteTime || isDefaultMenu(remote.drinks)) {
-      await uploadFullMenu({
-        drinks: localDrinks,
-        extras: localExtras || [],
-        services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-        visibility: loadVisibilityFromStorage(),
-      });
-      return {
-        drinks: localDrinks,
-        extras: localExtras || [],
-        services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-        visibility: loadVisibilityFromStorage(),
-      };
-    }
-  }
-
-  if (localDrinks?.length && (!remote?.drinks?.length || isDefaultMenu(remote.drinks))) {
-    await uploadFullMenu({
-      drinks: localDrinks,
-      extras: localExtras || [],
-      services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: loadVisibilityFromStorage(),
-    });
-    return {
-      drinks: localDrinks,
-      extras: localExtras || [],
-      services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
-      visibility: loadVisibilityFromStorage(),
-    };
-  }
-
   if (remote?.drinks?.length) {
     const menu = {
       drinks: remote.drinks,
@@ -672,7 +625,6 @@ async function loadFullMenu() {
     visibility: normalizeVisibility(),
   };
   saveFullMenuLocalFrom(menu);
-  await uploadFullMenu(menu);
   return menu;
 }
 
@@ -691,8 +643,9 @@ async function saveFullMenu() {
 
   try {
     const response = await fetch('/api/menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         drinks: menuDrinks,
         extras: menuExtras,
@@ -994,7 +947,7 @@ function applyCategoryVisibility() {
   }
 
   if (freeCoffeeSection) {
-    freeCoffeeSection.hidden = !currentUser || Boolean(drinksMenu?.hidden);
+    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
   }
 
   if (extrasMenu) {
@@ -1018,8 +971,9 @@ async function toggleCategoryVisibility(category) {
   renderStatsHubVisibility();
   try {
     await fetch('/api/menu', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         drinks: menuDrinks,
         extras: menuExtras,
@@ -1619,7 +1573,7 @@ function getCartPricing(items = getCartSummary().items) {
   const list = (items || []).filter((item) => item.qty > 0);
   const subtotal = list.reduce((sum, item) => sum + item.amount * item.qty, 0);
   const drinkQty = countDrinkQty(list);
-  const loyaltyEnabled = Boolean(currentUser?.id);
+  const loyaltyEnabled = true;
   const simulation = loyaltyEnabled
     ? simulateLoyaltyCycle(freeCoffeeStampsCount, drinkQty)
     : {
@@ -1688,367 +1642,7 @@ function getDeviceId() {
 }
 
 function getIdentityId() {
-  if (currentUser?.id) return `user:${currentUser.id}`;
   return getDeviceId();
-}
-
-function firstNameFromUser(user) {
-  const name = String(user?.firstName || user?.name || '').trim();
-  if (name) return name.split(/\s+/)[0];
-  const email = String(user?.email || '').trim();
-  if (email.includes('@')) return email.split('@')[0];
-  return 'гостю';
-}
-
-function waitForGoogleSdk(timeoutMs = 8000) {
-  if (window.google?.accounts?.id) return Promise.resolve(true);
-  if (googleSdkReady) return googleSdkReady;
-
-  googleSdkReady = new Promise((resolve) => {
-    const started = Date.now();
-    const timer = window.setInterval(() => {
-      if (window.google?.accounts?.id) {
-        window.clearInterval(timer);
-        resolve(true);
-        return;
-      }
-      if (Date.now() - started > timeoutMs) {
-        window.clearInterval(timer);
-        resolve(false);
-      }
-    }, 80);
-  });
-
-  return googleSdkReady;
-}
-
-async function loadAuthConfig() {
-  try {
-    const response = await fetch('/api/auth?action=config', { cache: 'no-store' });
-    const data = await response.json();
-    googleClientId = data?.clientId || null;
-    return Boolean(googleClientId);
-  } catch {
-    googleClientId = null;
-    return false;
-  }
-}
-
-async function loadCurrentUser() {
-  try {
-    const response = await fetch('/api/auth?action=me', {
-      cache: 'no-store',
-      credentials: 'include',
-    });
-    const data = await response.json();
-    if (data?.ok && data.user) {
-      setCurrentUser(data.user);
-      return data.user;
-    }
-  } catch {
-    // anonymous
-  }
-  setCurrentUser(null);
-  return null;
-}
-
-function setCurrentUser(user) {
-  currentUser = user || null;
-  try {
-    if (currentUser) {
-      localStorage.setItem(USER_CACHE_KEY, JSON.stringify({
-        id: currentUser.id,
-        name: currentUser.name,
-        firstName: currentUser.firstName || firstNameFromUser(currentUser),
-        email: currentUser.email,
-        picture: currentUser.picture,
-      }));
-    } else {
-      localStorage.removeItem(USER_CACHE_KEY);
-      freeCoffeeStampsCount = 0;
-      freeCoffeePendingUnits = [];
-      freeCoffeeCelebrate = false;
-    }
-  } catch {
-    // ignore
-  }
-  renderUserAccount();
-  renderFreeCoffeeStamps();
-  updateCart();
-  if (currentUser) {
-    updateSplashWelcomeMessage(currentUser);
-  } else {
-    resetSplashBrand();
-  }
-}
-
-function readCachedUser() {
-  try {
-    const raw = localStorage.getItem(USER_CACHE_KEY);
-    if (!raw) return null;
-    const data = JSON.parse(raw);
-    if (!data?.id) return null;
-    return {
-      id: String(data.id),
-      name: data.name || null,
-      firstName: data.firstName || firstNameFromUser(data),
-      email: data.email || null,
-      picture: data.picture || null,
-    };
-  } catch {
-    return null;
-  }
-}
-
-function normalizeAvatarUrl(url) {
-  const raw = String(url || '').trim();
-  if (!raw) return '';
-  try {
-    const parsed = new URL(raw);
-    if (!/^https?:$/i.test(parsed.protocol)) return '';
-    // Google profile photos often fail when Referer is sent; use a crisp size for the hero circle.
-    if (parsed.hostname.endsWith('googleusercontent.com')) {
-      parsed.search = '';
-      parsed.hash = '';
-      let path = parsed.pathname.replace(/=s\d+(-c)?$/i, '');
-      parsed.pathname = `${path}=s128-c`;
-      return parsed.toString();
-    }
-    return parsed.toString();
-  } catch {
-    return '';
-  }
-}
-
-function resetHeroAvatar() {
-  if (!heroAvatar) return;
-  heroAvatar.onload = null;
-  heroAvatar.onerror = null;
-  heroAvatar.removeAttribute('src');
-  heroAvatar.alt = '';
-  heroAvatar.hidden = true;
-  if (heroCupWrap) heroCupWrap.hidden = false;
-  if (heroIcon) heroIcon.classList.remove('has-avatar');
-}
-
-function applyHeroAvatar(picture, alt) {
-  if (!heroAvatar) return;
-
-  const url = normalizeAvatarUrl(picture);
-  if (!url) {
-    resetHeroAvatar();
-    return;
-  }
-
-  const reveal = () => {
-    heroAvatar.hidden = false;
-    if (heroCupWrap) heroCupWrap.hidden = true;
-    if (heroIcon) heroIcon.classList.add('has-avatar');
-  };
-
-  heroAvatar.referrerPolicy = 'no-referrer';
-  heroAvatar.alt = alt || '';
-  heroAvatar.onload = reveal;
-  heroAvatar.onerror = () => {
-    resetHeroAvatar();
-  };
-
-  // Keep the cup visible until the image actually loads (avoids an empty circle).
-  if (heroCupWrap) heroCupWrap.hidden = false;
-  heroAvatar.hidden = true;
-  if (heroIcon) heroIcon.classList.remove('has-avatar');
-
-  if (heroAvatar.getAttribute('src') === url) {
-    if (heroAvatar.complete && heroAvatar.naturalWidth > 0) {
-      reveal();
-    } else {
-      // Force a reload attempt for a previously failed URL.
-      heroAvatar.removeAttribute('src');
-      heroAvatar.src = url;
-    }
-    return;
-  }
-
-  heroAvatar.src = url;
-}
-
-function renderUserAccount() {
-  if (userAccountLogout) {
-    userAccountLogout.hidden = !currentUser;
-  }
-
-  const picture = String(currentUser?.picture || '').trim();
-  if (currentUser && picture) {
-    applyHeroAvatar(picture, firstNameFromUser(currentUser));
-  } else {
-    resetHeroAvatar();
-  }
-
-  if (!heroTitle) return;
-
-  if (currentUser) {
-    const name = firstNameFromUser(currentUser);
-    heroTitle.textContent = `${name}, що бажаєте сьогодні?`;
-    heroTitle.classList.add('is-user');
-    if (heroLead) heroLead.hidden = true;
-  } else {
-    heroTitle.textContent = 'Кавове меню';
-    heroTitle.classList.remove('is-user');
-    if (heroLead) {
-      heroLead.hidden = false;
-      heroLead.textContent = 'Що бажаєте сьогодні?';
-    }
-  }
-}
-
-function showSplashAuthError(message) {
-  if (!appSplashAuthError) return;
-  if (!message) {
-    appSplashAuthError.hidden = true;
-    appSplashAuthError.textContent = '';
-    return;
-  }
-  appSplashAuthError.textContent = message;
-  appSplashAuthError.hidden = false;
-}
-
-function setSplashAuthVisible(visible) {
-  if (appSplash) appSplash.classList.toggle('is-auth-mode', visible);
-  if (appSplashAuth) appSplashAuth.hidden = !visible;
-  if (appSplashLoader) appSplashLoader.hidden = visible;
-  if (!visible) showSplashAuthError('');
-}
-
-function isSplashAuthMode() {
-  return Boolean(appSplash?.classList.contains('is-auth-mode') || (appSplashAuth && !appSplashAuth.hidden));
-}
-
-function showSplashLoadingMessage(text = 'Готуємо для вас…') {
-  if (appSplashTitle) {
-    appSplashTitle.textContent = 'Кавове меню';
-    appSplashTitle.classList.remove('is-welcome');
-  }
-  if (appSplashLoyalty) {
-    appSplashLoyalty.hidden = false;
-    appSplashLoyalty.textContent = text;
-    appSplashLoyalty.classList.remove('is-welcome', 'is-loyalty', 'is-auth');
-  }
-}
-
-async function completeGoogleSignIn(credential) {
-  const response = await fetch('/api/auth?action=google', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
-      credential,
-      deviceId: getDeviceId(),
-    }),
-  });
-  const data = await response.json();
-  if (!response.ok || !data?.ok || !data.user) {
-    throw new Error(data?.error || 'auth_failed');
-  }
-
-  setCurrentUser(data.user);
-
-  if (data.freeCoffee) {
-    setFreeCoffeeBalance({
-      stamps: data.freeCoffee.stamps,
-      used: data.freeCoffee.used,
-      cycle: data.freeCoffee.cycle || data.freeCoffee.limit,
-      limit: data.freeCoffee.limit,
-      celebrated: false,
-    }, { animate: false });
-  }
-
-  await loadUserCoffeeStats();
-  return data.user;
-}
-
-async function handleGoogleCredential(response) {
-  try {
-    showSplashAuthError('');
-    await completeGoogleSignIn(response?.credential);
-    setSplashAuthVisible(false);
-    if (authLoginResolver) {
-      const resolve = authLoginResolver;
-      authLoginResolver = null;
-      resolve(true);
-    }
-  } catch {
-    showSplashAuthError('Не вдалося увійти. Спробуйте ще раз.');
-  }
-}
-
-async function renderGoogleSignInButton() {
-  if (!googleClientId || !googleSignInBtn) return false;
-  const ready = await waitForGoogleSdk();
-  if (!ready || !window.google?.accounts?.id) return false;
-
-  window.google.accounts.id.initialize({
-    client_id: googleClientId,
-    callback: handleGoogleCredential,
-    auto_select: true,
-    cancel_on_tap_outside: false,
-    context: 'signin',
-    ux_mode: 'popup',
-  });
-
-  googleSignInBtn.replaceChildren();
-  window.google.accounts.id.renderButton(googleSignInBtn, {
-    type: 'standard',
-    theme: 'filled_black',
-    size: 'large',
-    text: 'signin_with',
-    shape: 'pill',
-    logo_alignment: 'left',
-    width: Math.max(280, Math.round(googleSignInBtn.getBoundingClientRect().width) || 280),
-  });
-
-  try {
-    window.google.accounts.id.prompt();
-  } catch {
-    // One Tap is optional
-  }
-
-  return true;
-}
-
-function waitForSplashLogin() {
-  return new Promise((resolve) => {
-    authLoginResolver = resolve;
-    if (appSplashSkip) {
-      appSplashSkip.onclick = () => {
-        if (authLoginResolver) {
-          const done = authLoginResolver;
-          authLoginResolver = null;
-          done(false);
-        }
-        setSplashAuthVisible(false);
-      };
-    }
-  });
-}
-
-async function logoutCurrentUser() {
-  try {
-    await fetch('/api/auth?action=logout', {
-      method: 'POST',
-      credentials: 'include',
-    });
-  } catch {
-    // ignore
-  }
-  setCurrentUser(null);
-  await loadFreeCoffeeBalance();
-  await loadUserCoffeeStats();
-}
-
-if (userAccountLogout) {
-  userAccountLogout.addEventListener('click', () => {
-    logoutCurrentUser();
-  });
 }
 
 function getKyivDayKey(value = new Date()) {
@@ -2109,7 +1703,6 @@ function applyUserCoffeeStats(payload = {}) {
 }
 
 function recordLocalUserCoffee(drinkQty, forSelf = true) {
-  if (!currentUser?.id) return;
   const cups = Math.max(0, Math.round(Number(drinkQty) || 0));
   if (cups <= 0) return;
 
@@ -2128,11 +1721,6 @@ function recordLocalUserCoffee(drinkQty, forSelf = true) {
 }
 
 async function loadUserCoffeeStats() {
-  if (!currentUser?.id) {
-    applyUserCoffeeStats({ days: [], today: 0 });
-    return;
-  }
-
   applyUserCoffeeStats(readLocalUserCoffee());
   const deviceId = getIdentityId();
   try {
@@ -2379,10 +1967,6 @@ function formatLoyaltySplashText(untilFree) {
   return `У вас залишилось ${left} ${formatDrinkWord(left)} до безкоштовної кави`;
 }
 
-function formatWelcomeSplashText(user) {
-  return `Вітаємо, ${firstNameFromUser(user)}`;
-}
-
 function resetSplashBrand() {
   if (appSplashTitle) {
     appSplashTitle.textContent = 'Кавове меню';
@@ -2391,36 +1975,6 @@ function resetSplashBrand() {
   if (appSplashLoyalty) {
     appSplashLoyalty.hidden = false;
     appSplashLoyalty.classList.remove('is-welcome', 'is-loyalty', 'is-auth');
-  }
-}
-
-function updateSplashWelcomeMessage(user = currentUser) {
-  if (!user) return;
-
-  if (appSplash) appSplash.classList.remove('is-auth-mode');
-
-  if (appSplashTitle) {
-    appSplashTitle.textContent = formatWelcomeSplashText(user);
-    appSplashTitle.classList.add('is-welcome');
-  }
-
-  if (appSplashLoyalty) {
-    appSplashLoyalty.textContent = '';
-    appSplashLoyalty.hidden = true;
-    appSplashLoyalty.classList.remove('is-auth', 'is-loyalty', 'is-welcome');
-  }
-}
-
-function showSplashAuthPrompt() {
-  if (appSplashTitle) {
-    appSplashTitle.textContent = 'Кавове меню';
-    appSplashTitle.classList.remove('is-welcome');
-  }
-  if (appSplashLoyalty) {
-    appSplashLoyalty.hidden = false;
-    appSplashLoyalty.textContent = 'Для бонусів потрібна авторизація';
-    appSplashLoyalty.classList.remove('is-loyalty', 'is-welcome');
-    appSplashLoyalty.classList.add('is-auth');
   }
 }
 
@@ -2449,12 +2003,11 @@ function readCachedLoyaltyProgress() {
 }
 
 function updateSplashLoyaltyMessage(stamps = freeCoffeeStampsCount, cycle = freeCoffeeCycle) {
-  if (currentUser) {
-    updateSplashWelcomeMessage(currentUser);
-    return;
-  }
-  // Loyalty progress is only for signed-in users.
-  return;
+  if (!appSplashLoyalty) return;
+  const untilFree = getLoyaltyUntilFree(stamps, cycle);
+  appSplashLoyalty.hidden = false;
+  appSplashLoyalty.textContent = formatLoyaltySplashText(untilFree);
+  appSplashLoyalty.classList.add('is-loyalty');
 }
 
 function loyaltyCupMarkup() {
@@ -2532,15 +2085,10 @@ function renderFreeCoffeeStamps({ animateFrom = freeCoffeeStampsCount, celebrate
   if (!freeCoffeeStamps) return;
 
   if (freeCoffeeSection) {
-    freeCoffeeSection.hidden = !currentUser || Boolean(drinksMenu?.hidden);
+    freeCoffeeSection.hidden = Boolean(drinksMenu?.hidden);
   }
 
-  if (!currentUser) {
-    freeCoffeeStamps.replaceChildren();
-    return;
-  }
-
-  const readyForGift = freeCoffeeStampsCount >= freeCoffeeCycle - 1;
+    const readyForGift = freeCoffeeStampsCount >= freeCoffeeCycle - 1;
   const untilFree = getLoyaltyUntilFree(freeCoffeeStampsCount, freeCoffeeCycle);
   const progressRatio = Math.max(0, Math.min(1, freeCoffeeStampsCount / Math.max(1, freeCoffeeCycle - 1)));
 
@@ -2625,15 +2173,7 @@ function burstLoyaltyCelebration() {
 }
 
 function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = false } = {}) {
-  if (!currentUser?.id) {
-    freeCoffeeStampsCount = 0;
-    freeCoffeePendingUnits = [];
-    freeCoffeeCelebrate = false;
-    renderFreeCoffeeStamps();
-    return;
-  }
-
-  const prevStamps = freeCoffeeStampsCount;
+    const prevStamps = freeCoffeeStampsCount;
   const nextCycle = Number(payload.cycle ?? payload.limit);
   if (Number.isFinite(nextCycle) && nextCycle > 1) {
     freeCoffeeCycle = Math.round(nextCycle);
@@ -2665,13 +2205,11 @@ function setFreeCoffeeBalance(payload = {}, { animate = false, celebrated = fals
 }
 
 async function loadFreeCoffeeBalance() {
-  if (!currentUser?.id) {
-    freeCoffeeStampsCount = 0;
-    freeCoffeePendingUnits = [];
-    freeCoffeeCelebrate = false;
+  const cached = readCachedLoyaltyProgress();
+  if (cached) {
+    freeCoffeeStampsCount = cached.stamps;
+    freeCoffeeCycle = cached.cycle;
     renderFreeCoffeeStamps();
-    updateCart();
-    return;
   }
 
   const deviceId = getIdentityId();
@@ -2693,7 +2231,7 @@ async function loadFreeCoffeeBalance() {
 }
 
 function applyFreeCoffeeClaim(claim, { animate = true } = {}) {
-  if (!claim || !currentUser?.id) return;
+  if (!claim) return;
   const claimed = Number(claim.claimed || claim.freeDrinks || 0);
   const celebrated = Boolean(claim.celebrated || claimed > 0);
   setFreeCoffeeBalance(
@@ -3144,13 +2682,6 @@ function closeCardPaySheet() {
 }
 
 async function copyCardNumber() {
-  if (!pendingOrder || !pendingOrderId) return;
-
-  if (!otherPaymentRecorded) {
-    notifyOrder(pendingOrder, 'other', pendingOrderId);
-    otherPaymentRecorded = true;
-  }
-
   try {
     await navigator.clipboard.writeText(OTHER_BANK_CARD);
     if (cardPayCopy) {
@@ -3160,7 +2691,6 @@ async function copyCardNumber() {
         cardPayCopy.textContent = original;
       }, 1500);
     }
-    finishOtherPayment();
   } catch {
     if (cardPayCopy) cardPayCopy.textContent = 'Не вдалося скопіювати';
   }
@@ -3224,48 +2754,36 @@ function makeOrderId() {
   return `order-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
 }
 
-function notifyOrder(order, provider, orderId) {
+async function notifyOrder(order, provider, orderId) {
   const payload = JSON.stringify({
     id: orderId,
-    items: order.items,
-    total: order.total,
+    items: order.items.map(({ id, qty, category }) => ({ id, qty, category })),
     provider,
     deviceId: getIdentityId(),
-    freeDrinks: Number(order.freeDrinks || 0),
-    drinkQty: Number(order.drinkQty || 0),
     forSelf: order.forSelf !== false,
   });
 
-  const postOrder = () => fetch('/api/order', {
+  const response = await fetch('/api/order', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: payload,
     keepalive: true,
-    credentials: 'include',
-  }).then(async (response) => {
-    try {
-      const data = await response.json();
-      if (data?.freeCoffee) applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
-      // Stock is deducted on the server when the order is created
-      // (bank tap / card copy). Refresh local menu so it stays in sync.
-      if (data?.ok) await refreshMenuAfterOrder();
-    } catch {
-      // ignore parse errors
-    }
-  }).catch(() => {
-    // payment flow should continue even if notification fails
   });
 
-  // Prefer fetch so stock can sync before leaving / while staying on page
-  if (provider === 'other' || provider === 'free' || Number(order.freeDrinks || 0) > 0) {
-    postOrder();
-    return;
+  let data = null;
+  try {
+    data = await response.json();
+  } catch {
+    data = null;
   }
 
-  postOrder();
+  if (data?.freeCoffee) applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
+  if (data?.ok) await refreshMenuAfterOrder();
+  return { ok: Boolean(data?.ok), data };
 }
 
-function goToPayment(provider) {
+async function goToPayment(provider) {
+  try { sessionStorage.setItem('kava-last-provider', provider); } catch { /* ignore */ }
   const order = snapshotOrder();
   if (!order.items.length) return;
 
@@ -3278,32 +2796,28 @@ function goToPayment(provider) {
   setPayActionsDisabled(true);
 
   if (order.total === 0) {
-    if (currentUser?.id && (order.drinkQty > 0 || order.freeDrinks > 0)) {
-      const simulation = simulateLoyaltyCycle(freeCoffeeStampsCount, order.drinkQty || 0);
-      setFreeCoffeeBalance(
-        {
-          stamps: simulation.stamps,
-          cycle: freeCoffeeCycle,
-          celebrated: simulation.freeDrinks > 0,
-        },
-        { animate: true, celebrated: simulation.freeDrinks > 0 },
-      );
-    }
-    notifyOrder(order, 'free', orderId);
     closeSheet();
-    awaitingPayment = false;
-    clearPendingPayment();
-    pendingOrder = null;
-    pendingOrderId = null;
-    if (currentUser?.id && order.drinkQty > 0) {
-      recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+    setPayActionsDisabled(true);
+    try {
+      const result = await notifyOrder(order, 'free', orderId);
+      if (!result?.ok) throw new Error('order_failed');
+      if (order.drinkQty > 0) recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+      awaitingPayment = false;
+      clearPendingPayment();
+      pendingOrder = null;
+      pendingOrderId = null;
+      clearCart();
+      completeOrderCelebration();
+      await loadFreeCoffeeBalance();
+      await loadUserCoffeeStats();
+    } catch {
+      if (stockToast) {
+        stockToast.textContent = 'Не вдалося підтвердити замовлення. Спробуйте ще.';
+        stockToast.hidden = false;
+      }
+    } finally {
+      setPayActionsDisabled(false);
     }
-    clearCart();
-    completeOrderCelebration();
-    window.setTimeout(() => {
-      loadFreeCoffeeBalance();
-      loadUserCoffeeStats();
-    }, 900);
     return;
   }
 
@@ -3313,8 +2827,6 @@ function goToPayment(provider) {
     openCardPaySheet(order.total);
     return;
   }
-
-  notifyOrder(order, provider, orderId);
 
   const url = getPaymentUrl(provider, order.total);
   syncBankPayLinks(order.total);
@@ -3531,69 +3043,55 @@ function resetPendingPayment() {
   setPayActionsDisabled(false);
 }
 
-async function revokePendingOrderIncome() {
-  const orderId = pendingOrderId;
-  pendingOrderId = null;
-  if (!orderId) return;
-
-  try {
-    await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        type: 'delete',
-        id: orderId,
-        restoreStock: true,
-      }),
-      keepalive: true,
-    });
-    await refreshMenuAfterOrder();
-  } catch {
-    // ignore delete failures
-  }
-}
-
 async function finishOtherPayment() {
-  const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
-  pendingOrderId = null;
-  otherPaymentRecorded = false;
-  clearPendingPayment();
-  pendingOrder = null;
-  awaitingPayment = false;
   closeCardPaySheet();
-  setPayActionsDisabled(false);
-  // Extra stock already deducted in /api/order when card number was copied
-  if (order?.drinkQty > 0 && currentUser?.id) {
-    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
-  }
-  clearCart();
-  completeOrderCelebration();
-  loadUserCoffeeStats();
+  openConfirmSheet();
 }
 async function confirmPaymentSuccess() {
   const order = pendingOrder ? { ...pendingOrder, items: pendingOrder.items.map((item) => ({ ...item })) } : null;
-  pendingOrderId = null;
-  otherPaymentRecorded = false;
-  clearPendingPayment();
-  pendingOrder = null;
-  awaitingPayment = false;
-  closeConfirmSheet();
-  // Extra stock already deducted in /api/order when bank was pressed
-  if (order?.drinkQty > 0 && currentUser?.id) {
-    recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+  const orderId = pendingOrderId;
+  if (!order || !orderId) {
+    closeConfirmSheet();
+    return;
   }
-  clearCart();
-  completeOrderCelebration();
-  loadUserCoffeeStats();
+
+  closeConfirmSheet();
+  loader.hidden = false;
+  loaderText.textContent = 'Підтверджуємо замовлення…';
+
+  try {
+    const provider = sessionStorage.getItem('kava-last-provider') || 'bank';
+    const result = await notifyOrder(order, provider, orderId);
+    if (!result?.ok) throw new Error('order_failed');
+    if (order.drinkQty > 0) recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
+    pendingOrderId = null;
+    otherPaymentRecorded = false;
+    clearPendingPayment();
+    pendingOrder = null;
+    awaitingPayment = false;
+    setPayActionsDisabled(false);
+    clearCart();
+    completeOrderCelebration();
+    await loadFreeCoffeeBalance();
+    await loadUserCoffeeStats();
+  } catch {
+    if (stockToast) {
+      stockToast.textContent = 'Не вдалося зберегти замовлення. Спробуйте ще.';
+      stockToast.hidden = false;
+    }
+  } finally {
+    loader.hidden = true;
+  }
 }
 
 function cancelPendingPayment() {
-  revokePendingOrderIncome();
   otherPaymentRecorded = false;
   clearPendingPayment();
   pendingOrder = null;
+  pendingOrderId = null;
   awaitingPayment = false;
   closeConfirmSheet();
+  closeCardPaySheet();
   setPayActionsDisabled(false);
   clearCart();
 }
@@ -3725,6 +3223,8 @@ cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
 });
 
 cardPayCopy?.addEventListener('click', copyCardNumber);
+const cardPayConfirm = document.getElementById('card-pay-confirm');
+cardPayConfirm?.addEventListener('click', () => finishOtherPayment());
 
 sheet.querySelectorAll('[data-close]').forEach((el) => {
   el.addEventListener('click', closeSheet);
@@ -3823,74 +3323,20 @@ function dismissSplash() {
 async function bootApp() {
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
-  const minSplashMs = reducedMotion ? 0 : coarsePointer ? 1100 : 1400;
+  const minSplashMs = reducedMotion ? 0 : coarsePointer ? 900 : 1200;
   const started = Date.now();
-  let maxTimer = window.setTimeout(dismissSplash, 12000);
-  let waitedForLogin = false;
 
-  const cachedUser = readCachedUser();
-  if (cachedUser) {
-    currentUser = cachedUser;
-    updateSplashWelcomeMessage(cachedUser);
-    renderUserAccount();
-  } else {
-    // Keep a stable loading line until we know auth vs loyalty state.
-    showSplashLoadingMessage('Готуємо для вас…');
-  }
-
+  showSplashLoadingMessage('Готуємо для вас…');
   initMenuDelegation();
 
   try {
-    const [, user] = await Promise.all([
-      loadAuthConfig(),
-      loadCurrentUser(),
-      initMenu(),
-    ]);
-
-    if (user) {
-      updateSplashWelcomeMessage(user);
-      setSplashAuthVisible(false);
-    } else if (googleClientId) {
-      splashAwaitingLogin = true;
-      showSplashAuthPrompt();
-      setSplashAuthVisible(true);
-      window.clearTimeout(maxTimer);
-      const rendered = await renderGoogleSignInButton();
-      if (rendered) {
-        waitedForLogin = true;
-        await waitForSplashLogin();
-      } else {
-        splashAwaitingLogin = false;
-        setSplashAuthVisible(false);
-        updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
-      }
-      maxTimer = window.setTimeout(dismissSplash, 8000);
-    } else if (!currentUser) {
-      updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
-    }
-
-    await loadFreeCoffeeBalance();
-    await loadUserCoffeeStats();
+    await Promise.all([initMenu(), loadFreeCoffeeBalance(), loadUserCoffeeStats()]);
+    updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
   } catch {
-    // show menu with cached data or empty state
     renderFreeCoffeeStamps();
   }
 
-  if (currentUser) {
-    updateSplashWelcomeMessage(currentUser);
-    renderUserAccount();
-  } else if (!waitedForLogin && !isSplashAuthMode()) {
-    updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
-  }
-
-  // After Google login/skip the splash already waited — dismiss without another flash.
-  const wait = waitedForLogin
-    ? 0
-    : Math.max(0, minSplashMs - (Date.now() - started));
-  window.setTimeout(() => {
-    window.clearTimeout(maxTimer);
-    dismissSplash();
-  }, wait);
+  window.setTimeout(dismissSplash, Math.max(0, minSplashMs - (Date.now() - started)));
 }
 
 applyTheme(currentTheme);
@@ -5692,6 +5138,20 @@ function refreshStats({ immediate = false } = {}) {
   });
 }
 
+async function loginStatsAdmin(password) {
+  const response = await fetch('/api/stats', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    credentials: 'include',
+    body: JSON.stringify({ type: 'login', password }),
+  });
+  const data = await response.json();
+  if (!response.ok || !data?.ok) return false;
+  sessionStorage.setItem(STATS_AUTH_KEY, '1');
+  return true;
+}
+
 function isStatsAuthenticated() {
   return sessionStorage.getItem(STATS_AUTH_KEY) === '1';
 }
@@ -5746,8 +5206,9 @@ async function addCashIncome(label, amount, category = statsCategory) {
 
   try {
     await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         type: 'income',
         id,
@@ -5768,8 +5229,9 @@ async function addExpense(label, amount, category = statsCategory) {
 
   try {
     await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         type: 'expense',
         id,
@@ -5800,8 +5262,9 @@ async function submitStatsForm(handler, label, amount) {
 async function deleteTransaction(id) {
   try {
     await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         type: 'delete',
         id,
@@ -5841,8 +5304,9 @@ async function saveEditedTransaction(label, amount) {
 
   try {
     await fetch('/api/stats', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
       body: JSON.stringify({
         type: 'update',
         id: editingTransactionId,
@@ -5861,18 +5325,16 @@ async function saveEditedTransaction(label, amount) {
 heroIcon?.addEventListener('click', requestStatsAccess);
 statsGate?.querySelector('[data-stats-gate-close]')?.addEventListener('click', closeStatsGate);
 
-statsGateForm?.addEventListener('submit', (event) => {
+statsGateForm?.addEventListener('submit', async (event) => {
   event.preventDefault();
-
   const password = statsGatePassword?.value.trim();
-  if (password !== STATS_PASSWORD) {
+  const ok = await loginStatsAdmin(password);
+  if (!ok) {
     statsGateError.hidden = false;
     statsGatePassword?.focus();
     statsGatePassword?.select();
     return;
   }
-
-  sessionStorage.setItem(STATS_AUTH_KEY, '1');
   closeStatsGate();
   openStats();
 });

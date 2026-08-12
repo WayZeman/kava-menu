@@ -15,6 +15,33 @@ function serializeItems(items) {
   return JSON.stringify(items);
 }
 
+let transactionsTableReady = false;
+
+async function ensureTransactionsTable(sql) {
+  if (transactionsTableReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS transactions (
+      id TEXT PRIMARY KEY,
+      kind TEXT NOT NULL,
+      label TEXT NOT NULL,
+      amount NUMERIC NOT NULL,
+      source TEXT,
+      provider TEXT,
+      items JSONB,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS transactions_kind_created_idx
+    ON transactions (kind, created_at DESC)
+  `;
+
+  transactionsTableReady = true;
+}
+
 function mapRow(row) {
   let items = row.items || null;
   if (typeof items === 'string') {
@@ -42,6 +69,8 @@ function mapRow(row) {
 export async function listTransactions() {
   const sql = getSql();
   if (!sql) return { incomes: [], expenses: [] };
+
+  await ensureTransactionsTable(sql);
 
   const rows = await sql`
     SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
@@ -72,6 +101,8 @@ export async function insertIncome({
 }) {
   const sql = getSql();
   if (!sql) return null;
+
+  await ensureTransactionsTable(sql);
 
   if (id) {
     const existing = await sql`
@@ -116,6 +147,8 @@ export async function insertIncome({
 export async function insertExpense({ id, label, amount, category = 'drinks' }) {
   const sql = getSql();
   if (!sql) return null;
+
+  await ensureTransactionsTable(sql);
 
   const safeCategory = ['drinks', 'extras', 'services', 'youtube'].includes(category) ? category : 'drinks';
   const source = `expense-${safeCategory}`;

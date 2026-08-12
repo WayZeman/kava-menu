@@ -5,6 +5,7 @@
     "jose": "^6.2.3"
   },
   "scripts": {
+    "dev": "npx vercel dev",
     "seed:db": "node --env-file=.env.local scripts/seed-db.mjs",
     "deploy": "npx vercel deploy --prod --yes"
   },

@@ -1,4 +1,3 @@
-import { getSessionUser, userIdentityKey } from './_lib/auth.js';
 import {
   applyOrderedExtraStock,
   buildOrderLabel,
@@ -6,6 +5,7 @@ import {
   insertIncome,
   logDeviceCoffee,
 } from './_lib/db.js';
+import { validateAndPriceOrder } from './_lib/order-pricing.js';
 
 function formatOrderDate() {
   return new Intl.DateTimeFormat('uk-UA', {
@@ -27,49 +27,10 @@ function providerLabel(provider) {
   return 'Банк';
 }
 
-function buildOrderRecord(body) {
-  const items = body?.items;
-  if (!Array.isArray(items) || !items.length) return null;
-
-  const lines = [];
-  let total = 0;
-
-  for (const item of items) {
-    const name = String(item?.name || '').trim();
-    const qty = Number(item?.qty);
-    const amount = Number(item?.amount);
-    if (!name || !Number.isFinite(qty) || qty <= 0) continue;
-    if (!Number.isFinite(amount) || amount < 0) continue;
-
-    total += amount * qty;
-    const category = String(item?.category || '').trim() || null;
-    lines.push({
-      id: String(item?.id || '').trim() || null,
-      name,
-      qty,
-      amount,
-      category,
-      freeQty: Math.max(0, Math.min(qty, Math.round(Number(item?.freeQty) || 0))),
-    });
-  }
-
-  if (!lines.length) return null;
-
-  const parsedTotal = Number(body?.total);
-  if (Number.isFinite(parsedTotal) && parsedTotal >= 0) {
-    total = parsedTotal;
-  }
-
-  const id = String(body?.id || '').trim() || null;
-
-  return {
-    id,
-    label: buildOrderLabel(lines),
-    amount: total,
-    source: 'order',
-    provider: String(body?.provider || '').trim() || 'bank',
-    items: lines,
-  };
+function normalizeDeviceId(value) {
+  const id = String(value || '').trim();
+  if (!id || id.length > 120) return null;
+  return id;
 }
 
 async function sendTelegramMessage(token, chatId, text) {
@@ -95,62 +56,46 @@ export default async function handler(req, res) {
     return;
   }
 
-  const lines = [];
-  let total = 0;
-
-  for (const item of items) {
-    const name = String(item?.name || '').trim();
-    const qty = Number(item?.qty);
-    const amount = Number(item?.amount);
-
-    if (!name || !Number.isFinite(qty) || qty <= 0 || qty > 99) {
-      res.status(400).json({ ok: false, error: 'invalid_item' });
-      return;
-    }
-
-    if (!Number.isFinite(amount) || amount < 0 || amount > 100000) {
-      res.status(400).json({ ok: false, error: 'invalid_item' });
-      return;
-    }
-
-    const lineTotal = amount * qty;
-    total += lineTotal;
-    lines.push(`• ${name} × ${qty} — ${lineTotal} грн`);
+  const deviceId = normalizeDeviceId(req.body?.deviceId);
+  if (!deviceId) {
+    res.status(400).json({ ok: false, error: 'invalid_device' });
+    return;
   }
-
-  const paidTotalRaw = Number(req.body?.total);
-  const paidTotal = Number.isFinite(paidTotalRaw) && paidTotalRaw >= 0
-    ? paidTotalRaw
-    : total;
-
-  const freeDrinksRaw = Number(req.body?.freeDrinks);
-  const freeDrinks = Number.isFinite(freeDrinksRaw) && freeDrinksRaw > 0
-    ? Math.round(freeDrinksRaw)
-    : 0;
-  const session = await getSessionUser(req);
-  const bodyDeviceId = String(req.body?.deviceId || '').trim();
-  const deviceId = session ? userIdentityKey(session.id) : bodyDeviceId;
 
   const providerRaw = String(req.body?.provider || '').trim() || 'bank';
   const provider = providerLabel(providerRaw);
 
-  const orderRecord = buildOrderRecord({
-    id: req.body?.id,
-    items,
-    total: paidTotal,
+  let pricing;
+  try {
+    pricing = await validateAndPriceOrder({ items, deviceId, provider: providerRaw });
+  } catch {
+    res.status(503).json({ ok: false, error: 'pricing_failed' });
+    return;
+  }
+
+  if (!pricing.ok) {
+    res.status(400).json({ ok: false, error: pricing.error || 'invalid_order' });
+    return;
+  }
+
+  const orderId = String(req.body?.id || '').trim() || null;
+  const orderRecord = {
+    id: orderId,
+    label: buildOrderLabel(pricing.lines),
+    amount: pricing.paidTotal,
+    source: 'order',
     provider: providerRaw,
-  });
+    items: pricing.lines,
+  };
 
   let saved = null;
   let isNewOrder = false;
-  if (orderRecord) {
-    try {
-      const result = await insertIncome(orderRecord);
-      saved = result?.record || null;
-      isNewOrder = Boolean(result?.isNew);
-    } catch {
-      saved = null;
-    }
+  try {
+    const result = await insertIncome(orderRecord);
+    saved = result?.record || null;
+    isNewOrder = Boolean(result?.isNew);
+  } catch {
+    saved = null;
   }
 
   if (!saved) {
@@ -159,40 +104,33 @@ export default async function handler(req, res) {
   }
 
   let freeCoffee = null;
-  if (isNewOrder && session && deviceId) {
-    const drinkCount = items.reduce((sum, item) => {
-      if (String(item?.category || '').trim() !== 'drink') return sum;
-      return sum + (Number(item?.qty) || 0);
-    }, 0);
+  if (isNewOrder && pricing.drinkQty > 0) {
+    try {
+      freeCoffee = await claimFreeCoffee({
+        deviceId,
+        orderId: saved.id,
+        drinkQty: pricing.drinkQty,
+      });
+    } catch {
+      freeCoffee = null;
+    }
 
-    if (drinkCount > 0) {
-      try {
-        freeCoffee = await claimFreeCoffee({
-          deviceId,
-          orderId: saved.id,
-          drinkQty: drinkCount,
-        });
-      } catch {
-        freeCoffee = null;
-      }
-
-      try {
-        const forSelf = req.body?.forSelf !== false && req.body?.forSelf !== 'false';
-        await logDeviceCoffee({
-          deviceId,
-          orderId: saved.id,
-          drinkQty: drinkCount,
-          forSelf,
-        });
-      } catch {
-        // personal stats are optional
-      }
+    try {
+      const forSelf = req.body?.forSelf !== false && req.body?.forSelf !== 'false';
+      await logDeviceCoffee({
+        deviceId,
+        orderId: saved.id,
+        drinkQty: pricing.drinkQty,
+        forSelf,
+      });
+    } catch {
+      // personal stats are optional
     }
   }
 
   if (isNewOrder) {
     try {
-      await applyOrderedExtraStock(orderRecord?.items || []);
+      await applyOrderedExtraStock(pricing.lines);
     } catch {
       // do not fail the order if stock sync fails
     }
@@ -202,15 +140,27 @@ export default async function handler(req, res) {
   const chatId = process.env.TELEGRAM_CHAT_ID;
 
   if (isNewOrder && token && chatId) {
+    const telegramLines = pricing.lines.map((line) => {
+      const lineTotal = line.amount * line.qty - line.freeQty * line.amount;
+      if (line.freeQty > 0 && lineTotal === 0) {
+        return `• ${line.name} × ${line.qty} — безкоштовно`;
+      }
+      if (line.freeQty > 0) {
+        return `• ${line.name} × ${line.qty} — ${lineTotal} грн (−${line.freeQty})`;
+      }
+      return `• ${line.name} × ${line.qty} — ${lineTotal} грн`;
+    });
+
     const freeLine = freeCoffee?.claimed
       ? `Безкоштовно: ${freeCoffee.claimed} кав`
       : null;
+
     const text = [
       '🧾 Чек замовлення',
       '',
-      ...lines,
+      ...telegramLines,
       '',
-      `Разом: ${paidTotal} грн`,
+      `Разом: ${pricing.paidTotal} грн`,
       freeLine,
       `Оплата: ${provider}`,
       `🕐 ${formatOrderDate()}`,
@@ -223,5 +173,14 @@ export default async function handler(req, res) {
     }
   }
 
-  res.status(200).json({ ok: true, income: saved, freeCoffee });
+  res.status(200).json({
+    ok: true,
+    income: saved,
+    freeCoffee,
+    pricing: {
+      paidTotal: pricing.paidTotal,
+      freeDrinks: pricing.freeDrinks,
+      drinkQty: pricing.drinkQty,
+    },
+  });
 }
