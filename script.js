@@ -168,7 +168,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '144';
+const APP_VERSION = '145';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1967,6 +1967,19 @@ function formatLoyaltySplashText(untilFree) {
   return `У вас залишилось ${left} ${formatDrinkWord(left)} до безкоштовної кави`;
 }
 
+function showSplashLoadingMessage(text = 'Готуємо для вас…') {
+  if (appSplashTitle) {
+    appSplashTitle.textContent = 'Кавове меню';
+    appSplashTitle.classList.remove('is-welcome');
+  }
+  if (appSplashLoyalty) {
+    appSplashLoyalty.hidden = false;
+    appSplashLoyalty.textContent = text;
+    appSplashLoyalty.classList.remove('is-welcome', 'is-auth');
+    appSplashLoyalty.classList.add('is-loyalty');
+  }
+}
+
 function resetSplashBrand() {
   if (appSplashTitle) {
     appSplashTitle.textContent = 'Кавове меню';
@@ -3325,6 +3338,7 @@ async function bootApp() {
   const coarsePointer = window.matchMedia('(pointer: coarse)').matches;
   const minSplashMs = reducedMotion ? 0 : coarsePointer ? 900 : 1200;
   const started = Date.now();
+  const safetyTimer = window.setTimeout(dismissSplash, 8000);
 
   showSplashLoadingMessage('Готуємо для вас…');
   initMenuDelegation();
@@ -3334,14 +3348,15 @@ async function bootApp() {
     updateSplashLoyaltyMessage(freeCoffeeStampsCount, freeCoffeeCycle);
   } catch {
     renderFreeCoffeeStamps();
+  } finally {
+    window.clearTimeout(safetyTimer);
+    window.setTimeout(dismissSplash, Math.max(0, minSplashMs - (Date.now() - started)));
   }
-
-  window.setTimeout(dismissSplash, Math.max(0, minSplashMs - (Date.now() - started)));
 }
 
 applyTheme(currentTheme);
 initStandaloneMode();
-bootApp();
+bootApp().catch(() => dismissSplash());
 initPaymentReturn();
 updateCart();
 try {
