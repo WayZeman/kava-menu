@@ -6,34 +6,18 @@ import {
   logDeviceCoffee,
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
-
-function formatOrderDate() {
-  return new Intl.DateTimeFormat('uk-UA', {
-    timeZone: 'Europe/Kyiv',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
-}
+import {
+  formatDeviceRef,
+  formatKyivDateTime,
+  getDeviceHeading,
+  getTelegramConfig,
+  sendTelegramMessage,
+} from './_lib/telegram.js';
 
 function normalizeDeviceId(value) {
   const id = String(value || '').trim();
   if (!id || id.length > 120) return null;
   return id;
-}
-
-async function sendTelegramMessage(token, chatId, text) {
-  const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-
-  const data = await telegramResponse.json();
-  return Boolean(data.ok);
 }
 
 export default async function handler(req, res) {
@@ -124,10 +108,9 @@ export default async function handler(req, res) {
     // personal stats are optional
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const telegramConfig = getTelegramConfig();
 
-  if (token && chatId) {
+  if (telegramConfig) {
     const lines = pricing.lines.map((line) => {
       if (line.freeQty > 0) {
         return `• ${line.name} × ${line.qty} — безкоштовно`;
@@ -135,18 +118,19 @@ export default async function handler(req, res) {
       return `• ${line.name} × ${line.qty} — ${line.amount * line.qty} грн`;
     });
 
+    const heading = await getDeviceHeading(deviceId, { free: true });
+
     const text = [
-      '☕ Безкоштовна кава',
-      '',
-      'Клієнт отримав 10-ту каву в подарунок:',
+      heading,
       '',
       ...lines,
       '',
-      `🕐 ${formatOrderDate()}`,
+      `🆔 \`${formatDeviceRef(deviceId)}\``,
+      `🕐 ${formatKyivDateTime()}`,
     ].join('\n');
 
     try {
-      await sendTelegramMessage(token, chatId, text);
+      await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // claim already saved
     }

@@ -6,18 +6,13 @@ import {
   logDeviceCoffee,
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
-
-function formatOrderDate() {
-  return new Intl.DateTimeFormat('uk-UA', {
-    timeZone: 'Europe/Kyiv',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
-}
+import {
+  formatDeviceRef,
+  formatKyivDateTime,
+  getDeviceHeading,
+  getTelegramConfig,
+  sendTelegramMessage,
+} from './_lib/telegram.js';
 
 function providerLabel(provider) {
   if (provider === 'mono') return 'Monobank';
@@ -31,17 +26,6 @@ function normalizeDeviceId(value) {
   const id = String(value || '').trim();
   if (!id || id.length > 120) return null;
   return id;
-}
-
-async function sendTelegramMessage(token, chatId, text) {
-  const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-
-  const data = await telegramResponse.json();
-  return Boolean(data.ok);
 }
 
 export default async function handler(req, res) {
@@ -136,10 +120,9 @@ export default async function handler(req, res) {
     }
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  const telegramConfig = getTelegramConfig();
 
-  if (isNewOrder && token && chatId) {
+  if (isNewOrder && telegramConfig) {
     const telegramLines = pricing.lines.map((line) => {
       const lineTotal = line.amount * line.qty - line.freeQty * line.amount;
       if (line.freeQty > 0 && lineTotal === 0) {
@@ -155,19 +138,22 @@ export default async function handler(req, res) {
       ? `Безкоштовно: ${freeCoffee.claimed} кав`
       : null;
 
+    const heading = await getDeviceHeading(deviceId, { order: true });
+
     const text = [
-      '🧾 Чек замовлення',
+      heading,
       '',
       ...telegramLines,
       '',
       `Разом: ${pricing.paidTotal} грн`,
       freeLine,
       `Оплата: ${provider}`,
-      `🕐 ${formatOrderDate()}`,
+      `🆔 \`${formatDeviceRef(deviceId)}\``,
+      `🕐 ${formatKyivDateTime()}`,
     ].filter(Boolean).join('\n');
 
     try {
-      await sendTelegramMessage(token, chatId, text);
+      await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // income is already saved; telegram is optional
     }

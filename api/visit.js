@@ -1,32 +1,17 @@
-import { registerVisitNotice } from './_lib/db.js';
-
-function formatVisitDate() {
-  return new Intl.DateTimeFormat('uk-UA', {
-    timeZone: 'Europe/Kyiv',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date());
-}
+import { getDeviceLabel, registerVisitNotice } from './_lib/db.js';
+import {
+  buildDeviceBindHint,
+  formatDeviceRef,
+  formatKyivDateTime,
+  getDeviceHeading,
+  getTelegramConfig,
+  sendTelegramMessage,
+} from './_lib/telegram.js';
 
 function normalizeDeviceId(value) {
   const id = String(value || '').trim();
   if (!id || id.length > 120) return null;
   return id;
-}
-
-async function sendTelegramMessage(token, chatId, text) {
-  const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ chat_id: chatId, text }),
-  });
-
-  const data = await telegramResponse.json();
-  return Boolean(data.ok);
 }
 
 export default async function handler(req, res) {
@@ -55,26 +40,32 @@ export default async function handler(req, res) {
     return;
   }
 
-  const token = process.env.TELEGRAM_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
-
-  if (!token || !chatId) {
+  const config = getTelegramConfig();
+  if (!config) {
     res.status(200).json({ ok: true, notified: false, reason: 'not_configured' });
     return;
   }
 
   const isStandalone = req.body?.standalone === true || req.body?.standalone === 'true';
   const source = isStandalone ? 'Застосунок (PWA)' : 'Браузер';
+  const heading = await getDeviceHeading(deviceId, { visit: true });
+  const label = await getDeviceLabel(deviceId);
 
-  const text = [
-    '👋 Хтось зайшов на сайт',
+  const lines = [
+    heading,
     '',
     `📲 ${source}`,
-    `🕐 ${formatVisitDate()}`,
-  ].join('\n');
+    `🕐 ${formatKyivDateTime()}`,
+  ];
+
+  if (!label) {
+    lines.push('', buildDeviceBindHint(deviceId));
+  } else {
+    lines.push('', `🆔 \`${formatDeviceRef(deviceId)}\``);
+  }
 
   try {
-    const sent = await sendTelegramMessage(token, chatId, text);
+    const sent = await sendTelegramMessage(config.token, config.chatId, lines.join('\n'));
     res.status(200).json({ ok: true, notified: sent, reason: sent ? 'sent' : 'telegram_error' });
   } catch {
     res.status(200).json({ ok: true, notified: false, reason: 'telegram_error' });
