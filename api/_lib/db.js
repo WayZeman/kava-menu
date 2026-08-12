@@ -112,36 +112,43 @@ export async function insertIncome({
       LIMIT 1
     `;
     if (existing[0]) return { record: mapRow(existing[0]), isNew: false };
+  } else {
+    const recent = await sql`
+      SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
+      FROM transactions
+      WHERE kind = 'income'
+        AND label = ${label}
+        AND amount = ${amount}
+        AND created_at > NOW() - INTERVAL '5 seconds'
+      ORDER BY created_at DESC
+      LIMIT 1
+    `;
+    if (recent[0]) return { record: mapRow(recent[0]), isNew: false };
   }
 
-  const recent = await sql`
-    SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
-    FROM transactions
-    WHERE kind = 'income'
-      AND label = ${label}
-      AND amount = ${amount}
-      AND created_at > NOW() - INTERVAL '5 seconds'
-    ORDER BY created_at DESC
-    LIMIT 1
-  `;
-  if (recent[0]) return { record: mapRow(recent[0]), isNew: false };
-
   const txnId = id || makeId('income');
-  const rows = await sql`
-    INSERT INTO transactions (id, kind, label, amount, source, provider, items)
-    VALUES (
-      ${txnId},
-      'income',
-      ${label},
-      ${amount},
-      ${source},
-      ${provider},
-      ${serializeItems(items)}
-    )
-    RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
-  `;
+  const normalizedAmount = Number.isFinite(Number(amount)) ? Number(amount) : 0;
 
-  return { record: mapRow(rows[0]), isNew: true };
+  try {
+    const rows = await sql`
+      INSERT INTO transactions (id, kind, label, amount, source, provider, items)
+      VALUES (
+        ${txnId},
+        'income',
+        ${label},
+        ${normalizedAmount},
+        ${source},
+        ${provider},
+        ${serializeItems(items)}
+      )
+      RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
+    `;
+
+    if (!rows[0]) return null;
+    return { record: mapRow(rows[0]), isNew: true };
+  } catch {
+    return null;
+  }
 }
 
 export async function insertExpense({ id, label, amount, category = 'drinks' }) {

@@ -168,7 +168,7 @@ const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '147';
+const APP_VERSION = '148';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -1491,12 +1491,20 @@ function setPayActionsDisabled(disabled) {
   if (receiptFreeClaim) receiptFreeClaim.disabled = disabled;
 }
 
+/** Free 10th-coffee checkout: drinks only, nothing to pay. */
+function isFreeCoffeeClaim(pricing = getCartPricing()) {
+  return Boolean(
+    pricing.freeDrinks > 0
+    && pricing.paidTotal === 0
+    && pricing.drinkQty > 0,
+  );
+}
+
 /** Single free 10th-coffee cart: one drink, nothing to pay. */
 function isSingleFreeCoffeeClaim(pricing = getCartPricing()) {
   const totalQty = (pricing.items || []).reduce((sum, item) => sum + Number(item.qty || 0), 0);
   return Boolean(
-    pricing.freeDrinks > 0
-    && pricing.paidTotal === 0
+    isFreeCoffeeClaim(pricing)
     && pricing.drinkQty === 1
     && totalQty === 1,
   );
@@ -2803,39 +2811,71 @@ async function notifyOrder(order, provider, orderId) {
   return { ok: Boolean(data?.ok), data };
 }
 
+function showStockToast(message, duration = 4000) {
+  if (!stockToast) return;
+  stockToast.textContent = message;
+  stockToast.hidden = false;
+  window.setTimeout(() => {
+    stockToast.hidden = true;
+  }, duration);
+}
+
 async function claimFreeCoffeeDirectly() {
+  await loadFreeCoffeeBalance();
+
   const pricing = getCartPricing();
-  if (!pricing.items.length || pricing.paidTotal !== 0 || !pricing.freeDrinks) return false;
+  if (!isFreeCoffeeClaim(pricing)) {
+    showStockToast('Бонус ще не готовий. Зберіть 9 печаток.');
+    return false;
+  }
 
   const order = snapshotOrder();
   const orderId = makeOrderId();
 
   loader.hidden = false;
   loaderText.textContent = 'Отримуємо каву…';
-  setPayActionsDisabled(true);
 
   try {
-    const result = await notifyOrder(order, 'free', orderId);
-    if (!result?.ok) throw new Error('claim_failed');
+    const response = await fetch('/api/claim-free-coffee', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: orderId,
+        items: order.items.map(({ id, qty, category }) => ({ id, qty, category })),
+        deviceId: getIdentityId(),
+        forSelf: order.forSelf !== false,
+      }),
+    });
+
+    let data = null;
+    try {
+      data = await response.json();
+    } catch {
+      data = null;
+    }
+
+    if (!response.ok || !data?.ok) {
+      throw new Error(data?.error || 'claim_failed');
+    }
+
+    if (data.freeCoffee) {
+      applyFreeCoffeeClaim(data.freeCoffee, { animate: true });
+    }
 
     if (order.drinkQty > 0) {
       recordLocalUserCoffee(order.drinkQty, order.forSelf !== false);
     }
 
     clearCart();
-    showGiftReward(pricing.freeDrinks, { thenThanks: true });
-    await loadFreeCoffeeBalance();
-    await loadUserCoffeeStats();
+    showFreeCoffeeWelcome();
+    void loadFreeCoffeeBalance();
+    void loadUserCoffeeStats();
     return true;
   } catch {
-    if (stockToast) {
-      stockToast.textContent = 'Не вдалося отримати каву. Спробуйте ще.';
-      stockToast.hidden = false;
-    }
+    showStockToast('Не вдалося отримати каву. Спробуйте ще.');
     return false;
   } finally {
     loader.hidden = true;
-    setPayActionsDisabled(false);
   }
 }
 
@@ -2996,6 +3036,26 @@ function closeGiftReward({ skipThanks = false } = {}) {
 
   if (typeof onClose === 'function') onClose();
   else if (showThanksAfter) showThanks();
+}
+
+function showFreeCoffeeWelcome() {
+  dismissOverlays();
+  closeThanks();
+
+  if (!giftReward) return;
+
+  if (giftRewardText) {
+    giftRewardText.textContent = 'Ваша безкоштовна кава готова';
+  }
+
+  buildGiftConfetti();
+  giftReward.hidden = false;
+  document.body.classList.add('gift-reward-open');
+
+  if (giftRewardTimer) clearTimeout(giftRewardTimer);
+  giftRewardTimer = window.setTimeout(() => {
+    closeGiftReward({ skipThanks: true });
+  }, 2800);
 }
 
 function showGiftReward(freeCount = 1, { thenThanks = false, onClose = null } = {}) {
@@ -3226,9 +3286,15 @@ carWashSheet?.querySelectorAll('[data-car-wash-close]').forEach((el) => {
 });
 
 let cartPayTapLock = false;
+let cartPayLastTapAt = 0;
 
 async function handleCartPayTap(event) {
   if (event.cancelable) event.preventDefault();
+
+  const now = Date.now();
+  if (now - cartPayLastTapAt < 400) return;
+  cartPayLastTapAt = now;
+
   if (cart.hidden || cartPayTapLock) return;
   if (giftReward && !giftReward.hidden) return;
   if (extrasUpsell && !extrasUpsell.hidden) return;
@@ -3253,7 +3319,7 @@ async function handleCartPayTap(event) {
     let latest = getCartPricing();
     if (!latest.items.length) return;
 
-    if (isSingleFreeCoffeeClaim(latest)) {
+    if (isFreeCoffeeClaim(latest)) {
       await claimFreeCoffeeDirectly();
       return;
     }
@@ -3263,15 +3329,10 @@ async function handleCartPayTap(event) {
       latest = getCartPricing();
       if (!latest.items.length) return;
 
-      if (isSingleFreeCoffeeClaim(latest)) {
+      if (isFreeCoffeeClaim(latest)) {
         await claimFreeCoffeeDirectly();
         return;
       }
-    }
-
-    if (latest.freeDrinks > 0 && latest.paidTotal === 0) {
-      await claimFreeCoffeeDirectly();
-      return;
     }
 
     if (latest.freeDrinks > 0) {
@@ -3289,7 +3350,8 @@ async function handleCartPayTap(event) {
   }
 }
 
-cartPay.addEventListener('pointerup', handleCartPayTap);
+cartPay?.addEventListener('click', handleCartPayTap);
+cartPay?.addEventListener('pointerup', handleCartPayTap);
 
 payActions.forEach((action) => {
   action.addEventListener('click', (event) => {
