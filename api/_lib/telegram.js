@@ -7,61 +7,69 @@ export function getTelegramConfig() {
   return { token, chatId };
 }
 
-export function formatKyivDateTime(value = new Date()) {
-  return new Intl.DateTimeFormat('uk-UA', {
-    timeZone: 'Europe/Kyiv',
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(value instanceof Date ? value : new Date(value));
-}
-
 export function formatDeviceRef(deviceId) {
   const id = String(deviceId || '').trim();
   if (!id) return '—';
-  return id.length <= 24 ? id : `${id.slice(0, 22)}…`;
+  return id.length <= 20 ? id : `${id.slice(0, 18)}…`;
 }
 
-export async function sendTelegramMessage(token, chatId, text, { parseMode = 'Markdown' } = {}) {
-  const payload = {
-    chat_id: chatId,
-    text,
-  };
-  if (parseMode) payload.parse_mode = parseMode;
-
+export async function sendTelegramMessage(token, chatId, text) {
   const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({ chat_id: chatId, text }),
   });
 
   const data = await telegramResponse.json();
   return Boolean(data.ok);
 }
 
-export async function getDeviceHeading(deviceId, { visit = false, order = false, free = false } = {}) {
-  const label = await getDeviceLabel(deviceId);
-  if (label) {
-    if (visit) return `👋 ${label} зайшов на сайт`;
-    if (order) return `🧾 ${label} замовляє`;
-    if (free) return `☕ ${label} отримує безкоштовну каву`;
-    return label;
-  }
-
-  if (visit) return '👋 Хтось зайшов на сайт';
-  if (order) return '🧾 Чек замовлення';
-  if (free) return '☕ Безкоштовна кава';
-  return 'Клієнт';
+export async function getDeviceName(deviceId) {
+  return getDeviceLabel(deviceId);
 }
 
-export function buildDeviceBindHint(deviceId) {
-  const id = String(deviceId || '').trim();
-  if (!id) return '';
-  return [
-    `🆔 \`${id}\``,
-    `Прив'язати: /id ${id} Ім'я`,
-  ].join('\n');
+function formatOrderLine(line) {
+  const qty = Number(line.qty) || 1;
+  const name = String(line.name || 'Позиція').trim();
+  const lineTotal = line.amount * qty - (line.freeQty || 0) * line.amount;
+  if (line.freeQty > 0 && lineTotal === 0) return `${name}×${qty} free`;
+  if (line.freeQty > 0) return `${name}×${qty} ${lineTotal}`;
+  return `${name}×${qty} ${line.amount * qty}`;
+}
+
+function providerCode(provider) {
+  const value = String(provider || '').toLowerCase();
+  if (value.includes('mono')) return 'm';
+  if (value.includes('privat')) return 'p';
+  if (value.includes('free') || value.includes('безк')) return '0';
+  if (value.includes('other') || value.includes('інш')) return 'c';
+  return 'b';
+}
+
+export async function buildVisitMessage(deviceId, { standalone = false } = {}) {
+  const label = await getDeviceLabel(deviceId);
+  if (label) return label;
+
+  const tail = standalone ? ' app' : '';
+  return `?${tail}\n${deviceId}\n/id ${deviceId}`;
+}
+
+export async function buildOrderMessage(deviceId, { lines = [], paidTotal = 0, provider = '' } = {}) {
+  const label = await getDeviceLabel(deviceId);
+  const head = label
+    ? `${label} · ${paidTotal} · ${providerCode(provider)}`
+    : `${paidTotal} · ${providerCode(provider)}`;
+  const items = lines.map(formatOrderLine);
+  const parts = [head, ...items];
+  if (!label) parts.push(deviceId, `/id ${deviceId}`);
+  return parts.join('\n');
+}
+
+export async function buildFreeCoffeeMessage(deviceId, { lines = [] } = {}) {
+  const label = await getDeviceLabel(deviceId);
+  const head = label ? `${label} · free` : 'free';
+  const items = lines.map(formatOrderLine);
+  const parts = [head, ...items];
+  if (!label) parts.push(deviceId, `/id ${deviceId}`);
+  return parts.join('\n');
 }

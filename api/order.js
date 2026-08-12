@@ -7,9 +7,8 @@ import {
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
-  formatDeviceRef,
-  formatKyivDateTime,
-  getDeviceHeading,
+  buildFreeCoffeeMessage,
+  buildOrderMessage,
   getTelegramConfig,
   sendTelegramMessage,
 } from './_lib/telegram.js';
@@ -123,36 +122,12 @@ export default async function handler(req, res) {
   const telegramConfig = getTelegramConfig();
 
   if (isNewOrder && telegramConfig) {
-    const telegramLines = pricing.lines.map((line) => {
-      const lineTotal = line.amount * line.qty - line.freeQty * line.amount;
-      if (line.freeQty > 0 && lineTotal === 0) {
-        return `• ${line.name} × ${line.qty} — безкоштовно`;
-      }
-      if (line.freeQty > 0) {
-        return `• ${line.name} × ${line.qty} — ${lineTotal} грн (−${line.freeQty})`;
-      }
-      return `• ${line.name} × ${line.qty} — ${lineTotal} грн`;
-    });
-
-    const freeLine = freeCoffee?.claimed
-      ? `Безкоштовно: ${freeCoffee.claimed} кав`
-      : null;
-
-    const heading = await getDeviceHeading(deviceId, { order: true });
-
-    const text = [
-      heading,
-      '',
-      ...telegramLines,
-      '',
-      `Разом: ${pricing.paidTotal} грн`,
-      freeLine,
-      `Оплата: ${provider}`,
-      `🆔 \`${formatDeviceRef(deviceId)}\``,
-      `🕐 ${formatKyivDateTime()}`,
-    ].filter(Boolean).join('\n');
-
     try {
+      const text = await buildOrderMessage(deviceId, {
+        lines: pricing.lines,
+        paidTotal: pricing.paidTotal,
+        provider,
+      });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // income is already saved; telegram is optional

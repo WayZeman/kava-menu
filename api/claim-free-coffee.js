@@ -7,9 +7,7 @@ import {
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
-  formatDeviceRef,
-  formatKyivDateTime,
-  getDeviceHeading,
+  buildFreeCoffeeMessage,
   getTelegramConfig,
   sendTelegramMessage,
 } from './_lib/telegram.js';
@@ -111,25 +109,8 @@ export default async function handler(req, res) {
   const telegramConfig = getTelegramConfig();
 
   if (telegramConfig) {
-    const lines = pricing.lines.map((line) => {
-      if (line.freeQty > 0) {
-        return `• ${line.name} × ${line.qty} — безкоштовно`;
-      }
-      return `• ${line.name} × ${line.qty} — ${line.amount * line.qty} грн`;
-    });
-
-    const heading = await getDeviceHeading(deviceId, { free: true });
-
-    const text = [
-      heading,
-      '',
-      ...lines,
-      '',
-      `🆔 \`${formatDeviceRef(deviceId)}\``,
-      `🕐 ${formatKyivDateTime()}`,
-    ].join('\n');
-
     try {
+      const text = await buildFreeCoffeeMessage(deviceId, { lines: pricing.lines });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // claim already saved

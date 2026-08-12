@@ -1,12 +1,5 @@
-import { getDeviceLabel, registerVisitNotice } from './_lib/db.js';
-import {
-  buildDeviceBindHint,
-  formatDeviceRef,
-  formatKyivDateTime,
-  getDeviceHeading,
-  getTelegramConfig,
-  sendTelegramMessage,
-} from './_lib/telegram.js';
+import { registerVisitNotice } from './_lib/db.js';
+import { buildVisitMessage, getTelegramConfig, sendTelegramMessage } from './_lib/telegram.js';
 
 function normalizeDeviceId(value) {
   const id = String(value || '').trim();
@@ -47,25 +40,10 @@ export default async function handler(req, res) {
   }
 
   const isStandalone = req.body?.standalone === true || req.body?.standalone === 'true';
-  const source = isStandalone ? 'Застосунок (PWA)' : 'Браузер';
-  const heading = await getDeviceHeading(deviceId, { visit: true });
-  const label = await getDeviceLabel(deviceId);
-
-  const lines = [
-    heading,
-    '',
-    `📲 ${source}`,
-    `🕐 ${formatKyivDateTime()}`,
-  ];
-
-  if (!label) {
-    lines.push('', buildDeviceBindHint(deviceId));
-  } else {
-    lines.push('', `🆔 \`${formatDeviceRef(deviceId)}\``);
-  }
 
   try {
-    const sent = await sendTelegramMessage(config.token, config.chatId, lines.join('\n'));
+    const text = await buildVisitMessage(deviceId, { standalone: isStandalone });
+    const sent = await sendTelegramMessage(config.token, config.chatId, text);
     res.status(200).json({ ok: true, notified: sent, reason: sent ? 'sent' : 'telegram_error' });
   } catch {
     res.status(200).json({ ok: true, notified: false, reason: 'telegram_error' });

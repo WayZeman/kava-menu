@@ -1,5 +1,5 @@
 import { resolveDeviceId, setDeviceLabel } from './_lib/db.js';
-import { formatDeviceRef, getTelegramConfig, sendTelegramMessage } from './_lib/telegram.js';
+import { getTelegramConfig, sendTelegramMessage } from './_lib/telegram.js';
 
 function normalizeChatId(value) {
   return String(value || '').trim();
@@ -64,15 +64,7 @@ export default async function handler(req, res) {
   const text = String(message.text).trim();
 
   if (/^\/(start|help)(@\w+)?$/i.test(text)) {
-    await reply(config.token, message.chat.id, [
-      '*Команди бота*',
-      '',
-      '/id `<device_id>` `<імʼя>` — привʼязати імʼя до пристрою',
-      'Приклад:',
-      '/id device-abc123 Євген',
-      '',
-      'Після цього візити та замовлення будуть з іменем.',
-    ].join('\n'));
+    await reply(config.token, message.chat.id, '/id device-id Ім\'я');
     res.status(200).json({ ok: true });
     return;
   }
@@ -80,11 +72,7 @@ export default async function handler(req, res) {
   const parsed = parseIdCommand(text);
   if (!parsed) {
     if (/^\/id(?:@\w+)?/i.test(text)) {
-      await reply(
-        config.token,
-        message.chat.id,
-        'Формат: /id `<device_id>` `<імʼя>`\nПриклад: /id device-abc123 Євген',
-      );
+      await reply(config.token, message.chat.id, '/id device-id Ім\'я');
     }
     res.status(200).json({ ok: true });
     return;
@@ -93,33 +81,22 @@ export default async function handler(req, res) {
   try {
     const deviceId = await resolveDeviceId(parsed.deviceToken);
     if (!deviceId) {
-      await reply(
-        config.token,
-        message.chat.id,
-        'Не знайшов пристрій за цим ID. Скопіюйте ID з повідомлення про візит.',
-      );
+      await reply(config.token, message.chat.id, '? id');
       res.status(200).json({ ok: true });
       return;
     }
 
     const saved = await setDeviceLabel(deviceId, parsed.name);
     if (!saved) {
-      await reply(config.token, message.chat.id, 'Не вдалося зберегти імʼя. Спробуйте ще.');
+      await reply(config.token, message.chat.id, 'err');
       res.status(200).json({ ok: true });
       return;
     }
 
-    await reply(
-      config.token,
-      message.chat.id,
-      [
-        `✅ Привʼязано: *${saved.displayName}*`,
-        `🆔 \`${formatDeviceRef(saved.deviceId)}\``,
-      ].join('\n'),
-    );
+    await reply(config.token, message.chat.id, `✓ ${saved.displayName}`);
     res.status(200).json({ ok: true });
   } catch {
-    await reply(config.token, message.chat.id, 'Помилка під час збереження. Спробуйте ще.');
+    await reply(config.token, message.chat.id, 'err');
     res.status(200).json({ ok: false });
   }
 }
