@@ -1,4 +1,4 @@
-import { registerVisitNotice } from './_lib/db.js';
+import { checkVisitNoticeCooldown, recordVisitNotice } from './_lib/db.js';
 import { getTelegramConfig, sendTelegramMessage, VISIT_MESSAGE } from './_lib/telegram.js';
 
 function normalizeDeviceId(value) {
@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
   let notice = { shouldNotify: true, reason: 'no_db' };
   try {
-    notice = await registerVisitNotice(deviceId, 30);
+    notice = await checkVisitNoticeCooldown(deviceId, 30);
   } catch {
     notice = { shouldNotify: true, reason: 'db_error' };
   }
@@ -41,6 +41,13 @@ export default async function handler(req, res) {
 
   try {
     const sent = await sendTelegramMessage(config.token, config.chatId, VISIT_MESSAGE);
+    if (sent) {
+      try {
+        await recordVisitNotice(deviceId);
+      } catch {
+        // telegram already sent
+      }
+    }
     res.status(200).json({ ok: true, notified: sent, reason: sent ? 'sent' : 'telegram_error' });
   } catch {
     res.status(200).json({ ok: true, notified: false, reason: 'telegram_error' });

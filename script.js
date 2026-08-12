@@ -170,7 +170,7 @@ const USER_COFFEE_KEY = 'kava-user-coffee';
 const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '156';
+const APP_VERSION = '157';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3502,21 +3502,19 @@ function dismissSplash() {
 
 function notifySiteVisit() {
   try {
-    if (sessionStorage.getItem(VISIT_NOTICE_KEY)) return;
-    sessionStorage.setItem(VISIT_NOTICE_KEY, '1');
+    const now = Date.now();
+    const prev = Number(sessionStorage.getItem(VISIT_NOTICE_KEY) || 0);
+    if (prev && now - prev < 15000) return;
+    sessionStorage.setItem(VISIT_NOTICE_KEY, String(now));
   } catch {
     // continue without session guard
   }
-
-  const standalone = window.matchMedia('(display-mode: standalone)').matches
-    || window.navigator.standalone === true;
 
   void fetch('/api/visit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
       deviceId: getIdentityId(),
-      standalone,
     }),
     keepalive: true,
   });
@@ -3539,13 +3537,13 @@ async function bootApp() {
     renderFreeCoffeeStamps();
   } finally {
     window.clearTimeout(safetyTimer);
-    notifySiteVisit();
     window.setTimeout(dismissSplash, Math.max(0, minSplashMs - (Date.now() - started)));
   }
 }
 
 applyTheme(currentTheme);
 initStandaloneMode();
+notifySiteVisit();
 bootApp().catch(() => dismissSplash());
 initPaymentReturn();
 updateCart();

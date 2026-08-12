@@ -1062,7 +1062,7 @@ async function ensureVisitNoticeTable(sql) {
   visitNoticeTableReady = true;
 }
 
-export async function registerVisitNotice(deviceId, cooldownMinutes = 30) {
+export async function checkVisitNoticeCooldown(deviceId, cooldownMinutes = 30) {
   const sql = getSql();
   if (!sql) return { shouldNotify: true, reason: 'no_db' };
 
@@ -1086,13 +1086,32 @@ export async function registerVisitNotice(deviceId, cooldownMinutes = 30) {
     }
   }
 
+  return { shouldNotify: true, reason: 'eligible' };
+}
+
+export async function recordVisitNotice(deviceId) {
+  const sql = getSql();
+  if (!sql) return;
+
+  const id = String(deviceId || '').trim();
+  if (!id || id.length > 120) return;
+
+  await ensureVisitNoticeTable(sql);
+
   await sql`
     INSERT INTO site_visit_notices (device_id, last_notified_at)
     VALUES (${id}, NOW())
     ON CONFLICT (device_id) DO UPDATE SET
       last_notified_at = NOW()
   `;
+}
 
-  return { shouldNotify: true, reason: 'registered' };
+/** @deprecated use checkVisitNoticeCooldown + recordVisitNotice */
+export async function registerVisitNotice(deviceId, cooldownMinutes = 30) {
+  const notice = await checkVisitNoticeCooldown(deviceId, cooldownMinutes);
+  if (notice.shouldNotify) {
+    await recordVisitNotice(deviceId);
+  }
+  return notice;
 }
 
