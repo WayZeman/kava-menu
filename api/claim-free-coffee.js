@@ -7,7 +7,7 @@ import {
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
-  buildFreeCoffeeMessage,
+  buildFreeCoffeeReceiptMessage,
   getTelegramConfig,
   sendTelegramMessage,
 } from './_lib/telegram.js';
@@ -110,7 +110,7 @@ export default async function handler(req, res) {
 
   if (telegramConfig) {
     try {
-      const text = buildFreeCoffeeMessage({ lines: pricing.lines });
+      const text = buildFreeCoffeeReceiptMessage({ lines: pricing.lines });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
       // claim already saved

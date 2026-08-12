@@ -7,7 +7,7 @@ import {
 } from './_lib/db.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
-  buildOrderMessage,
+  buildOrderReceiptMessage,
   getTelegramConfig,
   sendTelegramMessage,
 } from './_lib/telegram.js';
@@ -122,10 +122,11 @@ export default async function handler(req, res) {
 
   if (isNewOrder && telegramConfig) {
     try {
-      const text = buildOrderMessage({
+      const text = buildOrderReceiptMessage({
         lines: pricing.lines,
         paidTotal: pricing.paidTotal,
         provider,
+        freeClaimed: freeCoffee?.claimed || 0,
       });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {

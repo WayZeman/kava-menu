@@ -18,31 +18,60 @@ export async function sendTelegramMessage(token, chatId, text) {
 
 export const VISIT_MESSAGE = 'Хтось планує замовити каву';
 
-function formatOrderLine(line) {
-  const qty = Number(line.qty) || 1;
-  const name = String(line.name || 'Позиція').trim();
-  const lineTotal = line.amount * qty - (line.freeQty || 0) * line.amount;
-  if (line.freeQty > 0 && lineTotal === 0) return `${name}×${qty} free`;
-  if (line.freeQty > 0) return `${name}×${qty} ${lineTotal}`;
-  return `${name}×${qty} ${line.amount * qty}`;
+export function formatKyivDateTime(value = new Date()) {
+  return new Intl.DateTimeFormat('uk-UA', {
+    timeZone: 'Europe/Kyiv',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).format(value instanceof Date ? value : new Date(value));
 }
 
-function providerCode(provider) {
-  const value = String(provider || '').toLowerCase();
-  if (value.includes('mono')) return 'm';
-  if (value.includes('privat')) return 'p';
-  if (value.includes('free') || value.includes('безк')) return '0';
-  if (value.includes('other') || value.includes('інш')) return 'c';
-  return 'b';
+function formatReceiptLine(line) {
+  const lineTotal = line.amount * line.qty - line.freeQty * line.amount;
+  if (line.freeQty > 0 && lineTotal === 0) {
+    return `• ${line.name} × ${line.qty} — безкоштовно`;
+  }
+  if (line.freeQty > 0) {
+    return `• ${line.name} × ${line.qty} — ${lineTotal} грн (−${line.freeQty})`;
+  }
+  return `• ${line.name} × ${line.qty} — ${lineTotal} грн`;
 }
 
-export function buildOrderMessage({ lines = [], paidTotal = 0, provider = '' } = {}) {
-  const head = `${paidTotal} · ${providerCode(provider)}`;
-  const items = lines.map(formatOrderLine);
-  return [head, ...items].join('\n');
+export function buildOrderReceiptMessage({ lines = [], paidTotal = 0, provider = '', freeClaimed = 0 } = {}) {
+  const telegramLines = lines.map(formatReceiptLine);
+  const freeLine = freeClaimed > 0 ? `Безкоштовно: ${freeClaimed} кав` : null;
+
+  return [
+    '🧾 Чек замовлення',
+    '',
+    ...telegramLines,
+    '',
+    `Разом: ${paidTotal} грн`,
+    freeLine,
+    `Оплата: ${provider}`,
+    `🕐 ${formatKyivDateTime()}`,
+  ].filter(Boolean).join('\n');
 }
 
-export function buildFreeCoffeeMessage({ lines = [] } = {}) {
-  const items = lines.map(formatOrderLine);
-  return ['free', ...items].join('\n');
+export function buildFreeCoffeeReceiptMessage({ lines = [] } = {}) {
+  const telegramLines = lines.map((line) => {
+    if (line.freeQty > 0) {
+      return `• ${line.name} × ${line.qty} — безкоштовно`;
+    }
+    return `• ${line.name} × ${line.qty} — ${line.amount * line.qty} грн`;
+  });
+
+  return [
+    '☕ Безкоштовна кава',
+    '',
+    'Клієнт отримав 10-ту каву в подарунок:',
+    '',
+    ...telegramLines,
+    '',
+    `🕐 ${formatKyivDateTime()}`,
+  ].join('\n');
 }
