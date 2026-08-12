@@ -167,10 +167,9 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
-const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '157';
+const APP_VERSION = '158';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3501,21 +3500,10 @@ function dismissSplash() {
 }
 
 function notifySiteVisit() {
-  try {
-    const now = Date.now();
-    const prev = Number(sessionStorage.getItem(VISIT_NOTICE_KEY) || 0);
-    if (prev && now - prev < 15000) return;
-    sessionStorage.setItem(VISIT_NOTICE_KEY, String(now));
-  } catch {
-    // continue without session guard
-  }
-
   void fetch('/api/visit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      deviceId: getIdentityId(),
-    }),
+    body: JSON.stringify({}),
     keepalive: true,
   });
 }
