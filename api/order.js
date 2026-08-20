@@ -67,7 +67,7 @@ export default async function handler(req, res) {
     amount: pricing.paidTotal,
     source: 'order',
     provider: providerRaw,
-    items: pricing.lines,
+    items: pricing.incomeItems || pricing.lines,
   };
 
   let saved = null;
@@ -96,13 +96,15 @@ export default async function handler(req, res) {
     } catch {
       freeCoffee = null;
     }
+  }
 
+  if (isNewOrder && pricing.statsDrinkQty > 0) {
     try {
       const forSelf = req.body?.forSelf !== false && req.body?.forSelf !== 'false';
       await logDeviceCoffee({
         deviceId,
         orderId: saved.id,
-        drinkQty: pricing.drinkQty,
+        drinkQty: pricing.statsDrinkQty,
         forSelf,
       });
     } catch {
@@ -142,6 +144,7 @@ export default async function handler(req, res) {
       paidTotal: pricing.paidTotal,
       freeDrinks: pricing.freeDrinks,
       drinkQty: pricing.drinkQty,
+      statsDrinkQty: pricing.statsDrinkQty,
     },
   });
 }
