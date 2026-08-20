@@ -1,4 +1,4 @@
-import { getTelegramConfig, sendTelegramMessage } from './_lib/telegram.js';
+import { getTelegramConfig, sendTelegramMessage, buildFeedbackMessage } from './_lib/telegram.js';
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
@@ -18,7 +18,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const text = `☕ Відгук з кавового меню:\n\n${message}`;
+  const text = buildFeedbackMessage(message);
 
   try {
     const sent = await sendTelegramMessage(config.token, config.chatId, text);

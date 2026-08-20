@@ -1,5 +1,9 @@
 import { saveTelegramChatIdToDb } from './_lib/db.js';
-import { getTelegramBotToken, sendTelegramMessage } from './_lib/telegram.js';
+import {
+  getTelegramBotToken,
+  sendTelegramMessage,
+  buildBotConnectedMessage,
+} from './_lib/telegram.js';
 
 export default async function handler(req, res) {
   res.setHeader('Cache-Control', 'no-store');
@@ -25,7 +29,7 @@ export default async function handler(req, res) {
       await sendTelegramMessage(
         getTelegramBotToken(),
         normalized,
-        '✅ Сповіщення з кавʼярні підключено до цього чату.',
+        buildBotConnectedMessage(),
       );
     }
 
