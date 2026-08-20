@@ -454,6 +454,47 @@ export async function saveMenuDrinksToDb(drinks) {
   };
 }
 
+export async function getTelegramChatIdFromDb() {
+  const sql = getSql();
+  if (!sql) return null;
+
+  await ensureMenuTable(sql);
+
+  const rows = await sql`
+    SELECT value
+    FROM app_config
+    WHERE key = 'telegram_chat_id'
+    LIMIT 1
+  `;
+
+  const raw = rows[0]?.value;
+  const chatId = raw && typeof raw === 'object'
+    ? String(raw.chatId || raw.chat_id || '').trim()
+    : String(raw || '').trim();
+
+  return chatId || null;
+}
+
+export async function saveTelegramChatIdToDb(chatId) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const normalized = String(chatId || '').trim();
+  if (!normalized) return null;
+
+  await ensureMenuTable(sql);
+
+  await sql`
+    INSERT INTO app_config (key, value, updated_at)
+    VALUES ('telegram_chat_id', ${JSON.stringify({ chatId: normalized })}::jsonb, NOW())
+    ON CONFLICT (key) DO UPDATE SET
+      value = EXCLUDED.value,
+      updated_at = NOW()
+  `;
+
+  return normalized;
+}
+
 function normalizeMenuExtras(value) {
   if (!Array.isArray(value)) return [];
   return value
