@@ -1,5 +1,6 @@
 import { isAdminRequest, verifyStatsPassword } from './_lib/admin.js';
 import { getFullMenuFromDb, saveFullMenuToDb } from './_lib/db.js';
+import { MONTHLY_PASS, ensureMonthlyPassInDrinks } from './_lib/monthly-pass.js';
 
 const DEFAULT_DRINKS = [
   { id: 'espresso', name: 'Еспресо', amount: 20, icon: 'espresso' },
@@ -8,6 +9,7 @@ const DEFAULT_DRINKS = [
   { id: 'cappuccino', name: 'Капучино', amount: 35, icon: 'cappuccino' },
   { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
   { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
+  { ...MONTHLY_PASS },
 ];
 
 const DEFAULT_SERVICES = [
@@ -74,9 +76,11 @@ function normalizeServices(list) {
 }
 
 function buildMenuResponse(stored) {
-  const drinks = stored?.drinks?.length
-    ? normalizeDrinks(stored.drinks)
-    : DEFAULT_DRINKS;
+  const drinks = ensureMonthlyPassInDrinks(
+    stored?.drinks?.length
+      ? normalizeDrinks(stored.drinks)
+      : DEFAULT_DRINKS,
+  );
   const extras = normalizeExtras(stored?.extras);
   const services = stored?.services?.length
     ? normalizeServices(stored.services)
@@ -144,7 +148,12 @@ export default async function handler(req, res) {
       return;
     }
 
-    const saved = await saveFullMenuToDb({ drinks, extras, services, visibility });
+    const saved = await saveFullMenuToDb({
+      drinks: ensureMonthlyPassInDrinks(drinks),
+      extras,
+      services,
+      visibility,
+    });
     if (!saved) {
       res.status(503).json({ ok: false, error: 'db_unavailable' });
       return;

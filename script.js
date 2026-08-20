@@ -171,7 +171,7 @@ const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '159';
+const APP_VERSION = '160';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -310,7 +310,11 @@ const DEFAULT_DRINKS = [
   { id: 'cappuccino', name: 'Капучино', amount: 35, icon: 'cappuccino' },
   { id: 'latte', name: 'Лате Макіато', amount: 40, icon: 'latte' },
   { id: 'iced-latte', name: 'Айс Лате', amount: 40, icon: 'iced-latte' },
+  { id: 'monthly-pass', name: 'Абонемент на місяць', amount: 999, icon: 'monthly-pass' },
 ];
+
+const MONTHLY_PASS_ID = 'monthly-pass';
+const MONTHLY_PASS_STATS_DRINKS = 33;
 
 const DEFAULT_SERVICES = [
   { id: 'haircut', name: 'Стрижка', amount: 250, icon: 'haircut' },
@@ -360,6 +364,7 @@ const DRINK_ICON_OPTIONS = [
   { id: 'cappuccino', label: 'Капучино' },
   { id: 'latte', label: 'Лате' },
   { id: 'iced-latte', label: 'Айс Лате' },
+  { id: 'monthly-pass', label: 'Абонемент' },
   { id: 'hot-water', label: 'Гаряча вода' },
   { id: 'generic', label: 'Чашка' },
 ];
@@ -372,6 +377,7 @@ const DRINK_ICONS = {
   cappuccino: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#f5f0e8"/>',
   latte: '<path d="M17 8h14l3 32a3 3 0 0 1-3 2.5H17a3 3 0 0 1-3-2.5L17 8z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="19" y="28" width="10" height="10" fill="#5c3a28"/><rect x="19" y="18" width="10" height="8" fill="#d4a853"/><rect x="19" y="12" width="10" height="5" fill="#f5f0e8"/>',
   'iced-latte': '<path d="M17 10h14l-2.5 30a2.5 2.5 0 0 1-2.5 2H22a2.5 2.5 0 0 1-2.5-2L17 10z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="19" y="30" width="10" height="9" fill="#5c3a28"/><rect x="19" y="22" width="10" height="8" fill="#f5f0e8"/><rect x="20" y="24" width="4" height="4" rx="0.8" fill="#b8dff0" stroke="#7eb8d4" stroke-width="1"/><rect x="26" y="27" width="3.5" height="3.5" rx="0.8" fill="#b8dff0" stroke="#7eb8d4" stroke-width="1"/><path d="M31 8v16" stroke="#d4a853" stroke-width="2" stroke-linecap="round"/>',
+  'monthly-pass': '<rect x="10" y="14" width="28" height="20" rx="3.5" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><path d="M10 20h28" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="24" width="12" height="3.5" rx="1.2" fill="#d4a853"/><circle cx="31" cy="28" r="3.2" fill="#d4a853" stroke="#2f1a0f" stroke-width="1.4"/><path d="M14 12.5h6M28 12.5h6" stroke="#2f1a0f" stroke-width="2" stroke-linecap="round"/>',
   'hot-water': '<path d="M15 20h18v18a3 3 0 0 1-3 3H18a3 3 0 0 1-3-3V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="17" y="24" width="14" height="12" fill="#c5e3f6"/><ellipse cx="24" cy="24" rx="7" ry="2" fill="#dceefb"/><path d="M20 16c1-2 2-3 2-5" stroke="#b8b0a8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M24 14c1-2 2-3 2-5" stroke="#b8b0a8" stroke-width="1.6" stroke-linecap="round" fill="none"/><path d="M28 16c1-2 2-3 2-5" stroke="#b8b0a8" stroke-width="1.6" stroke-linecap="round" fill="none"/>',
   generic: '<path d="M14 20h20v18a4 4 0 0 1-4 4H18a4 4 0 0 1-4-4V20z" fill="#f5f0e8" stroke="#2f1a0f" stroke-width="2"/><rect x="14" y="30" width="20" height="8" fill="#5c3a28"/><ellipse cx="24" cy="20" rx="10" ry="3" fill="#d4a853"/>',
 };
@@ -610,7 +616,7 @@ async function loadFullMenu() {
 
   if (remote?.drinks?.length) {
     const menu = {
-      drinks: remote.drinks,
+      drinks: ensureMonthlyPassInDrinks(remote.drinks),
       extras: remote.extras || [],
       services: remote.services?.length
         ? remote.services
@@ -624,7 +630,7 @@ async function loadFullMenu() {
 
   if (localDrinks?.length) {
     return {
-      drinks: localDrinks,
+      drinks: ensureMonthlyPassInDrinks(localDrinks),
       extras: localExtras || [],
       services: localServices || DEFAULT_SERVICES.map((item) => ({ ...item })),
       visibility: resolveMenuVisibility(),
@@ -1411,7 +1417,7 @@ async function saveMenuEditor() {
   menuEditorSaveBtn.disabled = true;
   menuEditorSaveBtn.textContent = 'Зберігається…';
 
-  menuDrinks = menuEditorDraft.map((item) => ({ ...item }));
+  menuDrinks = ensureMonthlyPassInDrinks(menuEditorDraft.map((item) => ({ ...item })));
   menuExtras = menuEditorExtrasDraft.map((item) => ({ ...item }));
   menuServices = menuEditorServicesDraft.map((item) => ({ ...item }));
   pruneCartItems();
@@ -1568,14 +1574,47 @@ function getCartSummary() {
   return { items, totalQty, total };
 }
 
+function isMonthlyPassItem(item) {
+  return String(item?.id || '') === MONTHLY_PASS_ID;
+}
+
+function ensureMonthlyPassInDrinks(drinks) {
+  const list = Array.isArray(drinks) ? drinks.map((item) => ({ ...item })) : [];
+  if (!list.some((item) => isMonthlyPassItem(item))) {
+    list.push({
+      id: MONTHLY_PASS_ID,
+      name: 'Абонемент на місяць',
+      amount: 999,
+      icon: 'monthly-pass',
+    });
+  }
+  return list;
+}
+
 function isDrinkCartItem(item) {
   return item?.category === 'drink';
 }
 
-function countDrinkQty(items) {
+function countLoyaltyDrinkQty(items) {
   return (items || [])
-    .filter((item) => isDrinkCartItem(item))
+    .filter((item) => isDrinkCartItem(item) && !isMonthlyPassItem(item))
     .reduce((sum, item) => sum + Number(item.qty || 0), 0);
+}
+
+function countStatsDrinkQty(items) {
+  return (items || []).reduce((sum, item) => {
+    if (isMonthlyPassItem(item)) {
+      return sum + MONTHLY_PASS_STATS_DRINKS * Number(item.qty || 0);
+    }
+    if (isDrinkCartItem(item)) {
+      return sum + Number(item.qty || 0);
+    }
+    return sum;
+  }, 0);
+}
+
+function countDrinkQty(items) {
+  return countLoyaltyDrinkQty(items);
 }
 
 function simulateLoyaltyCycle(stamps, drinkQty, cycle = freeCoffeeCycle) {
@@ -1611,7 +1650,8 @@ function simulateLoyaltyCycle(stamps, drinkQty, cycle = freeCoffeeCycle) {
 function getCartPricing(items = getCartSummary().items) {
   const list = (items || []).filter((item) => item.qty > 0);
   const subtotal = list.reduce((sum, item) => sum + item.amount * item.qty, 0);
-  const drinkQty = countDrinkQty(list);
+  const drinkQty = countLoyaltyDrinkQty(list);
+  const statsDrinkQty = countStatsDrinkQty(list);
   const loyaltyEnabled = true;
   const simulation = loyaltyEnabled
     ? simulateLoyaltyCycle(freeCoffeeStampsCount, drinkQty)
@@ -1627,7 +1667,7 @@ function getCartPricing(items = getCartSummary().items) {
   let unitIndex = 0;
   let freeValue = 0;
   const pricedItems = list.map((item) => {
-    if (!isDrinkCartItem(item)) {
+    if (!isDrinkCartItem(item) || isMonthlyPassItem(item)) {
       return {
         ...item,
         freeQty: 0,
@@ -1655,6 +1695,7 @@ function getCartPricing(items = getCartSummary().items) {
   return {
     items: pricedItems,
     drinkQty,
+    statsDrinkQty,
     freeDrinks: simulation.freeDrinks,
     freeValue,
     subtotal,
@@ -2805,7 +2846,8 @@ function snapshotOrder() {
     freeDrinks: pricing.freeDrinks,
     freeValue: pricing.freeValue,
     subtotal: pricing.subtotal,
-    drinkQty: pricing.drinkQty,
+    drinkQty: pricing.statsDrinkQty,
+    loyaltyDrinkQty: pricing.drinkQty,
     forSelf: true,
   };
 }
