@@ -3,6 +3,9 @@ import { getTelegramChatIdFromDb } from './db.js';
 /** Notifications bot: @barigacofe_bot */
 const BARIGACOFE_BOT_TOKEN = '8994978328:AAF8Nwk4ZVviJ_KEq4LC16HmSTq7Q6cOykw';
 
+const BRAND = 'Кавове меню';
+const BRAND_HANDLE = '@barigacofe_bot';
+
 export function getTelegramBotToken() {
   return BARIGACOFE_BOT_TOKEN;
 }
@@ -88,6 +91,13 @@ export function formatKyivDateTime(value = new Date()) {
   }).format(value instanceof Date ? value : new Date(value));
 }
 
+function brandHeader(title) {
+  return [
+    `☕ <b>${escapeHtml(BRAND)}</b>`,
+    title ? `<b>${title}</b>` : null,
+  ].filter(Boolean).join('\n');
+}
+
 function metaLine(when = new Date()) {
   return `🕒 <i>${escapeHtml(formatShortKyivTime(when))}</i>`;
 }
@@ -115,8 +125,8 @@ function wrapBlock(lines) {
 
 export function buildVisitMessage(when = new Date()) {
   return [
-    '👁 <b>Клієнт у меню</b>',
-    '<i>Відкрив кавове меню</i>',
+    brandHeader('Клієнт у меню'),
+    '<i>Відкрив онлайн-меню кавʼярні</i>',
     '',
     metaLine(when),
   ].join('\n');
@@ -137,13 +147,13 @@ export function buildOrderReceiptMessage({
   const freeCount = Math.max(0, Math.round(Number(freeClaimed) || 0));
   const isFreeOrder = total === 0 && freeCount > 0;
 
-  const title = isFreeOrder ? '🎁 <b>Подарунок</b>' : '🧾 <b>Нове замовлення</b>';
+  const title = isFreeOrder ? 'Подарункове замовлення' : 'Нове замовлення';
   const summary = isFreeOrder
     ? '💰 <b>До сплати:</b> безкоштовно'
     : `💰 <b>До сплати:</b> ${escapeHtml(formatMoney(total))}`;
 
   return [
-    title,
+    brandHeader(title),
     '',
     wrapBlock(itemLines.length ? itemLines : ['Без позицій']),
     '',
@@ -170,7 +180,7 @@ export function buildFreeCoffeeReceiptMessage({ lines = [], when = new Date() } 
   });
 
   return [
-    '🎁 <b>10-та кава</b>',
+    brandHeader('10-та кава'),
     '<i>Клієнт отримав подарунок за лояльність</i>',
     '',
     wrapBlock(itemLines.length ? itemLines : ['Кава ×1 — подарунок']),
@@ -182,7 +192,7 @@ export function buildFreeCoffeeReceiptMessage({ lines = [], when = new Date() } 
 export function buildFeedbackMessage(message, when = new Date()) {
   const body = escapeHtml(String(message || '').trim());
   return [
-    '💬 <b>Відгук</b>',
+    brandHeader('Відгук клієнта'),
     '',
     wrapBlock(body),
     '',
@@ -192,8 +202,8 @@ export function buildFeedbackMessage(message, when = new Date()) {
 
 export function buildBotConnectedMessage(when = new Date()) {
   return [
-    '✅ <b>Бот підключено</b>',
-    '<i>Сповіщення з кавʼярні будуть приходити сюди</i>',
+    brandHeader('Сповіщення підключено'),
+    `<i>${escapeHtml(BRAND_HANDLE)} · офіційний бот кавʼярні</i>`,
     '',
     wrapBlock([
       '👁 відвідування меню',
@@ -201,6 +211,24 @@ export function buildBotConnectedMessage(when = new Date()) {
       '🎁 подарункові кави',
       '💬 відгуки клієнтів',
     ]),
+    '',
+    'Все готово — сповіщення будуть приходити сюди.',
+    '',
+    metaLine(when),
+  ].join('\n');
+}
+
+export function buildBotStatusMessage({ chatId, when = new Date() } = {}) {
+  return [
+    brandHeader('Статус підключення'),
+    `<i>${escapeHtml(BRAND_HANDLE)}</i>`,
+    '',
+    wrapBlock([
+      'Статус: активний',
+      chatId ? `Чат ID: ${escapeHtml(String(chatId))}` : 'Чат ID: невідомий',
+    ]),
+    '',
+    'Цей чат отримує сповіщення кавʼярні.',
     '',
     metaLine(when),
   ].join('\n');

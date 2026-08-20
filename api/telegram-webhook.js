@@ -3,6 +3,7 @@ import {
   getTelegramBotToken,
   sendTelegramMessage,
   buildBotConnectedMessage,
+  buildBotStatusMessage,
 } from './_lib/telegram.js';
 
 export default async function handler(req, res) {
@@ -25,12 +26,14 @@ export default async function handler(req, res) {
     await saveTelegramChatIdToDb(normalized);
 
     const text = String(message?.text || '').trim().toLowerCase();
-    if (text === '/start' || text.startsWith('/start ') || text === '/id') {
-      await sendTelegramMessage(
-        getTelegramBotToken(),
-        normalized,
-        buildBotConnectedMessage(),
-      );
+    const isStart = text === '/start' || text.startsWith('/start ');
+    const isStatus = text === '/id' || text.startsWith('/id ');
+
+    if (isStart || isStatus) {
+      const reply = isStatus
+        ? buildBotStatusMessage({ chatId: normalized })
+        : buildBotConnectedMessage();
+      await sendTelegramMessage(getTelegramBotToken(), normalized, reply);
     }
 
     res.status(200).json({ ok: true });
