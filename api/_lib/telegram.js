@@ -3,9 +3,6 @@ import { getTelegramChatIdFromDb } from './db.js';
 /** Notifications bot: @barigacofe_bot */
 const BARIGACOFE_BOT_TOKEN = '8994978328:AAF8Nwk4ZVviJ_KEq4LC16HmSTq7Q6cOykw';
 
-const BRAND = 'Кавове меню';
-const DIVIDER = '────────────';
-
 export function getTelegramBotToken() {
   return BARIGACOFE_BOT_TOKEN;
 }
@@ -42,8 +39,25 @@ function formatMoney(amount) {
 }
 
 function formatQty(qty) {
-  const value = Math.max(0, Math.round(Number(qty) || 0));
-  return String(value);
+  return String(Math.max(0, Math.round(Number(qty) || 0)));
+}
+
+function formatShortKyivTime(value = new Date()) {
+  const parts = new Intl.DateTimeFormat('uk-UA', {
+    timeZone: 'Europe/Kyiv',
+    day: '2-digit',
+    month: 'short',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false,
+  }).formatToParts(value instanceof Date ? value : new Date(value));
+
+  const map = Object.fromEntries(parts.filter((p) => p.type !== 'literal').map((p) => [p.type, p.value]));
+  const day = map.day || '';
+  const month = (map.month || '').replace('.', '');
+  const hour = map.hour || '';
+  const minute = map.minute || '';
+  return `${day} ${month} · ${hour}:${minute}`;
 }
 
 export async function sendTelegramMessage(token, chatId, text) {
@@ -74,8 +88,8 @@ export function formatKyivDateTime(value = new Date()) {
   }).format(value instanceof Date ? value : new Date(value));
 }
 
-function messageFooter(when = new Date()) {
-  return `<i>${escapeHtml(formatKyivDateTime(when))}</i>`;
+function metaLine(when = new Date()) {
+  return `🕒 <i>${escapeHtml(formatShortKyivTime(when))}</i>`;
 }
 
 function formatReceiptLine(line) {
@@ -86,22 +100,25 @@ function formatReceiptLine(line) {
   const lineTotal = amount * Number(line?.qty || 0) - freeQty * amount;
 
   if (freeQty > 0 && lineTotal === 0) {
-    return `• <b>${name}</b> × ${qty}\n  <i>подарунок</i>`;
+    return `${name} ×${qty} — <i>подарунок</i>`;
   }
   if (freeQty > 0) {
-    return `• <b>${name}</b> × ${qty}\n  ${escapeHtml(formatMoney(lineTotal))} <i>(−${freeQty} у подарунок)</i>`;
+    return `${name} ×${qty} — ${escapeHtml(formatMoney(lineTotal))} <i>(−${freeQty})</i>`;
   }
-  return `• <b>${name}</b> × ${qty}\n  ${escapeHtml(formatMoney(lineTotal))}`;
+  return `${name} ×${qty} — ${escapeHtml(formatMoney(lineTotal))}`;
+}
+
+function wrapBlock(lines) {
+  const body = (Array.isArray(lines) ? lines : [lines]).filter(Boolean).join('\n');
+  return `<blockquote>${body}</blockquote>`;
 }
 
 export function buildVisitMessage(when = new Date()) {
   return [
-    `<b>👁 Відвідування</b>`,
-    BRAND,
-    DIVIDER,
-    'Клієнт відкрив меню.',
+    '👁 <b>Клієнт у меню</b>',
+    '<i>Відкрив кавове меню</i>',
     '',
-    messageFooter(when),
+    metaLine(when),
   ].join('\n');
 }
 
@@ -115,79 +132,76 @@ export function buildOrderReceiptMessage({
   freeClaimed = 0,
   when = new Date(),
 } = {}) {
-  const telegramLines = lines.map(formatReceiptLine);
+  const itemLines = lines.map(formatReceiptLine);
   const total = Math.max(0, Math.round(Number(paidTotal) || 0));
   const freeCount = Math.max(0, Math.round(Number(freeClaimed) || 0));
   const isFreeOrder = total === 0 && freeCount > 0;
 
-  const title = isFreeOrder ? '🎁 Подарункове замовлення' : '🧾 Нове замовлення';
-  const totalLine = isFreeOrder
-    ? '<b>Разом:</b> безкоштовно'
-    : `<b>Разом:</b> ${escapeHtml(formatMoney(total))}`;
+  const title = isFreeOrder ? '🎁 <b>Подарунок</b>' : '🧾 <b>Нове замовлення</b>';
+  const summary = isFreeOrder
+    ? '💰 <b>До сплати:</b> безкоштовно'
+    : `💰 <b>До сплати:</b> ${escapeHtml(formatMoney(total))}`;
 
   return [
-    `<b>${title}</b>`,
-    BRAND,
-    DIVIDER,
-    telegramLines.length ? telegramLines.join('\n') : '• Без позицій',
-    DIVIDER,
-    totalLine,
-    freeCount > 0 && !isFreeOrder
-      ? `<b>Подарунок:</b> ${freeCount} ${freeCount === 1 ? 'кава' : 'кави'}`
-      : null,
-    provider ? `<b>Оплата:</b> ${escapeHtml(provider)}` : null,
+    title,
     '',
-    messageFooter(when),
+    wrapBlock(itemLines.length ? itemLines : ['Без позицій']),
+    '',
+    summary,
+    freeCount > 0 && !isFreeOrder
+      ? `🎁 Подарунок: ${freeCount} ${freeCount === 1 ? 'кава' : 'кави'}`
+      : null,
+    provider ? `💳 ${escapeHtml(provider)}` : null,
+    '',
+    metaLine(when),
   ].filter((line) => line != null && line !== false).join('\n');
 }
 
 export function buildFreeCoffeeReceiptMessage({ lines = [], when = new Date() } = {}) {
-  const telegramLines = lines.map((line) => {
+  const itemLines = lines.map((line) => {
     const name = escapeHtml(line?.name || 'Кава');
     const qty = formatQty(line?.qty);
     const freeQty = Math.max(0, Math.round(Number(line?.freeQty) || 0));
     if (freeQty > 0) {
-      return `• <b>${name}</b> × ${qty}\n  <i>10-та кава · подарунок</i>`;
+      return `${name} ×${qty} — <i>10-та кава</i>`;
     }
     const amount = Number(line?.amount) || 0;
-    return `• <b>${name}</b> × ${qty}\n  ${escapeHtml(formatMoney(amount * Number(line?.qty || 0)))}`;
+    return `${name} ×${qty} — ${escapeHtml(formatMoney(amount * Number(line?.qty || 0)))}`;
   });
 
   return [
-    '<b>🎁 Програма лояльності</b>',
-    BRAND,
-    DIVIDER,
-    'Клієнт отримав 10-ту каву безкоштовно.',
+    '🎁 <b>10-та кава</b>',
+    '<i>Клієнт отримав подарунок за лояльність</i>',
     '',
-    telegramLines.length ? telegramLines.join('\n') : '• Кава × 1',
+    wrapBlock(itemLines.length ? itemLines : ['Кава ×1 — подарунок']),
     '',
-    messageFooter(when),
+    metaLine(when),
   ].join('\n');
 }
 
 export function buildFeedbackMessage(message, when = new Date()) {
   const body = escapeHtml(String(message || '').trim());
   return [
-    '<b>💬 Відгук клієнта</b>',
-    BRAND,
-    DIVIDER,
-    body,
+    '💬 <b>Відгук</b>',
     '',
-    messageFooter(when),
+    wrapBlock(body),
+    '',
+    metaLine(when),
   ].join('\n');
 }
 
 export function buildBotConnectedMessage(when = new Date()) {
   return [
-    '<b>✅ Сповіщення підключено</b>',
-    BRAND,
-    DIVIDER,
-    'Цей чат отримуватиме:',
-    '• відвідування меню',
-    '• нові замовлення',
-    '• подарункові кави',
-    '• відгуки клієнтів',
+    '✅ <b>Бот підключено</b>',
+    '<i>Сповіщення з кавʼярні будуть приходити сюди</i>',
     '',
-    messageFooter(when),
+    wrapBlock([
+      '👁 відвідування меню',
+      '🧾 нові замовлення',
+      '🎁 подарункові кави',
+      '💬 відгуки клієнтів',
+    ]),
+    '',
+    metaLine(when),
   ].join('\n');
 }
