@@ -1,9 +1,26 @@
+import { getTelegramChatIdFromDb } from './db.js';
+
 /** Notifications bot: @barigacofe_bot */
 const BARIGACOFE_BOT_TOKEN = '8994978328:AAF8Nwk4ZVviJ_KEq4LC16HmSTq7Q6cOykw';
 
-export function getTelegramConfig() {
+export function getTelegramBotToken() {
+  return BARIGACOFE_BOT_TOKEN;
+}
+
+export async function getTelegramConfig() {
   const token = BARIGACOFE_BOT_TOKEN;
-  const chatId = process.env.TELEGRAM_CHAT_ID;
+  let chatId = '';
+
+  try {
+    chatId = (await getTelegramChatIdFromDb()) || '';
+  } catch {
+    chatId = '';
+  }
+
+  if (!chatId) {
+    chatId = String(process.env.TELEGRAM_CHAT_ID || '').trim();
+  }
+
   if (!token || !chatId) return null;
   return { token, chatId };
 }

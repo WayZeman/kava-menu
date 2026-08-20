@@ -106,7 +106,7 @@ export default async function handler(req, res) {
     // personal stats are optional
   }
 
-  const telegramConfig = getTelegramConfig();
+  const telegramConfig = await getTelegramConfig();
 
   if (telegramConfig) {
     try {

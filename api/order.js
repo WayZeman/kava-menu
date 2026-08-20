@@ -118,7 +118,7 @@ export default async function handler(req, res) {
     }
   }
 
-  const telegramConfig = getTelegramConfig();
+  const telegramConfig = await getTelegramConfig();
 
   if (isNewOrder && telegramConfig) {
     try {

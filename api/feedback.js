@@ -6,7 +6,7 @@ export default async function handler(req, res) {
     return;
   }
 
-  const config = getTelegramConfig();
+  const config = await getTelegramConfig();
   if (!config) {
     res.status(503).json({ ok: false, error: 'not_configured' });
     return;
