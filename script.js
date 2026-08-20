@@ -167,9 +167,11 @@ const THEME_KEY = 'kava-ui-theme';
 const DEVICE_ID_KEY = 'kava-device-id';
 const LOYALTY_CACHE_KEY = 'kava-loyalty-progress';
 const USER_COFFEE_KEY = 'kava-user-coffee';
+const VISIT_NOTICE_KEY = 'kava-visit-notified';
+const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '158';
+const APP_VERSION = '159';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -3500,11 +3502,32 @@ function dismissSplash() {
 }
 
 function notifySiteVisit() {
+  try {
+    const now = Date.now();
+    const prev = Number(localStorage.getItem(VISIT_NOTICE_KEY) || 0);
+    if (prev && now - prev < VISIT_COOLDOWN_MS) return;
+  } catch {
+    // continue without local guard
+  }
+
   void fetch('/api/visit', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({}),
+    body: JSON.stringify({
+      deviceId: getIdentityId(),
+    }),
     keepalive: true,
+  }).then(async (response) => {
+    try {
+      const data = await response.json();
+      if (data?.notified) {
+        localStorage.setItem(VISIT_NOTICE_KEY, String(Date.now()));
+      }
+    } catch {
+      // ignore parse errors
+    }
+  }).catch(() => {
+    // visit notify is best-effort
   });
 }
 
