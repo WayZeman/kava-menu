@@ -1,5 +1,8 @@
+/** Notifications bot: @barigacofe_bot */
+const BARIGACOFE_BOT_TOKEN = '8994978328:AAF8Nwk4ZVviJ_KEq4LC16HmSTq7Q6cOykw';
+
 export function getTelegramConfig() {
-  const token = process.env.TELEGRAM_BOT_TOKEN;
+  const token = BARIGACOFE_BOT_TOKEN;
   const chatId = process.env.TELEGRAM_CHAT_ID;
   if (!token || !chatId) return null;
   return { token, chatId };
