@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Автоматичне Налаштування Telegram Bot</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+        
+        .status {
+            background: #f0f9ff;
+            border-left: 4px solid #3b82f6;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+        }
+        
+        .status.success {
+            background: #f0fdf4;
+            border-left-color: #22c55e;
+        }
+        
+        .status.error {
+            background: #fef2f2;
+            border-left-color: #ef4444;
+        }
+        
+        .step {
+            margin-bottom: 25px;
+        }
+        
+        .step-number {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            text-align: center;
+            line-height: 30px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: #374151;
+        }
+        
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(102, 126, 234, 0.4);
+        }
+        
+        button:disabled {
+            background: #9ca3af;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .info-box {
+            background: #fef3c7;
+            border: 1px solid #fbbf24;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            font-size: 14px;
+        }
+        
+        .info-box a {
+            color: #d97706;
+            font-weight: 600;
+        }
+        
+        .logs {
+            background: #1f2937;
+            color: #10b981;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 20px;
+            display: none;
+        }
+        
+        .logs.show {
+            display: block;
+        }
+        
+        .log-line {
+            margin: 5px 0;
+        }
+        
+        .success-icon {
+            font-size: 48px;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 Автоматичне Налаштування</h1>
+        <p class="subtitle">Telegram Bot для Кавового Меню</p>
+        
+        <div class="status">
+            <strong>✅ Готово до налаштування</strong><br>
+            Новий токен перевірено та код оновлено
+        </div>
+        
+        <div class="step">
+            <label>
+                <span class="step-number">1</span>
+                Vercel API Token
+            </label>
+            <input 
+                type="password" 
+                id="vercelToken" 
+                placeholder="Вставте ваш Vercel Token"
+                autocomplete="off"
+            />
+        </div>
+        
+        <div class="info-box">
+            📌 <strong>Як отримати токен:</strong><br>
+            1. Перейдіть на <a href="https://vercel.com/account/tokens" target="_blank">vercel.com/account/tokens</a><br>
+            2. Натисніть "Create Token"<br>
+            3. Назва: "Cloud Agent Setup"<br>
+            4. Скопіюйте та вставте сюди
+        </div>
+        
+        <button id="setupBtn" onclick="startSetup()">
+            🚀 Почати Автоматичне Налаштування
+        </button>
+        
+        <div id="logs" class="logs"></div>
+        
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        const TELEGRAM_BOT_TOKEN = '8994978328:AAF-ORLZ804iPFMLc7PWJOEDW_MHkaQgzyA';
+        const PROJECT_NAME = 'kava-menu';
+        
+        function addLog(message, type = 'info') {
+            const logs = document.getElementById('logs');
+            logs.classList.add('show');
+            const line = document.createElement('div');
+            line.className = 'log-line';
+            const icon = type === 'error' ? '❌' : type === 'success' ? '✅' : '⏳';
+            line.textContent = `${icon} ${message}`;
+            logs.appendChild(line);
+            logs.scrollTop = logs.scrollHeight;
+        }
+        
+        async function startSetup() {
+            const token = document.getElementById('vercelToken').value.trim();
+            const btn = document.getElementById('setupBtn');
+            const result = document.getElementById('result');
+            
+            if (!token) {
+                alert('❌ Будь ласка, введіть Vercel Token');
+                return;
+            }
+            
+            btn.disabled = true;
+            btn.textContent = '⏳ Налаштування...';
+            result.innerHTML = '';
+            document.getElementById('logs').innerHTML = '';
+            
+            try {
+                addLog('Початок налаштування...');
+                
+                // Step 1: Find project
+                addLog('Пошук проекту kava-menu...');
+                const projectResponse = await fetch(`https://api.vercel.com/v9/projects/${PROJECT_NAME}`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                if (!projectResponse.ok) {
+                    throw new Error('Проект не знайдено. Перевірте токен.');
+                }
+                
+                const project = await projectResponse.json();
+                const projectId = project.id;
+                addLog(`✅ Проект знайдено: ${PROJECT_NAME}`, 'success');
+                
+                // Step 2: Check existing env vars
+                addLog('Перевірка існуючих змінних...');
+                const envResponse = await fetch(`https://api.vercel.com/v9/projects/${projectId}/env`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                });
+                
+                const envData = await envResponse.json();
+                const existingVar = envData.envs?.find(v => v.key === 'TELEGRAM_BOT_TOKEN');
+                
+                if (existingVar) {
+                    addLog('Видалення старої змінної...');
+                    await fetch(`https://api.vercel.com/v9/projects/${projectId}/env/${existingVar.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Authorization': `Bearer ${token}`
+                        }
+                    });
+                    addLog('✅ Стара змінна видалена', 'success');
+                }
+                
+                // Step 3: Add new env var
+                addLog('Додавання TELEGRAM_BOT_TOKEN...');
+                const addEnvResponse = await fetch(`https://api.vercel.com/v10/projects/${projectId}/env`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        key: 'TELEGRAM_BOT_TOKEN',
+                        value: TELEGRAM_BOT_TOKEN,
+                        type: 'encrypted',
+                        target: ['production', 'preview', 'development']
+                    })
+                });
+                
+                if (!addEnvResponse.ok) {
+                    throw new Error('Помилка при додаванні змінної');
+                }
+                
+                addLog('✅ TELEGRAM_BOT_TOKEN додано', 'success');
+                
+                // Step 4: Trigger deployment
+                addLog('Запуск deployment...');
+                const deployResponse = await fetch('https://api.vercel.com/v13/deployments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        name: PROJECT_NAME,
+                        gitSource: {
+                            type: 'github',
+                            ref: 'main',
+                            repoId: 'WayZeman/kava-menu'
+                        }
+                    })
+                });
+                
+                if (deployResponse.ok) {
+                    const deploy = await deployResponse.json();
+                    addLog(`✅ Deployment запущено: ${deploy.url}`, 'success');
+                    
+                    result.innerHTML = `
+                        <div class="status success">
+                            <div class="success-icon">🎉</div>
+                            <strong>Налаштування завершено успішно!</strong><br><br>
+                            <strong>Deployment URL:</strong> <a href="https://${deploy.url}" target="_blank">${deploy.url}</a><br><br>
+                            <strong>Наступні кроки:</strong><br>
+                            1. ✅ Дочекайтеся завершення deployment (~2 хв)<br>
+                            2. ✅ Перевірте бота на <a href="https://kava-menu.vercel.app" target="_blank">kava-menu.vercel.app</a><br>
+                            3. ✅ Зробіть тестове замовлення<br>
+                            4. ⚠️ Не забудьте скасувати старий токен через @BotFather!
+                        </div>
+                    `;
+                } else {
+                    addLog('⚠️ Deployment не запустився автоматично', 'error');
+                    result.innerHTML = `
+                        <div class="status success">
+                            <strong>✅ Змінна додана успішно!</strong><br><br>
+                            Deployment не запустився автоматично.<br>
+                            Перейдіть в <a href="https://vercel.com/dashboard" target="_blank">Vercel Dashboard</a>
+                            та натисніть Redeploy вручну.
+                        </div>
+                    `;
+                }
+                
+                btn.textContent = '✅ Готово!';
+                
+            } catch (error) {
+                addLog(`❌ Помилка: ${error.message}`, 'error');
+                result.innerHTML = `
+                    <div class="status error">
+                        <strong>❌ Помилка налаштування</strong><br>
+                        ${error.message}<br><br>
+                        Перевірте токен та спробуйте ще раз.
+                    </div>
+                `;
+                btn.disabled = false;
+                btn.textContent = '🔄 Спробувати ще раз';
+            }
+        }
+        
+        // Allow Enter key to submit
+        document.getElementById('vercelToken').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                startSetup();
+            }
+        });
+    </script>
+</body>
+</html>
