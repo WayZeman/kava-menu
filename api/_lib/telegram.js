@@ -1,17 +1,24 @@
 import { getTelegramChatIdFromDb } from './db.js';
 
-/** Notifications bot: @barigacofe_bot */
-const BARIGACOFE_BOT_TOKEN = '8994978328:AAF8Nwk4ZVviJ_KEq4LC16HmSTq7Q6cOykw';
-
 const BRAND = 'Кавове меню';
 const BRAND_HANDLE = '@barigacofe_bot';
 
 export function getTelegramBotToken() {
-  return BARIGACOFE_BOT_TOKEN;
+  const token = String(process.env.TELEGRAM_BOT_TOKEN || '').trim();
+  if (!token) {
+    throw new Error('TELEGRAM_BOT_TOKEN environment variable is not set');
+  }
+  return token;
 }
 
 export async function getTelegramConfig() {
-  const token = BARIGACOFE_BOT_TOKEN;
+  let token = '';
+  try {
+    token = getTelegramBotToken();
+  } catch {
+    return null;
+  }
+
   let chatId = '';
 
   try {
