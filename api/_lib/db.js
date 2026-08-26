@@ -283,6 +283,12 @@ export async function cancelPendingOrder({ orderId, deviceId }) {
     // optional cleanup
   }
 
+  try {
+    await deleteMonthlySubscriptionByOrderId(id);
+  } catch {
+    // optional cleanup
+  }
+
   return removed;
 }
 
@@ -1149,5 +1155,153 @@ export async function recordVisitNotice(deviceId) {
     ON CONFLICT (device_id) DO UPDATE SET
       last_notified_at = NOW()
   `;
+}
+
+let monthlySubscriptionsTableReady = false;
+
+async function ensureMonthlySubscriptionsTable(sql) {
+  if (monthlySubscriptionsTableReady) return;
+
+  await sql`
+    CREATE TABLE IF NOT EXISTS monthly_subscriptions (
+      id TEXT PRIMARY KEY,
+      order_id TEXT,
+      device_id TEXT,
+      first_name TEXT NOT NULL,
+      last_name TEXT NOT NULL,
+      amount NUMERIC NOT NULL DEFAULT 0,
+      pass_qty INTEGER NOT NULL DEFAULT 1,
+      starts_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      expires_at TIMESTAMPTZ NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS monthly_subscriptions_expires_idx
+    ON monthly_subscriptions (expires_at DESC)
+  `;
+
+  await sql`
+    CREATE INDEX IF NOT EXISTS monthly_subscriptions_order_idx
+    ON monthly_subscriptions (order_id)
+  `;
+
+  monthlySubscriptionsTableReady = true;
+}
+
+function mapMonthlySubscriptionRow(row) {
+  if (!row) return null;
+  return {
+    id: row.id,
+    orderId: row.order_id || null,
+    deviceId: row.device_id || null,
+    firstName: row.first_name,
+    lastName: row.last_name,
+    fullName: `${row.last_name} ${row.first_name}`.trim(),
+    amount: Number(row.amount || 0),
+    passQty: Math.max(1, Math.round(Number(row.pass_qty) || 1)),
+    startsAt: row.starts_at,
+    expiresAt: row.expires_at,
+    createdAt: row.created_at,
+    active: new Date(row.expires_at).getTime() >= Date.now(),
+  };
+}
+
+export async function insertMonthlySubscription({
+  id,
+  orderId = null,
+  deviceId = null,
+  firstName,
+  lastName,
+  amount = 0,
+  passQty = 1,
+  startsAt = null,
+  expiresAt,
+}) {
+  const sql = getSql();
+  if (!sql) return null;
+
+  const first = String(firstName || '').trim();
+  const last = String(lastName || '').trim();
+  if (!first || !last || !expiresAt) return null;
+
+  const recordId = String(id || '').trim() || makeId('pass');
+  const qty = Math.max(1, Math.round(Number(passQty) || 1));
+  const money = Math.max(0, Math.round(Number(amount) || 0));
+  const order = orderId ? String(orderId).trim() : null;
+  const device = deviceId ? String(deviceId).trim() : null;
+  const starts = startsAt ? new Date(startsAt).toISOString() : null;
+  const expires = new Date(expiresAt).toISOString();
+
+  await ensureMonthlySubscriptionsTable(sql);
+
+  const rows = await sql`
+    INSERT INTO monthly_subscriptions (
+      id, order_id, device_id, first_name, last_name, amount, pass_qty, starts_at, expires_at, created_at
+    )
+    VALUES (
+      ${recordId},
+      ${order},
+      ${device},
+      ${first},
+      ${last},
+      ${money},
+      ${qty},
+      COALESCE(${starts}::timestamptz, NOW()),
+      ${expires}::timestamptz,
+      NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+      first_name = EXCLUDED.first_name,
+      last_name = EXCLUDED.last_name,
+      amount = EXCLUDED.amount,
+      pass_qty = EXCLUDED.pass_qty,
+      expires_at = EXCLUDED.expires_at
+    RETURNING *
+  `;
+
+  return mapMonthlySubscriptionRow(rows[0]);
+}
+
+export async function listMonthlySubscriptions({ activeOnly = false } = {}) {
+  const sql = getSql();
+  if (!sql) return [];
+
+  await ensureMonthlySubscriptionsTable(sql);
+
+  const rows = activeOnly
+    ? await sql`
+      SELECT *
+      FROM monthly_subscriptions
+      WHERE expires_at >= NOW()
+      ORDER BY expires_at ASC, created_at DESC
+    `
+    : await sql`
+      SELECT *
+      FROM monthly_subscriptions
+      ORDER BY expires_at DESC, created_at DESC
+      LIMIT 200
+    `;
+
+  return rows.map(mapMonthlySubscriptionRow).filter(Boolean);
+}
+
+export async function deleteMonthlySubscriptionByOrderId(orderId) {
+  const sql = getSql();
+  if (!sql) return 0;
+
+  const id = String(orderId || '').trim();
+  if (!id) return 0;
+
+  await ensureMonthlySubscriptionsTable(sql);
+
+  const rows = await sql`
+    DELETE FROM monthly_subscriptions
+    WHERE order_id = ${id}
+    RETURNING id
+  `;
+
+  return rows.length;
 }
 

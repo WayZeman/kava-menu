@@ -70,6 +70,15 @@ function formatShortKyivTime(value = new Date()) {
   return `${day} ${month} · ${hour}:${minute}`;
 }
 
+function formatShortKyivDate(value = new Date()) {
+  return new Intl.DateTimeFormat('uk-UA', {
+    timeZone: 'Europe/Kyiv',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  }).format(value instanceof Date ? value : new Date(value));
+}
+
 export async function sendTelegramMessage(token, chatId, text) {
   const telegramResponse = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
     method: 'POST',
@@ -147,6 +156,8 @@ export function buildOrderReceiptMessage({
   paidTotal = 0,
   provider = '',
   freeClaimed = 0,
+  subscriber = null,
+  subscription = null,
   when = new Date(),
 } = {}) {
   const itemLines = lines.map(formatReceiptLine);
@@ -159,6 +170,13 @@ export function buildOrderReceiptMessage({
     ? '💰 <b>До сплати:</b> безкоштовно'
     : `💰 <b>До сплати:</b> ${escapeHtml(formatMoney(total))}`;
 
+  const fullName = subscriber
+    ? `${subscriber.lastName || ''} ${subscriber.firstName || ''}`.trim()
+    : '';
+  const expiresLabel = subscription?.expiresAt
+    ? formatShortKyivDate(subscription.expiresAt)
+    : '';
+
   return [
     brandHeader(title),
     '',
@@ -169,6 +187,8 @@ export function buildOrderReceiptMessage({
       ? `🎁 Подарунок: ${freeCount} ${freeCount === 1 ? 'кава' : 'кави'}`
       : null,
     provider ? `💳 ${escapeHtml(provider)}` : null,
+    fullName ? `👤 ${escapeHtml(fullName)}` : null,
+    expiresLabel ? `📅 Абонемент до ${escapeHtml(expiresLabel)}` : null,
     '',
     metaLine(when),
   ].filter((line) => line != null && line !== false).join('\n');

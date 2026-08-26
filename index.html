@@ -15,7 +15,7 @@
   <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png">
   <script>
     (function () {
-      var version = '158';
+      var version = '161';
       var versionKey = 'kava-app-version';
       var prev = null;
       try { prev = localStorage.getItem(versionKey); } catch (e) {}
@@ -42,7 +42,7 @@
   <link rel="dns-prefetch" href="https://send.monobank.ua">
   <link rel="preconnect" href="https://www.privat24.ua" crossorigin>
   <link rel="dns-prefetch" href="https://www.privat24.ua">
-  <link rel="stylesheet" href="styles.css?v=152">
+  <link rel="stylesheet" href="styles.css?v=161">
 </head>
 <body class="is-splash-active">
   <div id="app-splash" class="app-splash" aria-hidden="false" aria-busy="true" aria-label="Завантаження">
@@ -156,6 +156,16 @@
         <div class="receipt-total">
           <span class="receipt-total-label">Разом</span>
           <span id="sheet-title" class="receipt-total-sum"></span>
+        </div>
+
+        <div id="receipt-subscriber" class="receipt-subscriber" hidden>
+          <p class="receipt-subscriber-title">Абонемент на місяць</p>
+          <p class="receipt-subscriber-hint">Вкажіть імʼя та прізвище власника</p>
+          <div class="receipt-subscriber-fields">
+            <input id="subscriber-first-name" class="receipt-subscriber-input" type="text" maxlength="60" autocomplete="given-name" placeholder="Імʼя" enterkeyhint="next">
+            <input id="subscriber-last-name" class="receipt-subscriber-input" type="text" maxlength="60" autocomplete="family-name" placeholder="Прізвище" enterkeyhint="done">
+          </div>
+          <p id="subscriber-error" class="receipt-subscriber-error" hidden>Вкажіть імʼя та прізвище</p>
         </div>
 
         <p id="receipt-note" class="receipt-note">Monobank, Приват24 або переказ на картку</p>
@@ -532,6 +542,14 @@
           </article>
         </div>
 
+        <section id="stats-subscriptions" class="stats-subscriptions" hidden aria-label="Абонементи на каву">
+          <div class="stats-subscriptions-head">
+            <h3 class="stats-section-heading">Абонементи</h3>
+            <p id="stats-subscriptions-meta" class="stats-subscriptions-meta">Активних: 0</p>
+          </div>
+          <ul id="stats-subscriptions-list" class="stats-subscriptions-list"></ul>
+        </section>
+
       <section id="stats-daily-chart-section" class="stats-chart-section">
         <div class="stats-chart-head">
           <h3 id="stats-chart-heading" class="stats-section-heading">Замовлення кави по днях</h3>
@@ -691,6 +709,6 @@
   <div id="fx-layer" class="fx-layer" aria-hidden="true"></div>
   <div id="stock-toast" class="stock-toast" role="status" aria-live="polite" hidden></div>
 
-  <script src="script.js?v=160" defer></script>
+  <script src="script.js?v=161" defer></script>
 </body>
 </html>

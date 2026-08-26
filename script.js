@@ -27,6 +27,10 @@ const receiptDate = document.getElementById('receipt-date');
 const receiptNote = document.getElementById('receipt-note');
 const receiptPay = document.getElementById('receipt-pay');
 const receiptFreeClaim = document.getElementById('receipt-free-claim');
+const receiptSubscriber = document.getElementById('receipt-subscriber');
+const subscriberFirstName = document.getElementById('subscriber-first-name');
+const subscriberLastName = document.getElementById('subscriber-last-name');
+const subscriberError = document.getElementById('subscriber-error');
 const thanksForm = document.getElementById('thanks-form');
 const thanksFeedback = document.getElementById('thanks-feedback');
 const thanksSend = document.getElementById('thanks-send');
@@ -116,6 +120,9 @@ const statsHubChartPeriodButtons = document.querySelectorAll('[data-hub-chart-pe
 const statsMenuEntryTitle = document.getElementById('stats-menu-entry-title');
 const statsRoiWrap = document.getElementById('stats-roi-wrap');
 const statsCoffeeSplit = document.getElementById('stats-coffee-split');
+const statsSubscriptions = document.getElementById('stats-subscriptions');
+const statsSubscriptionsList = document.getElementById('stats-subscriptions-list');
+const statsSubscriptionsMeta = document.getElementById('stats-subscriptions-meta');
 const statsCoffeePaid = document.getElementById('stats-coffee-paid');
 const statsCoffeeGift = document.getElementById('stats-coffee-gift');
 const statsBalanceIncomeLabel = document.getElementById('stats-balance-income-label');
@@ -171,7 +178,8 @@ const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '160';
+const APP_VERSION = '161';
+const SUBSCRIBER_CACHE_KEY = 'kava-subscriber-name';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
   'soft-premium': {
@@ -2727,6 +2735,83 @@ function dismissOverlays() {
   setPayActionsDisabled(false);
 }
 
+function cartHasMonthlyPass(items = getCartSummary().items) {
+  return (items || []).some((item) => isMonthlyPassItem(item) && Number(item.qty || 0) > 0);
+}
+
+function readCachedSubscriber() {
+  try {
+    const raw = localStorage.getItem(SUBSCRIBER_CACHE_KEY);
+    if (!raw) return { firstName: '', lastName: '' };
+    const data = JSON.parse(raw);
+    return {
+      firstName: String(data?.firstName || '').trim(),
+      lastName: String(data?.lastName || '').trim(),
+    };
+  } catch {
+    return { firstName: '', lastName: '' };
+  }
+}
+
+function cacheSubscriber(firstName, lastName) {
+  try {
+    localStorage.setItem(SUBSCRIBER_CACHE_KEY, JSON.stringify({
+      firstName: String(firstName || '').trim(),
+      lastName: String(lastName || '').trim(),
+    }));
+  } catch {
+    // ignore
+  }
+}
+
+function getSubscriberFormValues() {
+  return {
+    firstName: String(subscriberFirstName?.value || '').trim().replace(/\s+/g, ' '),
+    lastName: String(subscriberLastName?.value || '').trim().replace(/\s+/g, ' '),
+  };
+}
+
+function setSubscriberError(visible) {
+  if (!subscriberError) return;
+  subscriberError.hidden = !visible;
+}
+
+function syncSubscriberForm(items = getCartSummary().items) {
+  const needsName = cartHasMonthlyPass(items);
+  if (receiptSubscriber) receiptSubscriber.hidden = !needsName;
+  if (!needsName) {
+    setSubscriberError(false);
+    return;
+  }
+
+  const cached = readCachedSubscriber();
+  if (subscriberFirstName && !subscriberFirstName.value && cached.firstName) {
+    subscriberFirstName.value = cached.firstName;
+  }
+  if (subscriberLastName && !subscriberLastName.value && cached.lastName) {
+    subscriberLastName.value = cached.lastName;
+  }
+}
+
+function requireSubscriberIfNeeded(items = getCartSummary().items) {
+  if (!cartHasMonthlyPass(items)) {
+    setSubscriberError(false);
+    return { ok: true, subscriber: null };
+  }
+
+  const { firstName, lastName } = getSubscriberFormValues();
+  if (!firstName || !lastName) {
+    setSubscriberError(true);
+    if (!firstName) subscriberFirstName?.focus();
+    else subscriberLastName?.focus();
+    return { ok: false, subscriber: null };
+  }
+
+  setSubscriberError(false);
+  cacheSubscriber(firstName, lastName);
+  return { ok: true, subscriber: { firstName, lastName } };
+}
+
 function openSheet() {
   const { items } = getCartSummary();
   if (!items.length) return;
@@ -2738,9 +2823,13 @@ function openSheet() {
   sheetTitle.textContent = pricing.paidTotal > 0 ? `${pricing.paidTotal} грн` : 'Безкоштовно';
   if (receiptDate) receiptDate.textContent = formatReceiptDate();
   renderReceiptLines(pricing.items);
+  syncSubscriberForm(items);
   sheet.hidden = false;
   document.body.classList.add('sheet-open');
   syncScrollLock();
+  if (cartHasMonthlyPass(items) && !getSubscriberFormValues().firstName) {
+    window.setTimeout(() => subscriberFirstName?.focus(), 80);
+  }
 }
 
 function closeSheet() {
@@ -2833,6 +2922,7 @@ function openPaymentUrl(url) {
 
 function snapshotOrder() {
   const pricing = getCartPricing();
+  const { firstName, lastName } = getSubscriberFormValues();
   return {
     items: pricing.items.map((item) => ({
       id: item.id,
@@ -2848,6 +2938,9 @@ function snapshotOrder() {
     subtotal: pricing.subtotal,
     drinkQty: pricing.statsDrinkQty,
     loyaltyDrinkQty: pricing.drinkQty,
+    subscriber: cartHasMonthlyPass(pricing.items)
+      ? { firstName, lastName }
+      : null,
     forSelf: true,
   };
 }
@@ -2863,6 +2956,7 @@ async function notifyOrder(order, provider, orderId) {
     provider,
     deviceId: getIdentityId(),
     forSelf: order.forSelf !== false,
+    subscriber: order.subscriber || null,
   });
 
   const response = await fetch('/api/order', {
@@ -2954,8 +3048,13 @@ async function claimFreeCoffeeDirectly() {
 
 async function goToPayment(provider) {
   try { sessionStorage.setItem('kava-last-provider', provider); } catch { /* ignore */ }
+
+  const required = requireSubscriberIfNeeded();
+  if (!required.ok) return;
+
   const order = snapshotOrder();
   if (!order.items.length) return;
+  if (required.subscriber) order.subscriber = required.subscriber;
 
   const orderId = makeOrderId();
   pendingOrder = order;
@@ -3441,6 +3540,10 @@ payActions.forEach((action) => {
 receiptFreeClaim?.addEventListener('click', () => {
   if (receiptFreeClaim.disabled || receiptFreeClaim.hidden) return;
   void claimFreeCoffeeDirectly();
+});
+
+[subscriberFirstName, subscriberLastName].forEach((input) => {
+  input?.addEventListener('input', () => setSubscriberError(false));
 });
 
 cardPaySheet?.querySelectorAll('[data-card-pay-close]').forEach((el) => {
@@ -5060,15 +5163,76 @@ function createTransactionActions(item, kind) {
 async function fetchStats() {
   try {
     const response = await fetch('/api/stats');
-    if (!response.ok) return { incomes: [], expenses: [] };
+    if (!response.ok) return { incomes: [], expenses: [], subscriptions: [] };
     const data = await response.json();
     return {
       incomes: Array.isArray(data.incomes) ? data.incomes : [],
       expenses: Array.isArray(data.expenses) ? data.expenses : [],
+      subscriptions: Array.isArray(data.subscriptions) ? data.subscriptions : [],
     };
   } catch {
-    return { incomes: [], expenses: [] };
+    return { incomes: [], expenses: [], subscriptions: [] };
   }
+}
+
+function formatSubscriptionDate(value) {
+  if (!value) return '—';
+  try {
+    return new Intl.DateTimeFormat('uk-UA', {
+      timeZone: 'Europe/Kyiv',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+    }).format(new Date(value));
+  } catch {
+    return '—';
+  }
+}
+
+function renderSubscriptionsList(subscriptions = []) {
+  if (!statsSubscriptions || !statsSubscriptionsList) return;
+
+  const list = Array.isArray(subscriptions) ? subscriptions : [];
+  const active = list.filter((item) => {
+    if (item?.active === false) return false;
+    const expires = new Date(item?.expiresAt || 0).getTime();
+    return Number.isFinite(expires) && expires >= Date.now();
+  }).sort((a, b) => new Date(a.expiresAt).getTime() - new Date(b.expiresAt).getTime());
+
+  statsSubscriptions.hidden = false;
+  if (statsSubscriptionsMeta) {
+    statsSubscriptionsMeta.textContent = active.length
+      ? `Активних: ${active.length}`
+      : 'Поки немає активних';
+  }
+
+  statsSubscriptionsList.replaceChildren();
+
+  if (!active.length) {
+    const empty = document.createElement('li');
+    empty.className = 'stats-subscriptions-empty';
+    empty.textContent = 'Немає активних абонементів';
+    statsSubscriptionsList.appendChild(empty);
+    return;
+  }
+
+  active.forEach((item) => {
+    const li = document.createElement('li');
+    li.className = 'stats-subscriptions-item';
+
+    const name = document.createElement('span');
+    name.className = 'stats-subscriptions-name';
+    name.textContent = item.fullName
+      || `${item.lastName || ''} ${item.firstName || ''}`.trim()
+      || 'Без імені';
+
+    const until = document.createElement('span');
+    until.className = 'stats-subscriptions-until';
+    until.textContent = `до ${formatSubscriptionDate(item.expiresAt)}`;
+
+    li.append(name, until);
+    statsSubscriptionsList.appendChild(li);
+  });
 }
 
 function renderIncomeItem(item) {
@@ -5295,6 +5459,14 @@ function renderStatsCategoryView(data) {
       const gift = summary.coffeeGiftDrinks;
       if (statsCoffeePaid) statsCoffeePaid.textContent = String(paid);
       if (statsCoffeeGift) statsCoffeeGift.textContent = String(gift);
+    }
+  }
+
+  if (statsSubscriptions) {
+    if (category === 'drinks') {
+      renderSubscriptionsList(data.subscriptions || []);
+    } else {
+      statsSubscriptions.hidden = true;
     }
   }
 

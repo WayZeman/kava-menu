@@ -3,8 +3,15 @@ import {
   buildOrderLabel,
   claimFreeCoffee,
   insertIncome,
+  insertMonthlySubscription,
   logDeviceCoffee,
 } from './_lib/db.js';
+import {
+  buildMonthlyPassExpiry,
+  countMonthlyPassQty,
+  isMonthlyPassId,
+  normalizeSubscriberName,
+} from './_lib/monthly-pass.js';
 import { validateAndPriceOrder } from './_lib/order-pricing.js';
 import {
   buildOrderReceiptMessage,
@@ -24,6 +31,13 @@ function normalizeDeviceId(value) {
   const id = String(value || '').trim();
   if (!id || id.length > 120) return null;
   return id;
+}
+
+function readSubscriber(body) {
+  const firstName = normalizeSubscriberName(body?.subscriber?.firstName ?? body?.firstName);
+  const lastName = normalizeSubscriberName(body?.subscriber?.lastName ?? body?.lastName);
+  if (!firstName || !lastName) return null;
+  return { firstName, lastName };
 }
 
 export default async function handler(req, res) {
@@ -57,6 +71,13 @@ export default async function handler(req, res) {
 
   if (!pricing.ok) {
     res.status(400).json({ ok: false, error: pricing.error || 'invalid_order' });
+    return;
+  }
+
+  const passQty = countMonthlyPassQty(pricing.lines);
+  const subscriber = passQty > 0 ? readSubscriber(req.body) : null;
+  if (passQty > 0 && !subscriber) {
+    res.status(400).json({ ok: false, error: 'subscriber_required' });
     return;
   }
 
@@ -112,6 +133,30 @@ export default async function handler(req, res) {
     }
   }
 
+  let subscription = null;
+  if (isNewOrder && passQty > 0 && subscriber) {
+    try {
+      const startsAt = saved.createdAt ? new Date(saved.createdAt) : new Date();
+      const expiresAt = buildMonthlyPassExpiry(startsAt, passQty);
+      const passAmount = pricing.lines
+        .filter((line) => isMonthlyPassId(line.id))
+        .reduce((sum, line) => sum + Number(line.amount || 0) * Number(line.qty || 0), 0);
+
+      subscription = await insertMonthlySubscription({
+        orderId: saved.id,
+        deviceId,
+        firstName: subscriber.firstName,
+        lastName: subscriber.lastName,
+        amount: passAmount || pricing.paidTotal,
+        passQty,
+        startsAt,
+        expiresAt,
+      });
+    } catch {
+      subscription = null;
+    }
+  }
+
   if (isNewOrder) {
     try {
       await applyOrderedExtraStock(pricing.lines);
@@ -129,6 +174,8 @@ export default async function handler(req, res) {
         paidTotal: pricing.paidTotal,
         provider,
         freeClaimed: freeCoffee?.claimed || 0,
+        subscriber,
+        subscription,
       });
       await sendTelegramMessage(telegramConfig.token, telegramConfig.chatId, text);
     } catch {
@@ -140,6 +187,7 @@ export default async function handler(req, res) {
     ok: true,
     income: saved,
     freeCoffee,
+    subscription,
     pricing: {
       paidTotal: pricing.paidTotal,
       freeDrinks: pricing.freeDrinks,
