@@ -6,9 +6,11 @@ import {
   verifyStatsPassword,
 } from './_lib/admin.js';
 import {
+  deleteMonthlySubscriptionByOrderId,
   deleteTransaction,
   insertExpense,
   insertIncome,
+  listMonthlySubscriptions,
   listTransactions,
   restoreOrderedExtraStock,
   updateTransaction,
@@ -161,6 +163,12 @@ export default async function handler(req, res) {
         return;
       }
 
+      try {
+        await deleteMonthlySubscriptionByOrderId(id);
+      } catch {
+        // optional cleanup
+      }
+
       if (
         req.body?.restoreStock === true
         && removed.kind === 'income'
@@ -185,7 +193,13 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     if (!(await requireAdmin(req, res))) return;
     const data = await listTransactions();
-    res.status(200).json({ ok: true, ...data });
+    let subscriptions = [];
+    try {
+      subscriptions = await listMonthlySubscriptions({ activeOnly: false });
+    } catch {
+      subscriptions = [];
+    }
+    res.status(200).json({ ok: true, ...data, subscriptions });
     return;
   }
 
