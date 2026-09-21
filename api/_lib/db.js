@@ -68,15 +68,38 @@ function mapRow(row) {
 
 export async function listTransactions() {
   const sql = getSql();
-  if (!sql) return { incomes: [], expenses: [] };
+  if (!sql) {
+    return {
+      incomes: [],
+      expenses: [],
+      meta: {
+        incomeCount: 0,
+        expenseCount: 0,
+        incomeTotal: 0,
+        expenseTotal: 0,
+        balance: 0,
+        complete: true,
+      },
+    };
+  }
 
   await ensureTransactionsTable(sql);
 
+  // Full ledger — never truncate. A LIMIT here previously caused new sales
+  // to displace equally-sized old sales so totals looked unchanged.
   const rows = await sql`
     SELECT id, kind, label, amount, source, provider, items, created_at, updated_at
     FROM transactions
     ORDER BY created_at DESC
-    LIMIT 500
+  `;
+
+  const aggregates = await sql`
+    SELECT
+      kind,
+      COUNT(*)::int AS count,
+      COALESCE(SUM(amount), 0)::float AS total
+    FROM transactions
+    GROUP BY kind
   `;
 
   const incomes = [];
@@ -88,7 +111,27 @@ export async function listTransactions() {
     else expenses.push(item);
   });
 
-  return { incomes, expenses };
+  const incomeAgg = aggregates.find((row) => row.kind === 'income');
+  const expenseAgg = aggregates.find((row) => row.kind === 'expense');
+  const incomeTotal = Number(incomeAgg?.total || 0);
+  const expenseTotal = Number(expenseAgg?.total || 0);
+  const incomeCount = Number(incomeAgg?.count || 0);
+  const expenseCount = Number(expenseAgg?.count || 0);
+
+  return {
+    incomes,
+    expenses,
+    meta: {
+      incomeCount,
+      expenseCount,
+      incomeTotal,
+      expenseTotal,
+      balance: incomeTotal - expenseTotal,
+      complete:
+        incomes.length === incomeCount
+        && expenses.length === expenseCount,
+    },
+  };
 }
 
 export async function insertIncome({

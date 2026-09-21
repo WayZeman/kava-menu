@@ -89,6 +89,7 @@ const carWashRow = document.querySelector('[data-picker="car-wash"]');
 const heroIcon = document.querySelector('.hero-icon');
 const statsPanel = document.getElementById('stats');
 const statsHub = document.getElementById('stats-hub');
+const statsHubSubtitle = document.getElementById('stats-hub-subtitle');
 const statsCategoryView = document.getElementById('stats-category');
 const statsCategoryTitle = document.getElementById('stats-category-title');
 const statsCategorySubtitle = document.getElementById('stats-category-subtitle');
@@ -178,7 +179,7 @@ const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '163';
+const APP_VERSION = '164';
 const SUBSCRIBER_CACHE_KEY = 'kava-subscriber-name';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
@@ -287,7 +288,7 @@ let statsLivePollTimer = null;
 let incomesListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
-let currentStatsData = { incomes: [], expenses: [] };
+let currentStatsData = { incomes: [], expenses: [], meta: null, subscriptions: [] };
 let editingTransactionId = null;
 
 const CAR_WASH_ENABLED = false;
@@ -4028,29 +4029,13 @@ function getServiceOnlyIncomes(incomes) {
   });
 }
 
-/** Overhead / equipment / rent wrongly filed under coffee supplies. */
-function isCoffeeOverheadExpense(expense) {
-  const label = String(expense?.label || '').trim().toLowerCase();
-  if (!label) return false;
-  return (
-    label.includes('апарт')
-    || label.includes('щомісячний платіж')
-    || label.includes('комплект обслуговування')
-    || label.includes('мастило')
-    || label.includes('лоток для готівки')
-    || label.includes('форма для льоду')
-  );
-}
-
 function getExpenseCategory(expense) {
   const source = String(expense?.source || '');
   if (source === 'expense-extras') return 'extras';
   if (source === 'expense-services') return 'services';
   if (source === 'expense-youtube') return 'youtube';
-  // Keep product COGS in coffee; move rent/equipment out so drink sales
-  // actually move the coffee profit number.
-  if (isCoffeeOverheadExpense(expense)) return 'services';
   if (source === 'expense-drinks') return 'drinks';
+  // Legacy rows without expense-* source still belong with coffee ops.
   return 'drinks';
 }
 
@@ -5216,16 +5201,20 @@ function createTransactionActions(item, kind) {
 
 async function fetchStats() {
   try {
-    const response = await fetch('/api/stats');
-    if (!response.ok) return { incomes: [], expenses: [], subscriptions: [] };
+    const response = await fetch('/api/stats', { credentials: 'include', cache: 'no-store' });
+    if (!response.ok) return { incomes: [], expenses: [], subscriptions: [], meta: null };
     const data = await response.json();
+    const incomes = Array.isArray(data.incomes) ? data.incomes : [];
+    const expenses = Array.isArray(data.expenses) ? data.expenses : [];
+    const meta = data.meta && typeof data.meta === 'object' ? data.meta : null;
     return {
-      incomes: Array.isArray(data.incomes) ? data.incomes : [],
-      expenses: Array.isArray(data.expenses) ? data.expenses : [],
+      incomes,
+      expenses,
       subscriptions: Array.isArray(data.subscriptions) ? data.subscriptions : [],
+      meta,
     };
   } catch {
-    return { incomes: [], expenses: [], subscriptions: [] };
+    return { incomes: [], expenses: [], subscriptions: [], meta: null };
   }
 }
 
@@ -5395,6 +5384,38 @@ function renderStatsHubVisibility() {
   });
 }
 
+function verifyLedgerIntegrity(data) {
+  const incomes = Array.isArray(data?.incomes) ? data.incomes : [];
+  const expenses = Array.isArray(data?.expenses) ? data.expenses : [];
+  const incomeSum = incomes.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const expenseSum = expenses.reduce((sum, row) => sum + (Number(row.amount) || 0), 0);
+  const summary = summarizeIncomes(incomes);
+  const splitSum = summary.coffee + summary.haircut + summary.extras + summary.youtube;
+  const meta = data?.meta && typeof data.meta === 'object' ? data.meta : null;
+  const issues = [];
+
+  if (meta) {
+    if (Math.abs(incomeSum - Number(meta.incomeTotal || 0)) > 0.01) issues.push('income_sum');
+    if (Math.abs(expenseSum - Number(meta.expenseTotal || 0)) > 0.01) issues.push('expense_sum');
+    if (incomes.length !== Number(meta.incomeCount || 0)) issues.push('income_count');
+    if (expenses.length !== Number(meta.expenseCount || 0)) issues.push('expense_count');
+    if (meta.complete === false) issues.push('incomplete');
+  }
+
+  if (Math.abs(splitSum - incomeSum) > 0.01) issues.push('split_drift');
+
+  return {
+    ok: issues.length === 0,
+    issues,
+    incomeSum,
+    expenseSum,
+    balance: incomeSum - expenseSum,
+    splitSum,
+    txnCount: incomes.length + expenses.length,
+    meta,
+  };
+}
+
 function renderStatsHub(data) {
   const summary = summarizeIncomes(data.incomes);
   const config = STATS_CATEGORIES;
@@ -5406,6 +5427,17 @@ function renderStatsHub(data) {
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
   const youtubeExpenses = getExpensesByCategory(data.expenses, 'youtube')
     .reduce((sum, item) => sum + Number(item.amount || 0), 0);
+
+  const audit = verifyLedgerIntegrity(data);
+  if (statsHubSubtitle) {
+    if (!audit.ok) {
+      statsHubSubtitle.textContent = 'Розбіжність у книзі обліку — оновіть сторінку';
+      statsHubSubtitle.classList.add('is-audit-error');
+    } else {
+      statsHubSubtitle.textContent = `${audit.txnCount} записів · баланс ${formatBalanceMoney(audit.balance)}`;
+      statsHubSubtitle.classList.remove('is-audit-error');
+    }
+  }
 
   const setHubBalance = (el, balance) => {
     if (!el) return;
