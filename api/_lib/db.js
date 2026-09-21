@@ -192,19 +192,35 @@ export async function insertExpense({ id, label, amount, category = 'drinks' }) 
   return mapRow(rows[0]);
 }
 
-export async function updateTransaction({ id, label, amount }) {
+export async function updateTransaction({ id, label, amount, category } = {}) {
   const sql = getSql();
   if (!sql) return null;
 
-  const rows = await sql`
-    UPDATE transactions
-    SET
-      label = COALESCE(${label ?? null}, label),
-      amount = COALESCE(${amount ?? null}, amount),
-      updated_at = NOW()
-    WHERE id = ${id}
-    RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
-  `;
+  const safeCategory = ['drinks', 'extras', 'services', 'youtube'].includes(category)
+    ? category
+    : null;
+  const nextSource = safeCategory ? `expense-${safeCategory}` : null;
+
+  const rows = nextSource
+    ? await sql`
+      UPDATE transactions
+      SET
+        label = COALESCE(${label ?? null}, label),
+        amount = COALESCE(${amount ?? null}, amount),
+        source = CASE WHEN kind = 'expense' THEN ${nextSource} ELSE source END,
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
+    `
+    : await sql`
+      UPDATE transactions
+      SET
+        label = COALESCE(${label ?? null}, label),
+        amount = COALESCE(${amount ?? null}, amount),
+        updated_at = NOW()
+      WHERE id = ${id}
+      RETURNING id, kind, label, amount, source, provider, items, created_at, updated_at
+    `;
 
   return rows[0] ? mapRow(rows[0]) : null;
 }

@@ -52,15 +52,22 @@ function normalizeUpdate(body) {
   const id = String(body?.id || '').trim();
   const label = body?.label !== undefined ? String(body.label).trim() : undefined;
   const amount = body?.amount !== undefined ? Number(body.amount) : undefined;
+  const category = body?.category !== undefined ? String(body.category).trim() : undefined;
 
   if (!id) return null;
   if (label !== undefined && (!label || label.length > 120)) return null;
   if (amount !== undefined && (!Number.isFinite(amount) || amount <= 0 || amount > 10000000)) {
     return null;
   }
-  if (label === undefined && amount === undefined) return null;
+  if (
+    category !== undefined
+    && !['drinks', 'extras', 'services', 'youtube'].includes(category)
+  ) {
+    return null;
+  }
+  if (label === undefined && amount === undefined && category === undefined) return null;
 
-  return { id, label, amount };
+  return { id, label, amount, category };
 }
 
 export default async function handler(req, res) {

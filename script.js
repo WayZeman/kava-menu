@@ -178,7 +178,7 @@ const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '162';
+const APP_VERSION = '163';
 const SUBSCRIBER_CACHE_KEY = 'kava-subscriber-name';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
@@ -283,6 +283,7 @@ let userCoffeeDays = [];
 let userCoffeeToday = 0;
 let scrollLockY = 0;
 let refreshStatsTimer = null;
+let statsLivePollTimer = null;
 let incomesListExpanded = false;
 let expensesListExpanded = false;
 let statsActiveTab = 'income';
@@ -3744,12 +3745,22 @@ function isServiceLine(line) {
   return isHaircutName(line?.name);
 }
 
+function isBakeryExtraName(value) {
+  const name = String(value || '').trim().toLowerCase();
+  if (!name) return false;
+  return /булоч|вафл|батончик|бісквіт|снек|печив|круасан|мафін|цукер|пряник|сирник/
+    .test(name);
+}
+
 function isExtraLine(line) {
   if (line?.category === 'extra') return true;
   const id = String(line?.id || '');
+  if (id.startsWith('extra-')) return true;
   if (menuExtras.some((extra) => extra.id === id)) return true;
   const name = String(line?.name || '').trim();
-  return menuExtras.some((extra) => extra.name === name);
+  if (menuExtras.some((extra) => extra.name === name)) return true;
+  // Old orders sometimes miss category when extras menu was cleared.
+  return isBakeryExtraName(name);
 }
 
 function isCoffeeLine(line) {
@@ -4017,11 +4028,28 @@ function getServiceOnlyIncomes(incomes) {
   });
 }
 
+/** Overhead / equipment / rent wrongly filed under coffee supplies. */
+function isCoffeeOverheadExpense(expense) {
+  const label = String(expense?.label || '').trim().toLowerCase();
+  if (!label) return false;
+  return (
+    label.includes('апарт')
+    || label.includes('щомісячний платіж')
+    || label.includes('комплект обслуговування')
+    || label.includes('мастило')
+    || label.includes('лоток для готівки')
+    || label.includes('форма для льоду')
+  );
+}
+
 function getExpenseCategory(expense) {
   const source = String(expense?.source || '');
   if (source === 'expense-extras') return 'extras';
   if (source === 'expense-services') return 'services';
   if (source === 'expense-youtube') return 'youtube';
+  // Keep product COGS in coffee; move rent/equipment out so drink sales
+  // actually move the coffee profit number.
+  if (isCoffeeOverheadExpense(expense)) return 'services';
   if (source === 'expense-drinks') return 'drinks';
   return 'drinks';
 }
@@ -5386,55 +5414,55 @@ function renderStatsHub(data) {
     el.classList.toggle('is-negative', balance < 0);
   };
 
+  const setHubProfit = (el, income, expenses) => {
+    if (!el) return;
+    const balance = getProfitBalance(income, expenses);
+    const roi = getRoiPercent(income, expenses);
+    if (roi === null && balance === 0) {
+      el.textContent = 'Прибуток: —';
+      el.classList.remove('is-negative', 'is-positive');
+      return;
+    }
+    const money = formatBalanceMoney(balance);
+    el.textContent = roi === null
+      ? `Прибуток: ${money}`
+      : `Прибуток: ${money} · ${formatSignedPercent(roi)}`;
+    el.classList.toggle('is-negative', balance < 0);
+    el.classList.toggle('is-positive', balance > 0);
+  };
+
   setHubBalance(statsHubCoffeeTotal, summary.coffee - drinksExpenses);
   if (statsHubCoffeeMeta) {
-    statsHubCoffeeMeta.textContent = formatCountLabel(
+    statsHubCoffeeMeta.textContent = `${formatCountLabel(
       getCategoryCount(summary, 'drinks'),
       ...config.drinks.countLabels,
-    );
+    )} · дохід ${formatStatsMoney(summary.coffee)}`;
   }
-  if (statsHubCoffeeRoi) {
-    const roi = getRoiPercent(summary.coffee, drinksExpenses);
-    statsHubCoffeeRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
-    statsHubCoffeeRoi.classList.toggle('is-negative', roi !== null && roi < 0);
-    statsHubCoffeeRoi.classList.toggle('is-positive', roi !== null && roi > 0);
-  }
+  setHubProfit(statsHubCoffeeRoi, summary.coffee, drinksExpenses);
+
   setHubBalance(statsHubExtrasTotal, summary.extras - extrasExpenses);
   if (statsHubExtrasMeta) {
-    statsHubExtrasMeta.textContent = formatCountLabel(
+    statsHubExtrasMeta.textContent = `${formatCountLabel(
       getCategoryCount(summary, 'extras'),
       ...config.extras.countLabels,
-    );
+    )} · дохід ${formatStatsMoney(summary.extras)}`;
   }
-  if (statsHubExtrasRoi) {
-    const roi = getRoiPercent(summary.extras, extrasExpenses);
-    statsHubExtrasRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
-    statsHubExtrasRoi.classList.toggle('is-negative', roi !== null && roi < 0);
-    statsHubExtrasRoi.classList.toggle('is-positive', roi !== null && roi > 0);
-  }
+  setHubProfit(statsHubExtrasRoi, summary.extras, extrasExpenses);
+
   setHubBalance(statsHubServicesTotal, summary.haircut - servicesExpenses);
   if (statsHubServicesMeta) {
-    statsHubServicesMeta.textContent = formatCountLabel(
+    statsHubServicesMeta.textContent = `${formatCountLabel(
       getCategoryCount(summary, 'services'),
       ...config.services.countLabels,
-    );
+    )} · дохід ${formatStatsMoney(summary.haircut)}`;
   }
-  if (statsHubServicesRoi) {
-    const roi = getRoiPercent(summary.haircut, servicesExpenses);
-    statsHubServicesRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
-    statsHubServicesRoi.classList.toggle('is-negative', roi !== null && roi < 0);
-    statsHubServicesRoi.classList.toggle('is-positive', roi !== null && roi > 0);
-  }
+  setHubProfit(statsHubServicesRoi, summary.haircut, servicesExpenses);
+
   setHubBalance(statsHubYoutubeTotal, summary.youtube - youtubeExpenses);
   if (statsHubYoutubeMeta) {
     statsHubYoutubeMeta.textContent = getYoutubeHubMeta(summary);
   }
-  if (statsHubYoutubeRoi) {
-    const roi = getRoiPercent(summary.youtube, youtubeExpenses);
-    statsHubYoutubeRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
-    statsHubYoutubeRoi.classList.toggle('is-negative', roi !== null && roi < 0);
-    statsHubYoutubeRoi.classList.toggle('is-positive', roi !== null && roi > 0);
-  }
+  setHubProfit(statsHubYoutubeRoi, summary.youtube, youtubeExpenses);
 
   renderHubOverviewKpis(data, statsHubChartPeriod);
 
@@ -5577,6 +5605,24 @@ async function runRefreshStats() {
   renderStatsView(data);
 }
 
+function stopStatsLivePoll() {
+  if (statsLivePollTimer) {
+    clearInterval(statsLivePollTimer);
+    statsLivePollTimer = null;
+  }
+}
+
+function startStatsLivePoll() {
+  stopStatsLivePoll();
+  statsLivePollTimer = window.setInterval(() => {
+    if (statsPanel?.hidden) {
+      stopStatsLivePoll();
+      return;
+    }
+    runRefreshStats();
+  }, 8000);
+}
+
 function refreshStats({ immediate = false } = {}) {
   clearTimeout(refreshStatsTimer);
   if (immediate) {
@@ -5647,6 +5693,7 @@ function openStats() {
   syncScrollLock();
   showStatsHub();
   runRefreshStats();
+  startStatsLivePoll();
 }
 
 function closeStats() {
@@ -5656,6 +5703,7 @@ function closeStats() {
   syncScrollLock();
   closeMenuEditor();
   showStatsHub();
+  stopStatsLivePoll();
 }
 
 async function addCashIncome(label, amount, category = statsCategory) {
