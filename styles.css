@@ -4562,13 +4562,17 @@ body.is-scroll-locked {
 }
 
 .stats-card--roi-complete {
-  border-color: rgba(255, 214, 92, 0.45);
+  border-color: rgba(180, 230, 120, 0.45);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.28);
 }
 
 .stats-card--roi-negative {
   border-color: rgba(255, 138, 122, 0.4);
   background: rgba(60, 24, 20, 0.88);
+}
+
+.stats-card--roi-zero {
+  border-color: rgba(255, 220, 160, 0.28);
 }
 
 .stats-roi-head {
@@ -4587,14 +4591,19 @@ body.is-scroll-locked {
 }
 
 .stats-card--roi-complete .stats-roi-percent {
-  color: #ffe2a4;
+  color: #dff7a8;
 }
 
 .stats-card--roi-negative .stats-roi-percent {
   color: #ffb0a4;
 }
 
+.stats-card--roi-zero .stats-roi-percent {
+  color: #ffe2a4;
+}
+
 .stats-roi-track {
+  position: relative;
   height: 12px;
   margin-top: 12px;
   border-radius: 999px;
@@ -4602,7 +4611,22 @@ body.is-scroll-locked {
   overflow: hidden;
 }
 
+.stats-roi-track::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+  background: rgba(255, 248, 236, 0.35);
+  z-index: 1;
+  pointer-events: none;
+}
+
 .stats-roi-fill {
+  position: relative;
+  z-index: 0;
   height: 100%;
   width: 0;
   border-radius: inherit;
@@ -4611,11 +4635,15 @@ body.is-scroll-locked {
 }
 
 .stats-card--roi-complete .stats-roi-fill {
-  background: linear-gradient(90deg, #ffe2a4 0%, #e8cc6a 100%);
+  background: linear-gradient(90deg, #c8e87a 0%, #8fbf3f 100%);
 }
 
 .stats-card--roi-negative .stats-roi-fill {
   background: linear-gradient(90deg, #ffb0a4 0%, #e07060 100%);
+}
+
+.stats-card--roi-zero .stats-roi-fill {
+  background: linear-gradient(90deg, #ffe2a4 0%, #e8cc6a 100%);
 }
 
 .stats-roi-caption {
@@ -7138,11 +7166,26 @@ body {
 .stats-breakdown-value,
 .stats-card-value,
 .stats-tab.is-active,
-.stats-roi-percent,
 .stats-menu-entry-text strong,
 .stats-section-heading,
 .menu-editor-section-tab.is-active {
   color: #fff8ec !important;
+}
+
+.stats-roi-percent {
+  color: #ffe2a4 !important;
+}
+
+.stats-card--roi-complete .stats-roi-percent {
+  color: #dff7a8 !important;
+}
+
+.stats-card--roi-negative .stats-roi-percent {
+  color: #ffb0a4 !important;
+}
+
+.stats-card--roi-zero .stats-roi-percent {
+  color: #ffe2a4 !important;
 }
 
 .stats-roi-caption,

@@ -178,7 +178,7 @@ const VISIT_NOTICE_KEY = 'kava-visit-notified';
 const VISIT_COOLDOWN_MS = 5 * 60 * 1000;
 const LOYALTY_CYCLE = 10;
 const HEALTH_CUP_LIMIT = 5;
-const APP_VERSION = '161';
+const APP_VERSION = '162';
 const SUBSCRIBER_CACHE_KEY = 'kava-subscriber-name';
 const HAIRCUT_ID = 'haircut';
 const THEMES = {
@@ -199,7 +199,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. кава готівкою',
     expensePlaceholder: 'Напр. зерно, молоко',
     countLabels: ['напій', 'напої', 'напоїв'],
-    roiLabel: 'Окупність кави',
+    roiLabel: 'Прибуток кави',
   },
   extras: {
     id: 'extras',
@@ -211,7 +211,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. булочка готівкою',
     expensePlaceholder: 'Напр. закупівля снеків',
     countLabels: ['позиція', 'позиції', 'позицій'],
-    roiLabel: 'Окупність «До кави»',
+    roiLabel: 'Прибуток «До кави»',
   },
   services: {
     id: 'services',
@@ -223,7 +223,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. стрижка готівкою',
     expensePlaceholder: 'Напр. інструменти',
     countLabels: ['раз', 'рази', 'разів'],
-    roiLabel: 'Окупність послуг',
+    roiLabel: 'Прибуток послуг',
   },
   youtube: {
     id: 'youtube',
@@ -235,7 +235,7 @@ const STATS_CATEGORIES = {
     incomePlaceholder: 'Напр. AdSense, спонсорство',
     expensePlaceholder: 'Напр. обладнання, монтаж',
     countLabels: ['дохід', 'доходи', 'доходів'],
-    roiLabel: 'Окупність YouTube',
+    roiLabel: 'Прибуток YouTube',
     analyticsOnly: true,
   },
 };
@@ -4376,9 +4376,8 @@ function getHubPeriodKpis(data, period = statsHubChartPeriod) {
     balance,
     incomeShare: totalFlow > 0 ? (totals.income / totalFlow) * 100 : 0,
     expenseShare: totalFlow > 0 ? (totals.expense / totalFlow) * 100 : 0,
-    balanceShare: totals.income > 0
-      ? (balance / totals.income) * 100
-      : (totals.expense > 0 ? -100 : 0),
+    // Same simple rule as category ROI: profit +, loss −, one result on spend.
+    balanceShare: getRoiPercent(totals.income, totals.expense) ?? 0,
   };
 }
 
@@ -4413,9 +4412,9 @@ function renderHubOverviewKpis(data, period = statsHubChartPeriod) {
   }
   if (statsHubBalanceShare) {
     if (kpis.income > 0 || kpis.expense > 0) {
-      statsHubBalanceShare.textContent = `${formatSignedPercent(kpis.balanceShare)} маржа`;
+      statsHubBalanceShare.textContent = `${formatSignedPercent(kpis.balanceShare)} прибуток`;
     } else {
-      statsHubBalanceShare.textContent = '0.00% маржа';
+      statsHubBalanceShare.textContent = '0.00% прибуток';
     }
   }
 }
@@ -5024,11 +5023,33 @@ function formatSignedPercent(value) {
   })}%`;
 }
 
+/** One money result: income − expenses. */
+function getProfitBalance(income, expenses) {
+  return (Number(income) || 0) - (Number(expenses) || 0);
+}
+
+/**
+ * Simple ROI on spend: ((income − expenses) / expenses) × 100.
+ * Break-even = 0%, profit stays positive and keeps growing.
+ * Returns null only when there is nothing to measure.
+ */
 function getRoiPercent(income, expenses) {
-  const expenseValue = Number(expenses) || 0;
-  if (expenseValue <= 0) return null;
   const incomeValue = Number(income) || 0;
-  return ((incomeValue - expenseValue) / expenseValue) * 100;
+  const expenseValue = Number(expenses) || 0;
+
+  if (expenseValue > 0) {
+    return ((incomeValue - expenseValue) / expenseValue) * 100;
+  }
+
+  // No expenses: pure income is full profit, no income is empty.
+  if (incomeValue > 0) return 100;
+  return null;
+}
+
+/** Map ROI % onto a 0–100 bar: -100% → 0, 0% → 50, +100%+ → 100. */
+function getRoiBarWidth(roiPercent) {
+  if (!Number.isFinite(roiPercent)) return 0;
+  return Math.max(0, Math.min(100, 50 + (roiPercent / 2)));
 }
 
 function setStatsTab(tab, { keepEdit = false } = {}) {
@@ -5058,10 +5079,16 @@ function renderRoi(income, expenses) {
 
   const incomeValue = Number(income) || 0;
   const expenseValue = Number(expenses) || 0;
+  const balance = getProfitBalance(incomeValue, expenseValue);
+  const roi = getRoiPercent(incomeValue, expenseValue);
 
-  statsRoiCard?.classList.remove('stats-card--roi-complete', 'stats-card--roi-negative');
+  statsRoiCard?.classList.remove(
+    'stats-card--roi-complete',
+    'stats-card--roi-negative',
+    'stats-card--roi-zero',
+  );
 
-  if (expenseValue <= 0) {
+  if (roi === null) {
     statsRoiMain.textContent = '—';
     statsRoiSub.hidden = true;
     statsRoiSub.textContent = '';
@@ -5069,27 +5096,26 @@ function renderRoi(income, expenses) {
     return;
   }
 
-  const rawPercent = ((incomeValue - expenseValue) / expenseValue) * 100;
-  const recoveryPercent = Math.max(0, Math.min(100, (incomeValue / expenseValue) * 100));
+  statsRoiMain.textContent = formatSignedPercent(roi);
+  if (statsRoiFill) statsRoiFill.style.width = `${getRoiBarWidth(roi)}%`;
 
-  if (statsRoiFill) statsRoiFill.style.width = `${recoveryPercent}%`;
-
-  if (incomeValue >= expenseValue) {
-    const profit = incomeValue - expenseValue;
-    statsRoiMain.textContent = formatSignedPercent(rawPercent);
-    statsRoiSub.textContent = profit > 0
-      ? `Окуплено · прибуток ${formatStatsMoney(profit)}`
-      : 'Окуплено';
+  if (balance > 0) {
+    statsRoiSub.textContent = `Прибуток ${formatBalanceMoney(balance)}`;
     statsRoiSub.hidden = false;
     statsRoiCard?.classList.add('stats-card--roi-complete');
     return;
   }
 
-  const left = expenseValue - incomeValue;
-  statsRoiMain.textContent = formatSignedPercent(rawPercent);
-  statsRoiSub.textContent = `Збиток ${formatStatsMoney(left)} · ще до окупності`;
+  if (balance < 0) {
+    statsRoiSub.textContent = `Збиток ${formatBalanceMoney(balance)}`;
+    statsRoiSub.hidden = false;
+    statsRoiCard?.classList.add('stats-card--roi-negative');
+    return;
+  }
+
+  statsRoiSub.textContent = 'В нулі · дохід = витрати';
   statsRoiSub.hidden = false;
-  statsRoiCard?.classList.add('stats-card--roi-negative');
+  statsRoiCard?.classList.add('stats-card--roi-zero');
 }
 
 function incomeTitle(item) {
@@ -5369,7 +5395,7 @@ function renderStatsHub(data) {
   }
   if (statsHubCoffeeRoi) {
     const roi = getRoiPercent(summary.coffee, drinksExpenses);
-    statsHubCoffeeRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatSignedPercent(roi)}`;
+    statsHubCoffeeRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
     statsHubCoffeeRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubCoffeeRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
@@ -5382,7 +5408,7 @@ function renderStatsHub(data) {
   }
   if (statsHubExtrasRoi) {
     const roi = getRoiPercent(summary.extras, extrasExpenses);
-    statsHubExtrasRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatSignedPercent(roi)}`;
+    statsHubExtrasRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
     statsHubExtrasRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubExtrasRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
@@ -5395,7 +5421,7 @@ function renderStatsHub(data) {
   }
   if (statsHubServicesRoi) {
     const roi = getRoiPercent(summary.haircut, servicesExpenses);
-    statsHubServicesRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatSignedPercent(roi)}`;
+    statsHubServicesRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
     statsHubServicesRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubServicesRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
@@ -5405,7 +5431,7 @@ function renderStatsHub(data) {
   }
   if (statsHubYoutubeRoi) {
     const roi = getRoiPercent(summary.youtube, youtubeExpenses);
-    statsHubYoutubeRoi.textContent = roi === null ? 'Окупність: —' : `Окупність: ${formatSignedPercent(roi)}`;
+    statsHubYoutubeRoi.textContent = roi === null ? 'Прибуток: —' : `Прибуток: ${formatSignedPercent(roi)}`;
     statsHubYoutubeRoi.classList.toggle('is-negative', roi !== null && roi < 0);
     statsHubYoutubeRoi.classList.toggle('is-positive', roi !== null && roi > 0);
   }
@@ -5447,7 +5473,7 @@ function renderStatsCategoryView(data) {
   if (expenseLabelInput) expenseLabelInput.placeholder = config.expensePlaceholder;
 
   const roiLabelEl = document.querySelector('.stats-card--roi .stats-card-label');
-  if (roiLabelEl) roiLabelEl.textContent = config.roiLabel || 'Окупність';
+  if (roiLabelEl) roiLabelEl.textContent = config.roiLabel || 'Прибуток';
   if (statsRoiWrap) statsRoiWrap.hidden = false;
 
   if (statsCoffeeSplit) {
